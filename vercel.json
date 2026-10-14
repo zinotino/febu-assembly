@@ -1,4 +1,5 @@
 {
+  "buildCommand": "python3 build.py",
   "routes": [
     {
       "src": "/start(\\.html)?",
@@ -24,5 +25,6 @@
       "path": "/api/archive",
       "schedule": "41 4 * * *"
     }
-  ]
+  ],
+  "outputDirectory": "."
 }
