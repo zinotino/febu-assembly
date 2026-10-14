@@ -1,0 +1,187 @@
+/* Assembly pages (front page, ledger, tests). Loaded after findings.css, which already gives the den: the starfield,
+   the silver main window, the navy title, the claim windows, the archive bar and the tabs. This adds the status
+   note, small windows, the text's own layout and fact 6's rows. Same palette, same one typeface. */
+:root{--bar:linear-gradient(90deg,#000080,#1084d0);--hi:#000080;--note:#ffffe1}
+[hidden]{display:none!important}
+
+.jump{display:flex;flex-wrap:wrap;gap:.2rem 1.1rem;margin:.75rem 0 .2rem;font-size:.82rem}
+.lede{margin-top:1.1rem}
+.intro{margin-top:1rem}
+.intro>p{margin:0}
+
+/* STATUS: pinned above everything in the den's tooltip yellow, the one colour kept for "not settled yet" */
+.banner{margin:0 0 .9rem;padding:.55rem .8rem .65rem;background:var(--note);color:#000;border:1px solid #000;
+  box-shadow:3px 3px 0 rgba(0,0,0,.4);scroll-margin-top:14px}
+.banner>strong{display:block;margin:0 0 .3rem;color:#7a0000;font-size:.86rem;letter-spacing:.07em;text-transform:uppercase}
+.banner>strong::before{content:"!";display:inline-grid;place-items:center;width:1.15rem;height:1.15rem;margin-right:.5rem;
+  color:#000;background:#ffd800;border:1px solid #000;font-size:.8rem;vertical-align:.08em}
+.banner p{margin:0}
+.banner p+p{margin-top:.35rem}
+
+/* entry squares carry their number instead of a mark */
+.strip.nums a{width:auto;min-width:2.1rem;padding:0 .4rem;font-size:.85rem}
+.strip.nums a::before{content:none}
+
+/* sections of the text */
+main>section{scroll-margin-top:14px}
+main>section>h2{scroll-margin-top:14px}
+
+/* a window: navy title bar, silver body */
+.win{margin:0 0 12px;background:var(--silver-lt);scroll-margin-top:14px;border:2px solid;border-color:var(--up);
+  box-shadow:inset -1px -1px #808080,4px 4px 0 rgba(0,0,0,.25)}
+.win>summary,.bar{display:flex;align-items:center;gap:.6rem;margin:0;padding:4px 4px 4px 8px;border:0;color:#fff;
+  background:var(--bar);font:700 .84rem/1.4 var(--mono);letter-spacing:.02em}
+.win>summary{cursor:pointer;list-style:none;min-height:2.1rem}
+.win>summary::-webkit-details-marker{display:none}
+.win>summary .t{flex:none}
+.win>summary .q{flex:1 1 12em;min-width:0;font-weight:400;color:#dfe5ff;overflow-wrap:anywhere}
+.win>summary::after{content:"+";flex:none;display:grid;place-items:center;width:1.45rem;height:1.3rem;margin-left:auto;
+  background:var(--silver);color:#000;font-weight:700;border:2px solid;border-color:var(--up)}
+.win[open]>summary::after{content:"\2212"}
+.win>summary:hover::after{background:#fff}
+.win>summary:focus-visible{outline:1px dotted #fff;outline-offset:-3px}
+.win:target,.win:has(:target){box-shadow:0 0 0 3px #7f90ff,0 0 0 5px var(--navy),4px 4px 0 5px rgba(0,0,0,.25)}
+.win-body{padding:12px 14px}
+.win-body>:last-child{margin-bottom:0}
+.go{margin:.9rem 0 0}
+.go a::before{content:"\25B8\00a0"}
+
+/* the text's own layout: numbered rules, labelled rows, notes set off to the right, lines shown as written */
+.row{display:grid;grid-template-columns:2.4em 1fr;gap:0 .6rem;margin:0 0 .6rem;scroll-margin-top:14px}
+.row>.k{color:var(--navy);font-weight:700;text-align:right}
+.row.r-lab{grid-template-columns:6.2em 1fr}
+.row.r-lab>.k,.row.r-hang>.k{text-align:left}
+.row.r-hang{grid-template-columns:minmax(5.5em,max-content) 1fr}
+.row.r-bul>.k{text-align:center}
+.row>.v{min-width:0;overflow-wrap:anywhere}
+.row .v>p{margin:0 0 .45rem}
+.row .v>:last-child{margin-bottom:0}
+.row:target{background:#fff;outline:2px solid #7f90ff;outline-offset:3px}
+.nest{margin:0 0 .8rem 1.4rem}
+.nest>p{margin:0 0 .45rem;color:#333}
+.tag{display:inline-block;padding:0 .4em;font-size:.72rem;font-weight:400;color:#333;background:var(--silver);
+  border:1px solid #808080;white-space:nowrap}
+.tags{margin:-.3rem 0 .8rem;text-align:right}
+pre.lit{margin:.25rem 0 .8rem;padding:7px 10px;background:#fff;color:#111;font:.84rem/1.5 var(--mono);
+  white-space:pre-wrap;overflow-wrap:anywhere;border:2px solid;border-color:var(--down)}
+pre.lit code{padding:0;border:0;background:none;font-size:1em}
+code.tok{cursor:copy;overflow-wrap:anywhere}
+code.tok.copied{background:var(--hi);color:#fff}
+.eg{margin:1rem 0;padding:6px 12px 2px;background:#ececf3;border:1px dashed #808080}
+.eg h4{margin:0 0 .5rem;font:700 .74rem/1.4 var(--mono);letter-spacing:.06em;color:var(--navy)}
+
+/* entries: the fields under what the entry says; old links (#6) land on the card after them */
+.alias{display:block;height:0;scroll-margin-top:14px}
+.entry .num::before,.pred .num::before{content:none}
+.fields{margin:.7rem 0 0}
+.fields>div{display:grid;grid-template-columns:6.4em 1fr;gap:.1rem .8rem;padding:.5rem 0;border-top:1px dotted #8a8a8a}
+.fields dt{padding-top:.12em;color:var(--navy);font-size:.76rem;font-weight:700;letter-spacing:.05em}
+.fields dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.fields dd p{margin:0 0 .45rem}
+.fields dd>:last-child{margin-bottom:0}
+.body .meta a{font-weight:700}
+
+/* fact 6, step by step, inside its own card */
+.walk{margin:.9rem 0 0;padding:.8rem 0 0;border-top:2px groove #fff}
+.walk-title{margin:0 0 .6rem;font:700 .95rem/1.4 var(--mono);color:var(--navy)}
+.walk-h{margin:1rem 0 .35rem;font:700 .76rem/1.4 var(--mono);letter-spacing:.06em;color:var(--navy)}
+.walk>p{margin:0 0 .5rem}
+.step .bar .n{display:grid;place-items:center;width:1.55rem;height:1.45rem;flex:none;color:#000;background:var(--silver);
+  border:2px solid;border-color:var(--up)}
+.step .bar{font-size:.9rem;padding:5px 8px}
+.walk .step{background:#fff}
+.walk .step .win-body{padding:10px 12px}
+.walk .row.r-lab{grid-template-columns:3.6em 1fr}
+.rows{margin-top:12px}
+.rows .tbl{margin:.5rem 0 .8rem}
+.rows table{font-size:.82rem}
+.rows th,.rows td{padding:.3rem .55rem}
+.rows .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rows td:first-child{text-align:right;color:var(--navy)}
+.rows td a{white-space:nowrap}
+.rows tbody tr:target td{background:var(--note)}
+.rows tfoot td{font-weight:700;background:var(--silver-lt);border-top:2px solid #808080;border-bottom:0}
+
+/* key and value lists */
+.kv{display:grid;gap:.2rem;margin:.2rem 0 .9rem}
+.kv>div{display:grid;grid-template-columns:8.6em 1fr;gap:.8rem}
+.kv dt{color:#333;font-size:.82rem;padding-top:.1em}
+.kv dd{margin:0;min-width:0;font-weight:700;overflow-wrap:anywhere}
+.files>div{padding:.5rem 0;border-top:1px dotted #8a8a8a}
+.files dd{font-weight:400}
+.files code{display:inline-block;margin-top:.2rem;font-weight:700}
+.files .served{display:block;margin-top:.2rem}
+
+/* comparing a copy you hold */
+.tool label{display:block;margin:1rem 0 .3rem;padding:0;color:var(--navy);font-weight:700}
+.tool input[type=file]{display:block;width:100%;padding:5px;font:.92rem/1.4 var(--mono);background:#fff;
+  border:2px solid;border-color:var(--down)}
+.tool input:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+.hint{margin:.3rem 0 0;font-size:.8rem;color:#333}
+.msg{margin:.6rem 0 0;font-weight:700}
+.msg:empty{display:none}
+.msg.ok{color:#075a2a}.msg.ok::before{content:"\2713\00a0"}
+.msg.err{color:#a30000}.msg.err::before{content:"\2715\00a0"}
+.compare{margin-top:.6rem}
+
+/* start page */
+.howto .bar{font-size:.95rem;padding:6px 10px}
+.howto .row.r-num{grid-template-columns:2.6rem 1fr;gap:0 .9rem;margin:0 0 .9rem;align-items:start}
+.howto .row.r-num>.k{display:grid;place-items:center;width:2.2rem;height:2rem;color:#fff;background:var(--hi);
+  border:2px solid;border-color:var(--up);font-size:1rem}
+.howto .row.r-num .v{padding-top:.2rem}
+.howto .after{margin-top:.4rem;padding-top:.6rem;border-top:2px groove #fff}
+.banner.brief{margin-top:.2rem}
+.foot{margin-top:2.2rem;padding-top:.6rem;border-top:2px groove #fff;font-size:.78rem;color:#333}
+
+@media (max-width:40rem){
+  .row.r-lab,.row.r-hang,.fields>div,.kv>div{grid-template-columns:1fr;gap:.1rem}
+  .row.r-lab>.k,.row.r-hang>.k{font-size:.85rem}
+  .walk .row.r-lab{grid-template-columns:1fr}
+  .nest{margin-left:.6rem}
+  .win-body{padding:10px 11px}
+  .walk .step .win-body{padding:9px 10px}
+  .tool input[type=file]{font-size:16px}
+  .win>summary{flex-wrap:wrap;gap:.1rem .6rem}
+  .win>summary .q{flex-basis:100%;order:3}
+  .rows table{font-size:.76rem}
+  .rows th,.rows td{padding:.28rem .35rem}
+  .rows thead th{white-space:normal}
+  /* a table becomes one small card per row, each cell under its heading */
+  .tbl.stack{overflow:visible;background:none;border:0}
+  .tbl.stack thead{display:none}
+  .tbl.stack table,.tbl.stack tbody,.tbl.stack tr,.tbl.stack td{display:block}
+  .tbl.stack tr{margin:0 0 8px;background:#fff;border:2px solid;border-color:var(--down)}
+  .tbl.stack td{display:grid;grid-template-columns:7.5em 1fr;gap:.6rem;border-bottom:1px solid #e0e0e0}
+  .tbl.stack td::before{content:attr(data-th);color:var(--navy);font-weight:700;font-size:.78rem}
+  .tbl.stack tbody tr:nth-child(even) td{background:none}
+  .tbl.stack td:first-child{background:var(--silver-lt)}
+}
+
+/* febu-assembly.html: the ledger is the main window, every entry listed with whether anyone has checked it */
+.lead{margin-top:1.2rem}
+.lead>.bar{flex-wrap:wrap;gap:.1rem .9rem;padding:6px 10px;font-size:.95rem}
+.bar .q{font-weight:400;font-size:.8rem;color:#dfe5ff}
+.entries{list-style:none;margin:0 0 .8rem;padding:0;background:#fff;border:2px solid;border-color:var(--down)}
+.entries li{margin:0}
+.entries li+li{border-top:1px solid #c8c8c8}
+.entries a{display:grid;grid-template-columns:6rem 1fr auto;gap:.25rem .9rem;align-items:baseline;padding:.6rem .7rem;
+  color:var(--ink);font-weight:400;text-decoration:none}
+.entries a:hover{background:#e8ebff;color:var(--ink)}
+.entries .num{order:0;justify-self:start;padding:0 .45rem;background:var(--silver-lt);color:var(--navy);font-weight:700;
+  font-size:.8rem;white-space:nowrap;border:2px solid;border-color:var(--up)}
+.entries .num::before{content:"?\00a0"}
+.entries .state{font-size:.75rem;color:#333;white-space:nowrap}
+.cta{display:flex;flex-wrap:wrap;gap:8px;margin:.9rem 0 0}
+.cta a{padding:8px 14px;background:var(--silver-lt);color:var(--navy);text-decoration:none;border:2px solid;border-color:var(--up)}
+.cta a:first-child{background:var(--hi);color:#fff}
+.cta a:hover{background:var(--navy);color:#fff}
+.cta a:active{border-color:var(--down);transform:translate(1px,1px)}
+.more{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:12px;margin-top:1.4rem}
+.more .win{display:flex;flex-direction:column;margin:0}
+.more .win-body{flex:1;display:flex;flex-direction:column}
+.more .go{margin-top:auto;padding-top:.6rem}
+@media (max-width:40rem){
+  .entries a{grid-template-columns:1fr auto}
+  .entries .says{grid-column:1/-1;order:3}
+}

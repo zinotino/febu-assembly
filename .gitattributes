@@ -1,0 +1,2 @@
+# ledger.txt is served byte for byte and its SHA-256 is printed on the site: keep text files LF in git and on disk.
+* text=auto eol=lf

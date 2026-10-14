@@ -1,0 +1,91 @@
+FOUR TESTS AND SIX STEPS (drafted 2026-10-13 by Z, for Witness to pick apart)
+
+WHY THIS PAGE
+  Witness asked: if we took the problems febu points at and approached them the way Satoshi
+  approached money, what would the answer look like? He named what Satoshi was answering:
+  gains kept private, losses passed down, bailouts, and decisions made at the top.
+  This page turns those four into tests, runs febu through them, and marks where our own
+  process stands. Nothing here has been checked by anyone but Z.
+
+THE FOUR TESTS, AND FEBU'S ANSWERS
+  [A] = anyone can open the record.  [B] = only from Z's saved copies.
+
+  1. GAINS. Who collects when it works?
+     The wallet that created $FEBU. Every trade on the main pool sets aside a fee (just under
+     1% in the trade checked) that only that wallet can collect. It collected 2,939 SOL
+     between 07-09 and 09-14, and 11 SOL is waiting now.                 [A, ledger entry 6]
+  2. LOSSES. Who pays when it fails?
+     Holders. That wallet sold its first allocation, 6.667% of supply, 116 minutes after the
+     coin was created. It sold its rebuilt stake on 09-22.               [A, ledger entry 2]
+  3. BAILOUT. When something fails, can the insider issue something new instead of paying?
+     Yes. Announcements cost nothing: "i am now the largest holder of $febu" and "i have more
+     skin in the experiment than any of you" on 08-14, sold on 09-22. The same wallet made a
+     second coin, benchcoin, on 09-03.                                                   [A]
+  4. DECISION. Is there a step only one party can perform?
+     Yes. One admin account approved every job on record. Jobs that failed were removed
+     from the list and not marked failed. Job #008 was paid 21 minutes before its approval
+     was recorded.                                          [B; the payment itself is A]
+  In fairness: the payouts were real. The chain shows payments to outside wallets, including
+  102 SOL for job #008. What was missing was any check that came before the money.
+
+WHERE THE AUTHORITY SAT: SIX STEPS
+  Bitcoin's question at each step: who do I have to trust here?
+
+  Step      In febu                      With no one in charge              Where we are
+  --------  ---------------------------  ---------------------------------  ----------------------
+  Propose   febu only                    anyone                             ledger: any member
+  Commit    an announcement, free        something set aside before the     promises added 10-13,
+                                         ask goes public                    no money
+  Do        the participants             anyone                             -
+  Verify    one admin, afterwards        checkers nobody chose; a source    rewritten 10-13,
+                                         that opens without the proposer    not yet run
+  Reward    the creator wallet, as it    released by rule on the verdict    not built; simulated
+            chose
+  Record    febu's database; failures    nothing deleted; anyone can hold   hash chain added
+            deleted                      a copy                             10-13, not yet run
+
+  The participants held one step of the six.
+
+WHAT THE TESTS SAY ABOUT OUR OWN PLANS
+  - Anything that raises trading in $FEBU pays the wallet that sold out. That fails test 1.
+  - The ledger passes tests 1 and 4 on paper: nobody checks their own claim and nobody picks
+    their checker. It has not been run. Every entry so far is Z's and none is checked.
+  - pump.fun will move a coin's creator fee to a new wallet when a community applies (its
+    community-takeover process). For $FEBU that would turn the fee from a leak into money
+    for jobs and checking. It would also make the group the one that gains from $FEBU
+    trading, which is test 1 again unless the money can only leave by rule. Not decided,
+    and not Z's to decide.
+
+WEAK POINTS WE ALREADY KNOW
+  1. The draw could be steered. The first rule 2 counted down a fixed list, so a proposer
+     could see the checkers before posting. Changed 10-13: the seats are drawn from a
+     Bitcoin block that did not exist when the claim was posted. Not yet used.
+  2. The second checker could copy the first. Changed 10-13: verdicts are locked first and
+     opened together. The locks are fiddly, and the fallback trusts the record keeper.
+  3. We are about seven. If three agree in advance, one writes a false claim and the other
+     two are drawn as its checkers about 1 time in 10. Changed 10-13: two more members
+     re-check every claim, which stops a group of three. The cost is that four of the five
+     members who can check have to look at every claim.
+  4. Nothing said who could be drawn or who decided. Changed 10-13: being drawn is earned
+     (one claim of your own closed RIGHT, and 30 days), checking is by choice, and the
+     whole group names the record keeper. The founding list and the record keeper have
+     not been named yet.
+  5. Only what has an outside record can be checked. Three of febu's eleven problems have
+     none. That puts them outside this list. It does not make them less important.
+  6. Nobody is paid to check. In a simulation, 0 of 400 random pay rules survived every kind
+     of cheat. A search found some that did, and the first hole an attacker found in those
+     was claims that cite no outside record. That work is not finished. A simulation sorts
+     designs. It does not show that one works.
+  7. Z wrote the rules, the first claims and the tools, and changed the rules alone three
+     times on 10-13. From the first closed claim on, a rule change waits 7 days in the
+     chat and goes to the whole group if anyone objects. Until then these are Z's rules.
+     The process is not real until a claim closes without Z in any seat.
+  8. This is a jury, not a protocol. Bitcoin checks arithmetic. Most of what is here needs a
+     person's judgement.
+  9. The rules have grown from two pages to about seven. Whoever understands a long
+     rulebook holds power over those who do not.
+
+QUESTIONS FOR WITNESS
+  - Which of the four tests is wrong, and which one is missing?
+  - What would count as this working, written so that it could come back false?
+  - Where does it stop being gravity and start being force?

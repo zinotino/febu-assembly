@@ -1,0 +1,104 @@
+/* Findings page, styled to match the 08-14 den: silver Win98 windows on a navy starfield.
+   Every Assembly page loads it: findings.html, and the pages that add assets/ledger.css. */
+:root{
+  --silver:#c0c0c0; --silver-lt:#d4d0c8; --navy:#1f1a8c; --ink:#111;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+  --up:#fff #404040 #404040 #fff; --down:#404040 #fff #fff #404040;
+}
+.v-yes{--v:#075a2a;--vk:#0b7a3a;--m:"\2713"} .v-no{--v:#a30000;--vk:#b00000;--m:"\2715"}
+.v-part{--v:#6b4a00;--vk:#8a5a00;--m:"~"}     .v-open{--v:#1f1a8c;--vk:#d4d0c8;--m:"?"}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:var(--ink);font:15px/1.65 var(--mono);
+  background-color:#00002b;
+  background-image:radial-gradient(circle,#9fb0ff 0 1px,transparent 1.6px),radial-gradient(circle,#fff 0 1px,transparent 1.6px),radial-gradient(circle,#5a6bd8 0 1px,transparent 1.6px);
+  background-size:97px 97px,151px 151px,59px 59px;background-position:0 0,37px 61px,19px 23px}
+
+.archive-bar{position:relative;z-index:2;padding:7px 10px;text-align:center;font:12px/1.6 var(--mono);
+  background:var(--silver-lt);border-bottom:3px groove #fff;box-shadow:0 2px 0 #000}
+.archive-bar a,main a{color:var(--navy);font-weight:700;text-decoration:underline}
+.archive-bar a:hover,main a:hover{background:var(--navy);color:#fff}
+a:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+
+main{--pad:clamp(12px,3.5vw,28px);width:min(920px,calc(100% - 16px));margin:22px auto 44px;padding:0 var(--pad) 32px;
+  background:var(--silver);border:3px solid;border-color:#fff #404040 #404040 #fff;box-shadow:0 0 0 1px #000,10px 10px 0 rgba(0,0,0,.5)}
+
+/* header: same navy bar as the den's, then the keys and the tally */
+.mast-title{margin:0 calc(var(--pad)*-1) 18px;padding:clamp(18px,4vw,30px) var(--pad) 16px;text-align:center;
+  background:linear-gradient(180deg,#0a0a3c,#171776 70%,var(--navy));border-bottom:3px groove #808080}
+h1{margin:0;font:700 clamp(1.6rem,6vw,2.6rem)/1.1 var(--mono);letter-spacing:.04em;text-transform:lowercase;color:#fff;
+  text-shadow:3px 3px 0 var(--navy),0 0 14px #7f90ff}
+.nb{white-space:nowrap}
+.sub{margin:.55rem 0 0;color:#cfd6ff;font-size:.95rem}
+.mast{padding-bottom:.6rem;border-bottom:2px groove #fff}
+
+.strip{display:flex;flex-wrap:wrap;gap:5px}
+.strip a{display:grid;place-items:center;width:2rem;height:2rem;background:var(--vk);color:#fff;
+  font:700 1.05rem/1 var(--mono);text-decoration:none;border:2px solid;border-color:#fff #404040 #404040 #fff}
+.strip a.v-open{color:var(--navy)}
+.strip a::before{content:var(--m)}
+.strip a:hover{filter:brightness(1.15);background:var(--vk);color:#fff}
+.strip a.v-open:hover{color:var(--navy)}
+.strip a:active{border-color:#404040 #fff #fff #404040;transform:translate(1px,1px)}
+
+.tally{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:.85rem 0 1.1rem;padding:0}
+.tally li{margin:0;padding:2px 12px;background:var(--silver-lt);color:var(--v);font-weight:700;
+  border:2px solid;border-color:#404040 #fff #fff #404040}
+.tally li::before{content:var(--m) "\00a0"}
+.tally b{margin-left:.4rem;font-size:1.1rem}
+.intro{color:#222}
+.intro strong{color:var(--navy)}
+
+/* text */
+h2{margin:2.4rem 0 .9rem;padding-bottom:4px;font:700 1.2rem/1.3 var(--mono);color:var(--navy);border-bottom:2px groove #fff}
+main>h3{margin:1.8rem 0 .5rem;font:700 1.02rem/1.4 var(--mono);color:var(--navy)}
+p,ul{margin:0 0 .9rem}
+ul{padding-left:1.3rem}
+li{margin-bottom:.45rem}
+li::marker{color:var(--navy)}
+code{padding:0 .3em;background:#fff;border:1px solid #808080;font:.9em var(--mono);overflow-wrap:anywhere}
+
+/* one claim = one window: verdict lives in the title bar */
+.claim{margin:0 0 14px;background:var(--silver-lt);scroll-margin-top:14px;
+  border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:inset -1px -1px #808080,4px 4px 0 rgba(0,0,0,.25)}
+.claim:target{box-shadow:0 0 0 3px #7f90ff,0 0 0 5px var(--navy),4px 4px 0 5px rgba(0,0,0,.25)}
+.mark{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;margin:0;padding:3px 4px 3px 8px;color:#fff;font-size:.8rem;font-weight:700;
+  background:linear-gradient(90deg,#000080,#1084d0)}
+.num{order:1;display:inline;font:inherit;color:inherit}
+.num::before{content:"claim\00a0"}
+.qual{order:2;display:inline;margin:0;font-size:.75rem;font-weight:400;color:#e4e8ff}
+.verdict{order:3;margin-left:auto;display:inline-flex;align-items:center;gap:.35rem;padding:1px 8px;
+  background:var(--silver-lt);color:var(--v);font:700 .75rem/1.5 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  border:2px solid;border-color:#fff #404040 #404040 #fff}
+.verdict::before{content:var(--m)}
+.body{padding:12px 14px}
+.body h3{margin:0 0 .4rem;font:700 1rem/1.45 var(--mono);color:var(--ink)}
+.body p{margin:0 0 .5rem}
+.body .meta{display:flex;flex-wrap:wrap;gap:.2rem 1.5rem;margin:.7rem 0 0;padding-top:.5rem;border-top:2px groove #fff;font-size:.78rem;color:#333}
+.lvl{display:inline-block;min-width:1.5em;padding:0 .3em;background:var(--navy);color:#fff;text-align:center;font-weight:700}
+
+/* tables read as list views */
+.tbl{overflow-x:auto;margin:.75rem 0 1rem;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:.35rem .7rem;text-align:left;vertical-align:top}
+thead th{background:var(--silver-lt);white-space:nowrap;border:2px solid;border-color:#fff #404040 #404040 #fff}
+td{border-bottom:1px solid #c8c8c8}
+tbody tr:nth-child(even) td{background:#f0f0f6}
+td:first-child{font-weight:700}
+
+/* the Assembly's pages, as tabs under the title */
+.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 .9rem}
+.tabs a{padding:6px 12px;background:var(--silver-lt);color:var(--navy);font-weight:700;text-decoration:none;
+  border:2px solid;border-color:var(--up)}
+.tabs a[aria-current=page]{background:var(--silver);color:#000;border-color:var(--down)}
+.tabs a:hover{background:var(--navy);color:#fff}
+@media (max-width:40rem){
+  body{font-size:14.5px}
+  .tabs{display:grid;grid-template-columns:1fr 1fr}
+  .tabs a{text-align:center;padding:6px 8px}
+  main{box-shadow:0 0 0 1px #000,6px 6px 0 rgba(0,0,0,.5)}
+  .strip a{width:1.85rem;height:1.85rem}
+  .body{padding:10px 11px}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}

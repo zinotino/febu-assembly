@@ -1,0 +1,60 @@
+FOUR TESTS (for Witness to pick apart; rewritten 2026-10-14 by Z for ledger version 2, updated for 2.1)
+
+THE QUESTION
+  Witness asked what the answer to febu would look like if we approached it the way Satoshi
+  approached money, and named what Satoshi was answering: gains kept private, losses passed
+  down, bailouts, and decisions made at the top. Those four are the tests. The ledger (08) is
+  our answer so far. Nothing in it has been checked by anyone but Z.
+
+THE FOUR TESTS
+  1. GAINS. Who collects when it works?
+     Febu:   the wallet that created $FEBU received 2,939 SOL of creator fees, 07-09 to 09-14
+             (fact 6).
+     Ledger: whoever asked for the work pays whoever did it, wallet to wallet. No pool, no
+             treasury (rule 5). But every $FEBU trade still pays a fee to that wallet
+             (KNOWN BUGS 5).
+  2. LOSSES. Who pays when it fails?
+     Febu:   holders. That wallet sold all its $FEBU on 09-22 and holds none (fact 2).
+     Ledger: whoever breaks a promise carries BROKEN under their name for good, and cannot
+             promise to pay again until they have paid. That is all. It is weak.
+  3. BAILOUT. Can an insider issue something new instead of paying for a failure?
+     Febu:   yes. Announcements cost nothing, and the same wallet made a second coin on 09-03.
+     Ledger: nothing is removed, a promise withdrawn in its last 7 days counts as BROKEN, and
+             the group makes no new token (rules 2 and 5).
+  4. DECISION. Is there a step only one party can perform?
+     Febu:   yes. Its admin account approved a developer account as winner of the $500 job
+             #004, and job #002 was deleted.
+     Ledger: nobody approves and anyone checks. Rules, and anything done in the group's name,
+             need 7 days, four yeses and at most one "object" (rule 7). Not yet true for the
+             file and the site, which are Z's (KNOWN BUGS 1).
+
+BITCOIN'S THREE PROPERTIES
+  1. Work that cannot be faked. PARTLY. A result counts only with what the checker saw at the
+     link, and anyone who opens the link can show it was faked. But nothing makes anyone look,
+     so a fake lasts until somebody does. Bitcoin turns a bad block away whether or not anyone
+     is watching.
+  2. Anyone can check for almost nothing. PARTLY. Yes for facts that are one link. Fact 6 is
+     several links and a column of 44 numbers; fact 4 is 164 pages. Nobody has timed one.
+  3. The rule itself pays, in the thing being protected. NO. Bitcoin could pay by rule because
+     it made its own money. The group makes no new token and holds no money, so the only
+     payments are people paying people. A rule that pays needs money held somewhere, and
+     whoever holds it is test 4 again.
+
+THE FOUNDER TEST
+  Bitcoin kept working when Satoshi stepped away. Febu's writing stopped on 09-19 and never
+  restarted. The ledger fails this test today: the file and the site are Z's.
+
+$FEBU
+  The group makes no new token, and $FEBU is the only token used (rule 5, proposed). Using
+  $FEBU means its trades pay a fee to the wallet that created it and sold out; in the trade
+  checked, that wallet's own 09-22 sale, just under 1% of the SOL (fact 6, step 1). pump.fun lets a community apply to move an abandoned
+  coin's fee to a new wallet. Whether to apply, and who would hold that wallet, is a decision
+  in the group's name (rule 7).
+  Witness's four ifs: a working system, people taking part, a role for $FEBU, demand growing
+  against supply. The first three can be written as promises with dates and links. The fourth
+  is a price, and nobody can promise a price.
+
+QUESTIONS FOR WITNESS
+  - Which of the four tests is wrong, and which one is missing?
+  - What would count as this working, written so that it could come back false?
+  - What role for $FEBU passes test 1 while its fee still goes to the wallet that sold?

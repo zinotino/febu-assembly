@@ -1,0 +1,22 @@
+{
+  "routes": [
+    {
+      "src": "/start(\\.html)?",
+      "status": 308,
+      "headers": {
+        "Location": "/febu-assembly.html#check"
+      }
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/z/?",
+      "dest": "/findings.html"
+    },
+    {
+      "src": "/",
+      "dest": "/febu-assembly.html"
+    }
+  ]
+}

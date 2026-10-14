@@ -1,0 +1,97 @@
+FACT 6 AS STEPS (the links behind ledger fact 6, written 2026-10-14 by Zurandol, changed for ledger version 2.1)
+
+WHAT THIS IS
+  Fact 6 adds up 44 payments, so checking it means opening links, not trusting a total. Each
+  step below is one link and one thing to look for. If a step fails, anyone can point at it
+  and everyone can open the same link. You choose which rows to open, so whoever wrote this
+  has to get every row right.
+  Z opened steps 1 to 3 on solscan.io on 2026-10-14 with no account and no login; step 1 then
+  used a smaller trade. Nobody else has tried them yet, and nobody has timed them.
+
+THE FACT (ledger fact 6, not yet checked)
+  The wallet that created $FEBU received 2,939.10 SOL from its creator-fee account in 44
+  payments between 2026-07-09 and 2026-09-14, and has received nothing from it since.
+
+STEP 1  Trades on the main $FEBU pool pay into the fee account.
+  Open   https://solscan.io/tx/51ekPPgzrfeSv4SmhvVsMj9HVUJYb4UiZNPdHrt1bHHJwk1Z9c8jTPiLna6j2twbumNbxvYXryRoeLEDMthCkw2N
+         (the creator wallet's sale of all its $FEBU on 2026-09-22, ledger fact 2)
+  Look   Under "Balance Changes", Token Balance Change: "Pump.fun AMM (febu-WSOL) Pool 2"
+         pays out 19.084468455 WSOL, and BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj gets
+         0.181665782 WSOL, just under 1% of it.
+
+STEP 2  Nothing has been collected since 2026-09-14.
+  Open   https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
+         (only money leaving the fee account, newest first)
+  Look   The top row is EUF8pwfZ..., row 44 below, and nothing is newer.
+
+STEP 3  The rows you open are right.
+  Open   the links in any three rows below. You choose which.
+  Look   "collect_coin_creator_fee", money leaving BGa8RYiu..., the amount in the row, and
+         the SOL arriving at ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG.
+  Note   The amount leaving BGa8RYiu... is the row's, to the last digit. The wallet's own SOL
+         goes up by about 0.00001 SOL less: the network fee it paid. In rows 1, 21, 41, 42
+         and 43 it goes up by more, because the same transaction also collected the wallet's
+         fees on Pump.fun itself (not Pump.fun AMM). Row 20 was run by the exchange, not by
+         the wallet: its 66.438490630 arrives as WSOL in a token account the wallet owns, so
+         look for it under Token Balance Change.
+  Post   the row numbers and the amounts you saw (see HOW TO CHECK AN ENTRY in the ledger).
+
+STEP 4  The total.
+  Add up the SOL column below. It comes to 2,939.095965. Any spreadsheet does it. If you
+  skip this step, say so in your post: then you have not tested that WRONG IF line.
+  Optional: page through the list in step 2 and count 44 rows.
+
+THE 44 PAYMENTS (from captures/fee_vault_20261013/fee_vault.json, pulled 2026-10-14 01:19 UTC)
+  row  date and time, UTC      SOL             link
+    1  2026-07-09 05:48   316.636805581  https://solscan.io/tx/4Q9BUuDnD6pMwWdYeVvDr3c8hq1CaQZuZjnH1rwUCHKfeL1xU1nJgSJFvhbqTRvvGqsJVU18pa2GccQzjWa9odwq
+    2  2026-07-10 14:34   312.352164063  https://solscan.io/tx/3uaej1gBjR644z96Qq5rAwCgXzwppvEHXYRjRxX1UW83wP1JFzWGrgWS5Dszcmv4qumgamE3AKysgyndzFDFq2X
+    3  2026-07-11 10:02   200.710017708  https://solscan.io/tx/5dB8w1HsD95FL3y72mG9qfMZ4XUH63o7z8CnozbKupgYQ7mw7H3x1rcaTR1ELKPU567y4BtmkuMe8F93Zzr3uPNH
+    4  2026-07-12 12:55   300.232847340  https://solscan.io/tx/2owUvkAAtVzkPCs46diqvvaaQ4rr8rU89mwGpmJe1Dgv6FYpamcLpRNCsiUAm1cbprSVGhz3vRR9EugricZX7LZA
+    5  2026-07-12 21:04   146.252200803  https://solscan.io/tx/2b3KfmNH8fY85x7r4w2h2UiQUsrqtcxCksDG8KjQrxYeLzTwNJaLuAatpWUHSsZJXqiGCQeBkJ37Sugt6Hyme9J8
+    6  2026-07-13 12:28   105.733886528  https://solscan.io/tx/2DUoiL8kW3qk4xHm1uaSuFdn8Y3YPkbg8ykJ8yQVoZx1gQLHb8ST4vPpiRn4QDqoHPhXjYGZdvb1GQF5RJtp6ZHN
+    7  2026-07-14 12:15   206.999537935  https://solscan.io/tx/VdF7FeY9F21cmRhJ2b4wWQ8HBEvbKB5u2xpKdT1YmCtnPB4sETTTfp5a8yK4c8JRTaWjrdCAbvKCQLKFy33Lgd7
+    8  2026-07-14 23:53    66.209761918  https://solscan.io/tx/2fBjddB3qJJLUFv7qTf9UjEKqnztKUYEGfrpkAyN4WfyH9yHzu7csYKV9rAbkpfh33hDoQDgnGPhf8UiqaedF8Av
+    9  2026-07-15 14:14    34.440360346  https://solscan.io/tx/3hHzs92jsJ9eYM66GKsQK4drhZy9c7FeXTX2hDxboBJZV6Bd9dc5f37kXMcoVxJfS7MkPASUD2yGWDvk5oFq7FDf
+   10  2026-07-15 17:06    25.549131233  https://solscan.io/tx/2v3LweyyDy3RL1RU5qibos63psjU2RTCoAVxHt4Ab9cyhTtTEEmPoEnmAj3x9XR1awHTpwhsS7iHNC9wLRbdAZEm
+   11  2026-07-15 20:00    28.770442524  https://solscan.io/tx/3ygtiMSnYvSXuV94LruXL4riq7qFt45pEALJogi9s4nraZtUj89EaR7iRAgQ4UV2HPnG9Dk6wyNcTJMTcPLyxZer
+   12  2026-07-16 00:53    26.655289887  https://solscan.io/tx/VMXHZWxDGW4q2xM1aSJdHMWgqSL76HEBLNaJqHyVAAVV37zfReueJWiV3SGMetNMAHH7QobZenYKs9A87LEeoAG
+   13  2026-07-16 12:41    29.665286580  https://solscan.io/tx/3s51djQK6Mdz6SUVhBH3FYUXTiXUoVmPKMJaoduDceHFMdtmC7k6RWWePiJ66YPZH3i5xutNcrq2a2LNphd1RgDS
+   14  2026-07-16 20:04    23.363517551  https://solscan.io/tx/4hjvaV9KodPHFTpeKgMfmMjQHAFMU93jaSET3HNitJyUhd5JBw8YTekAgCkesQtVShMfprgm1qXvepBYyYxEhQMS
+   15  2026-07-17 15:27    81.943135821  https://solscan.io/tx/4qNcMpRKjj6XDnig5e3WYF3RsyaaKKwFw3mxgkTTRbiL3fb85rUBezsm3yBguEQeNZADrJuaCJBjmovxjRJ3WgAs
+   16  2026-07-19 13:07   145.806060229  https://solscan.io/tx/2PjqSm1nCuKtHCCNHogQk5PvMmV9GgZoBSn8tMnG3HGasMQNAfaaQP6VdEL2qEFYpN7r2WGwRcscGSiUsHNjkgEU
+   17  2026-07-20 13:09    40.766430115  https://solscan.io/tx/TMx5AEjttbXqjYdZ1BHwsVQP6C2G9cWLyAjgyH8QqtzqRRhGAsyJauitZCHRZtRUvBqosWUMHJYGmjXSzEjTCJJ
+   18  2026-07-21 13:02   104.819848584  https://solscan.io/tx/4HkDrNediQUzFBPRMNgtTpNWh4wLtjCscDxQ99KhDpWDLiZyDKmLGaryhNSDk8BDTbn9aZvxs5roHfWTnWoFnJn8
+   19  2026-07-22 02:29    47.106288034  https://solscan.io/tx/3RctBzwYbFMxSTTtCUUxunF1ruFLeqb6pijVy3zKQLDWp4etD9znKSdSCoAp4Em4QKTVBWJFNdXtr9LNfHgJnZJs
+   20  2026-07-22 22:25    66.438490630  https://solscan.io/tx/3rJRommVgnUg7c3YtR1cRLbN7ojdGRv428szwUMwawkXXS5N2NsMYpmyPPd7FvEM9L1DziB1pRmmEcqKKHTQ4cJU  *
+   21  2026-07-23 01:22    23.810320894  https://solscan.io/tx/2Xtgb8JSi5vUBrZZfFEbXYiqhfCvmuMMuDxyQv2yNwVRESyPfPjU8eTjU5dSrw2yywNMPc7K5SswE1XoUGCpsdqw
+   22  2026-07-23 13:19    22.923689391  https://solscan.io/tx/4tFzy6J3XibnSC843BV6QoBRwRVeesaRacmef2fhXCyQiZ31XyG1z8oqvtWeZfh35hqxzW9PjSGi8x9kpovh7JEh
+   23  2026-07-23 21:02    18.398277427  https://solscan.io/tx/4Zo39B88NwT3rcca226K2NtMr1m4cG6PsMJ4tn263RNheYpSrGuT1cWwzQE4d2yVrsActa6mHWfAFANLmDuTPnEx
+   24  2026-07-24 13:37    26.882847072  https://solscan.io/tx/313HKyQi5kDG4RJgSD6ydC4dHGh1vS8NzDYe58fL9Xi8XSMbMPJSBSRZkeVZGNvRBHXHDWFc84SHXcwMu7fYaZdE
+   25  2026-07-25 00:38    11.605481648  https://solscan.io/tx/5tPZCohYfp8VeE47GV7TQYGQCe9MLCHSFJp88xqXyw8kM41qHvhmT9HD6g2xPnxkWxoA7b1kZEad6t8YuXdKJfz5
+   26  2026-07-25 14:47    21.551953466  https://solscan.io/tx/4j8BKoVHJGrZB72iSemoU1N3bj7zHaBGSGA8sD7VcSwpVUX9L5zKZyhGjvVsUNgSbucJ8dkBaJzmBCGgextms8L8
+   27  2026-07-27 22:41   111.098242006  https://solscan.io/tx/5knUX5WfsM97w8sdcCXeQ5saxbE2KnUUfNnvV62B7sV9mxEs1ekLii1qPzcxERoQe9fHoTaZze6tyVZJvAWh1zH6
+   28  2026-07-29 13:33    49.077087041  https://solscan.io/tx/4Du2Vk8QxBTqCUq817rPKbTC4oLv7hwNTJCvnY99N9fpFBCtR3ZwmTXTRe2x6U6ozXLMaq8NUWFV9MsYrHFDzvte
+   29  2026-07-30 22:13    38.231230145  https://solscan.io/tx/3ERryj1g1KXHUtzDHNunW3sVchfX9ZjEcX7aF2oqWQXcfo7zzZ4eMabFCZWa7SPycrsinEDfA3PHuJuAKx6WzH6B
+   30  2026-08-02 13:16    31.779496967  https://solscan.io/tx/2JEFPKjvR95e9HKmw6zEy4fS9A7YC7mL1zcg3meebYe47LW1HSXLYNSrYLuEjuWf6D9eyVvmLgy9Xg6mfqG9Awcv
+   31  2026-08-03 14:26    11.853195377  https://solscan.io/tx/4oftr6J911U1hwHxkkWpRvDmiaH9swkUdkSMYY58gjzCTDFCGQrYeSJRQw5p629d8BLyPnV1XKQs4faqcFfRtcJA
+   32  2026-08-04 17:45    34.419321492  https://solscan.io/tx/2Sd7euWDpAdSaBXfCeBDurMnFNz7WS3GZxdqKcToXwdE1isM8B3ZqYasyufTUDn3PS8CXqL6gto1gJNPauPSyAAk
+   33  2026-08-06 17:05    33.639634767  https://solscan.io/tx/bbMScd11XAqrf3mGJp5ZEY5Q6reFnH5suu5GCZRPKKhC1MzTCh55uJe8ALNDgbGTykYnWebyuaDk5vSDn7qvTEh
+   34  2026-08-07 15:02    12.056442197  https://solscan.io/tx/J7X6awCsxWAnYghmeh6DDiF7BJkEWgLvjjmDbMEuAm9ewiShyTRXs8tyGHqFQn23sdpybvDmygXNJ1cZRsFwgTW
+   35  2026-08-08 21:12    28.192680858  https://solscan.io/tx/2kxZiaP9WubGQp3uMHLVzdy4dBMBjDikJkrye9A1DKtVXbVC2Drsp38McBo27ei8xHz7yDg6fTKWefRuuVLB8QdK
+   36  2026-08-09 20:14    10.997508431  https://solscan.io/tx/xhDhp4wxAL8rRHHMFeamPydxqfSg1M4q4iP8mjxyGLsBJBjeSRU8Rs4kFfm6CdY7d2zf365rJVhRGwZXxJLg7xJ
+   37  2026-08-13 04:56    26.383369823  https://solscan.io/tx/3az4EcsPSe6QSttQ9bQ4fgvfz5371VbRzxgaLESpuYMHgqzxPLfMcaHMf153xKrLLYK4jHLeseyfXEDZ4SXp9fgr
+   38  2026-08-14 14:53    17.488528022  https://solscan.io/tx/56KFhfMs1q5zDU9DqkKg9nbEM3J9NjQBCkLGkg5LDJ9J4Do5VhKXe4Pn2Zi6YifNxyrzTMGosJTmZhzcXv9n9qcD
+   39  2026-08-16 22:02    14.261638978  https://solscan.io/tx/5WK1LURdii5ZfLyKUwYXj8vt9PvLmqXLahdPwUJWM4pXHqFV81tSMDnoBgeQUDEn14ryJuQ4vyL1Tn5RSWKyTC4z
+   40  2026-08-19 19:19    13.094964360  https://solscan.io/tx/4rFFJf7472rcudCcodhSdBzv7JyJoKdwnaYgBN6sk4nXwwco1fe8nsSEekND3CwqLWnv46LSwFyxtKXYqpSBrwWo
+   41  2026-08-27 17:19    34.225402338  https://solscan.io/tx/4hLdm8pBL2oBMyPjfH11gsijm4p2EsUnQJDtvM3NKoM1EW3m9C8AzXVbRXu536kVcs71gCErJd7vYbXh8cETLVmp
+   42  2026-09-02 20:07    21.108529305  https://solscan.io/tx/5ggy49T9spBy1Ng7mBERAZBvBp4iuHAz4ULkbgi1K7ARva944Pz14YDi4WAdAcK1KoGAgM58tx4urxKwGfpBR3ux
+   43  2026-09-08 01:46     8.695716481  https://solscan.io/tx/4J8Ft1p2FGZSVa1t5zPeSLFQJtMy61Qi6wb2KZYZCSMCkNsTibW7ExC4G4YGthkbZY9DuMmNhk3oMZ9wUNfvozXv
+   44  2026-09-14 21:08     6.868902687  https://solscan.io/tx/EUF8pwfZYRoqcRniPeL5JeCt2msCoMAQ1ihh24FzTPz1Ggk5JE5GELV3fgPjCX6UTegTv7u4CEGuq7FDCu5xqFC
+       total                    2939.095965
+  * run by the exchange's admin account, not by the creator wallet. The SOL arrived as WSOL in
+    a token account the creator wallet owns. See step 3 and the NOTE under entry 6.
+
+WHAT THIS DOES NOT SHOW
+  That every one of the 44 went to the creator wallet: step 3 shows it for three rows only.
+  That the fee account takes fees from $FEBU alone. It belongs to the creator wallet, not to
+  the coin, so some of the 2,939 SOL may come from other coins that wallet made.

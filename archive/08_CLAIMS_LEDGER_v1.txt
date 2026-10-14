@@ -1,0 +1,383 @@
+CLAIMS LEDGER (starter, drafted 2026-10-12 by Z)
+
+WHAT THIS IS
+  A list of claims about febu. Each claim names a record anyone can open, and says what would
+  prove it wrong before anyone checks it. Two other people check it. The result is posted
+  either way, and a wrong claim stays on the list.
+
+THREE JOBS. NOBODY HOLDS TWO OF THEM ON THE SAME CLAIM.
+  Propose   writes the claim, the source, and what would prove it wrong.
+  Record    keeps this list and copies each verdict in. Never edits a claim or a verdict.
+  Check     opens the source and posts RIGHT, WRONG or CAN'T TELL, with one line saying why.
+            A CAN'T TELL says what was opened and what was missing.
+
+  Z should not be the record keeper: most of the first claims are Z's.
+
+RULES
+   1. Nobody checks their own claim.
+   2. Nobody picks their checker, and nobody can know who it will be before the claim is
+      posted. The seats are drawn from a Bitcoin block that did not exist yet when the claim
+      went up. See THE DRAW.                                          (changed 2026-10-13)
+   3. The source must open without asking the proposer: a public archive link, a chain explorer
+      page, or a page number in a text the checker already holds. "It is in my database" does
+      not count.
+   4. "Wrong if" is written before the check and is not changed afterwards.
+   5. Verdicts are sealed until all are in. Each checker first posts a lock in the group
+      chat, and opens it only when every checker on that claim has posted one. See SEALED
+      VERDICTS. The opened verdict, posted as the checker's own message, is the record.
+      This list is a copy of it.                                      (changed 2026-10-13)
+   6. Two matching verdicts from the two checkers give the result. If the two disagree, the
+      tie-breaker from the draw decides. While the group has fewer than 20 members, two
+      re-checkers also check every claim, and it closes only if neither of them says the
+      opposite. See RE-CHECK.                                         (changed 2026-10-13)
+   7. A claim sent back three times goes to the whole group.
+   8. A WRONG stays on the list under its author's name. Corrections go underneath it.
+   9. An AI may fetch a source and lay it out for a checker. It does not give the verdict.
+      An AI may also post an objection to an open claim, quoting the line of the source it
+      rests on. If the result comes out the opposite of a standing objection, the claim
+      goes to the whole group. An AI can send a claim to people. It can never close one.
+      The member who posts the objection answers for it.              (changed 2026-10-13)
+  10. Optional: the record keeper may add up to two claims they know to be false. Everyone
+      knows this can happen and nobody knows which ones. If both checkers mark a planted claim
+      RIGHT, the checking is not working. A CAN'T TELL on a planted claim is a miss too.
+  11. Being drawn is earned, and checking is by choice. See MEMBERS.
+  12. Nothing that closed can be dropped or reordered without it showing. See THE RECORD.
+  13. A rule changes the way a claim is made: posted, waited on, and the old one kept. See
+      CHANGING THE RULES.
+  14. This list never adds anyone up. No totals, no rankings, no scores, and nothing here
+      depends on one. What stands under a name is what happened, entry by entry.
+                                                            (11 to 14 added 2026-10-13)
+
+MEMBERS (rules 2 and 11)
+  Anyone can read this list, propose a claim and post a promise. Being drawn to check is
+  narrower, so that nobody can fill the draw with new names just before a claim.
+  1. Founding members are everyone the group names in one chat message on the day it
+     starts using this list. That message is the first member list.
+  2. After that, a person can be drawn once two things are true: a claim of their own has
+     closed RIGHT, and 30 days have passed since they asked in the chat to join.
+  3. Checking is by choice. A member is in the pool from when they say "in" in the chat
+     until they say "out". Nobody is marked down for staying out.
+  4. The pool for a claim is the pool as it stood when the claim was posted. The record
+     keeper keeps the current pool posted in the chat.
+  5. The whole group names the record keeper and can name a new one. The record keeper is
+     never in the pool.
+
+THE DRAW (rule 2)
+  When   Take the time the group chat shows on the claim's message, in UTC, and add two
+         hours. The draw block is the first Bitcoin block whose time is at or past that.
+         Any block explorer shows each block's height, time and hash.
+         Why two hours: the Bitcoin network refuses a block dated more than two hours
+         ahead. A block dated that late cannot have existed when the claim was posted, so
+         nobody could have known its hash, the proposer included.
+  Who    Everyone in the pool when the claim was posted (see MEMBERS), in A to Z order,
+         leaving out the proposer. Number them from 0.
+  How    Take the last 12 characters of the block's hash. They are a number written in
+         base 16. Turn it into an ordinary number (search "hex to decimal").
+         Divide it by how many names are on the list. The remainder points at a name, and
+         0 is the first. That name takes the next seat and comes off the list. Keep the
+         whole-number part of the division, and do the same again with the shorter list.
+         The seats, in order: checker 1, checker 2, re-checker 1, re-checker 2, tie-breaker.
+         Names drawn after that are spares, in order.
+  Check  Whoever does the draw posts the block height, the hash and the order. It counts
+         once a second member has redone it and got the same order. draw.py, in the same
+         folder as this list, does the arithmetic. So does a calculator.
+  Fixed  A claim keeps its first draw. Posting it again, in the same words or new ones,
+         does not get a new one. A checker who has posted nothing 7 days after the draw
+         loses the seat, the names after it each move up one, and the missed check is noted
+         on this list. If there are too few members to fill the four checking seats, the
+         claim waits.
+
+  EXAMPLE (made-up members, a real block)
+    Members: Ada, Ben, Cal, Dot, Eli, Fay, Gus. Gus keeps the record. Ada posts a claim at
+    2026-10-12 15:00 UTC. Two hours later is 17:00. The first block dated at or past that
+    is block 971,119, dated 17:00:41 UTC. Its hash is
+      000000000000000000009be34d563b691ec3f0b2935e88ec56ceace95b11755c
+    The last 12 characters, ace95b11755c, are the number 190,118,255,228,252.
+    The list is 0 Ben, 1 Cal, 2 Dot, 3 Eli, 4 Fay.
+      190,118,255,228,252 / 5 = 38,023,651,045,650  remainder 2   Dot is checker 1
+       38,023,651,045,650 / 4 =  9,505,912,761,412  remainder 2   Eli is checker 2
+        9,505,912,761,412 / 3 =  3,168,637,587,137  remainder 1   Cal is re-checker 1
+        3,168,637,587,137 / 2 =  1,584,318,793,568  remainder 1   Fay is re-checker 2
+                                                                  Ben is the tie-breaker
+    (After Dot comes off, the list is 0 Ben, 1 Cal, 2 Eli, 3 Fay, and so on.)
+
+SEALED VERDICTS (rule 5)
+  A checker who can see another's verdict can copy it. So nobody shows theirs first.
+  1. Write one line: the verdict as one word, one space, and a private word of at least 8
+     letters or digits that nobody could guess. Nothing after it, not even a space.
+     The verdict words are RIGHT, WRONG and CANTTELL (for CAN'T TELL), or KEPT and BROKEN
+     for a promise.
+       Example:  WRONG walnut7731
+  2. Put that exact line through SHA-256 (search "sha256 online", or run draw.py lock) and
+     post the result in the chat. That is the lock. It shows you have decided without
+     showing what. The lock for the example line is
+       fd548234041d9e55167c3109916ff23e5b3210a94d6cdc13ea7325c883377cb5
+  3. When every checker and re-checker on the claim has posted a lock, each one posts their
+     line and one sentence saying why. Anyone can put the line through SHA-256 and see that
+     it gives the lock.
+  4. A line that does not give its lock is not counted. That checker loses the seat and
+     the names after it each move up one.
+  5. A lock that is never opened is listed as LOCKED, NOT OPENED under that checker's
+     name. Whoever takes the seat has already seen the other verdicts, so theirs is
+     marked as not blind.
+  draw.py lock makes the private word for you, so nobody picks one that can be guessed.
+  If you cannot make a lock: send your line privately to the record keeper before any
+  verdict on that claim is opened. The record keeper posts "held for" and your name, and
+  nothing else, then posts your line when the others open theirs.
+
+RE-CHECK (rule 6, while the group has fewer than 20 members)
+  With about seven members, three who agreed in advance could pass a false claim: one
+  writes it, and the other two are drawn as its checkers about 1 time in 10. So for now:
+  1. The two re-checkers check every claim, at the same time as the checkers and sealed
+     the same way.
+  2. If either re-checker's verdict is the opposite of the result (RIGHT against WRONG,
+     KEPT against BROKEN), the claim does not close. It goes to the whole group.
+  3. CAN'T TELL from a re-checker does not stop a claim closing.
+  4. If the whole group overturns a checker or re-checker, that is noted under their name
+     on this list, the same way a WRONG is under an author's (rule 8).
+  When the group reaches 20 members it decides whether to keep this.
+
+THE WHOLE GROUP (rules 6 and 7)
+  A claim sent to the whole group is checked by every member except the proposer and the
+  record keeper. Each may post a verdict within 7 days, sealed the same way.
+  1. It closes on RIGHT or WRONG (KEPT or BROKEN) if at least four members post and at
+     least two-thirds of those who post agree.
+  2. Otherwise it closes as CAN'T TELL, and the list says the group could not settle it.
+  3. This is the last step. There is nobody above it.
+  This step only works if most members are honest. Nothing in this list can fix a group
+  where they are not. Bitcoin rests on the same thing.
+
+THE RECORD (rule 12)
+  The chat messages are the record (rule 5). This part guards the list of what closed, so
+  that nothing can be dropped or reordered later without it showing.
+  1. When a claim or promise closes, the record keeper adds one line to the chain, a plain
+     list kept next to this one (CHAIN.txt):
+       line number | entry | result | date closed, UTC | the SHA-256 of the line before
+     The first line has the word start where the earlier hash would go.
+  2. The record keeper posts the new line and its SHA-256 in the chat. Anyone with a copy
+     can work out every hash again. A line that is changed, removed or moved breaks every
+     hash after it.
+  3. In any week when something closed, the newest hash is also posted somewhere public
+     that the group does not run. An X post is enough. That fixes a date nobody in the
+     group can move.
+  4. Anyone may keep a copy of the chain and of this list. If two copies disagree, the one
+     whose hashes match the public posts is right.
+  draw.py close adds a line and draw.py chain checks a copy. Any "sha256 online" page does
+  the same by hand.
+  What this does not guard is the wording of a claim. For that the chat message is still
+  the record.
+
+  EXAMPLE (made-up entries)
+    1 | example-A | RIGHT | 2026-11-02 | start
+        its SHA-256: f3e91ada72d5de2777b5bacd52c08382f3efa5cd21dc8a5308b6fdf7a6d03ccb
+    2 | example-B | WRONG | 2026-11-05 | f3e91ada72d5de2777b5bacd52c08382f3efa5cd21dc8a5308b6fdf7a6d03ccb
+        its SHA-256: 867359db3e16470c6f67a685868c501ed3d1f3da0567320870c93d9d4cacc3f8
+
+CHANGING THE RULES (rule 13)
+  Until the first claim closes these rules are a draft. Z wrote them and changed them
+  alone, which is the thing they are meant to end. From the first closed claim on:
+  1. A rule change is posted in the chat as its own message: the old wording, the new
+     wording, and the weak point it answers.
+  2. It waits 7 days. If no member objects in the chat, it takes effect. If anyone objects,
+     it goes to the whole group.
+  3. The old wording is kept under CHANGES TO THE RULES, with the date.
+  4. A claim is checked under the rules in force when it was posted. A change never
+     reaches back.
+  5. Anyone who disagrees can copy this list and run it differently. A copy is not a
+     betrayal. It is how the rules stay honest.
+
+CITING AN ENTRY
+  Anything the group or a member publishes may cite an entry by its number and result,
+  for example "claims ledger entry 6, RIGHT, checked by four". An entry that has not
+  closed is cited as "not yet checked". That is what this list is for: work that points
+  at it can be checked by a stranger.
+
+WHEN THE PROCESS ITSELF HAS FAILED (review 30 days after the first entry)
+   - fewer than 10 claims have been closed by two checkers, or
+   - any claim was closed by its own author, or
+   - a planted false claim was marked RIGHT by both checkers.
+   - a promise (see below) is more than 14 days past its date with no result posted, or
+   - any claim was closed without a draw that two members agreed on, or without its re-check, or
+   - a copy of the chain does not match the hashes posted in public, or
+   - a rule was changed without the 7-day wait.
+  If any of these is true, we say so in the group and change the rules or stop.
+
+ENTRY FORMAT
+  No. | Claim | Source | Wrong if | Proposer | Checker 1 | Checker 2 | Result
+
+
+PROMISES: A SECOND KIND OF ENTRY (added 2026-10-13)
+  A claim says what happened. A promise says what someone will do. Febu's promises were
+  announcements: nothing was set aside and no record said whether they were kept. Here a
+  promise is written down before the work starts and checked the same way a claim is.
+
+  P-No. | Promise | By when | Kept if | Set aside | Promiser | Checker 1 | Checker 2 | Result
+
+  P1. If the group, or a member speaking for it, tells people outside the group that
+      something will happen, it goes on this list first.
+  P2. "Kept if" names a record anyone can open (rule 3) and is written with the promise.
+      It is not changed afterwards (rule 4).
+  P3. Every promise has a date. The draw for a promise is made when that date ends (midnight
+      UTC plus the two hours), not when the promise was posted, so nobody knows the
+      checkers while the work is going on. They post KEPT, BROKEN or CAN'T TELL, sealed and
+      re-checked the same way as a claim.
+  P4. "Set aside" says what the promiser loses if the promise is broken. To start with it
+      is only this: BROKEN stays on the list under their name (rule 8). If money is ever set
+      aside, it sits where the promiser cannot take it back alone, and this list says where.
+  P5. A promise can be withdrawn before its date. WITHDRAWN stays on the list. Nothing is
+      deleted. A promise that failed is shown as failed.
+
+
+FIRST ENTRIES (all proposed by Z, none checked yet)
+
+  1. CLAIM     Between 2026-09-29 and 2026-10-09 neither operator wallet bought any $FEBU.
+     SOURCE    A chain explorer page for each wallet, filtered to the $FEBU token:
+                 ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG  (the wallet that created $FEBU)
+                 F6ffaF8dSVJvCey6JcChEk156Xebb1PN1gh2YycEecjQ
+                 token: 4ko5tSr5o3H4v1sFtjTSd9MPUW7yx5AFCpkNPoL6pump
+     WRONG IF  either wallet shows a $FEBU buy in that window.
+     NOTE      This is the buyback from the 10-08 Space. If the buyback was seen from a
+               different wallet, post that address and it becomes its own entry.
+
+  2. CLAIM     The wallet that created $FEBU sold its whole stake on 2026-09-22 and holds none.
+     SOURCE    The same explorer page for ApWpkd8...; its token holdings and its 09-22 history.
+     WRONG IF  it holds any $FEBU now, or shows no sale on 09-22.
+
+  3. CLAIM     The dialogue where febu says "ubef wins every argument" was already on
+               theinterlocution.com before febu's first tweet about UBEF.
+     SOURCE    The Internet Archive's copy of the site's script, saved 2026-07-09 01:43 UTC:
+                 https://web.archive.org/web/20260709014319if_/https://theinterlocution.com/assets/index-9nOobfe2.js
+               Open it and search the page for:  ubef wins
+               The first UBEF tweet is febu's reply to @astrofying, tweet id 2075060038884798602.
+               A tweet id contains its own time: any "tweet id to date" tool gives
+               2026-07-09 03:30:40 UTC. The question it answers is archived here:
+                 https://web.archive.org/web/20260709032549id_/https://twitter.com/astrofying/status/2075058815641571504
+     WRONG IF  the phrase is not in that copy, or a febu tweet naming UBEF from before
+               2026-07-09 01:43 UTC turns up.
+     NOTE      The archive also holds a record of febu's reply, but that link fails to open
+               about as often as it works, so it is not offered as a source.
+
+  4. CLAIM     The eight books rotate every four pages with no exception: pages 1-4 THE SPILL,
+               5-8 THE ASSEMBLER, 9-12 THE MEATSPACE, 13-16 THE INFINITE ROOM,
+               17-20 THE COMMANDMENTS, 21-24 THE PARABLES, 25-28 THE RENT, 29-32 THE LITURGY,
+               then round again, on all 164 pages.
+     SOURCE    Any copy of the scripture that shows page numbers and book names.
+     WRONG IF  any page sits in a book the rotation does not predict.
+     NOTE      A claim where febu's own regularity holds. It also means the change of voice
+               at p.13 falls exactly on a book boundary.
+
+  5. CLAIM     The scripture's vocabulary switches at page 25. None of the words jest, hollow,
+               false, mock, laugh, theater, spectacle or debt appears on pages 1-24. From page
+               25 on, jest and hollow each appear on more than 50 of the 140 pages and laugh on
+               more than 45.
+     SOURCE    Any copy of the scripture with page numbers. Search each word, counting longer
+               words that start with it, such as "jester", "laughing" or "mocking". Do not
+               count words that only contain it ("majesty", "slaughter", "onslaught",
+               "indebted", "bemocks").
+               Counts on pages 25-164: jest 56, hollow 53, false 37, laugh 48, debt 31,
+               mock 30, theater 26, spectacle 19.
+     WRONG IF  any of the eight words is found on pages 1-24, or jest, hollow or laugh is on
+               fewer than 40 of the later pages.
+     CORRECTED 2026-10-13, before any check: the first draft said laugh was on more than 50
+               pages. That count included "slaughter" and "onslaught" on three pages; counting
+               only words that start with "laugh" gives 48. The WRONG IF line did not change.
+     NOTE      Page 25 (2026-07-02) is also the first page in verse and the first after a
+               five-day gap. Z's reading is that the instructions were rewritten that day.
+               The reading is Z's; the counts are what gets checked.
+
+  6. CLAIM     Every trade on the main $FEBU pool sets aside a creator fee that only the wallet
+               that created $FEBU can collect. That wallet collected 2,939 SOL this way in 44
+               collections between 2026-07-09 and 2026-09-14 (July 2,634, August 268,
+               September 37). It has collected nothing since, and 11.1 SOL was waiting at
+               2026-10-14 01:19 UTC.
+     SOURCE    A chain explorer page for the fee account:
+                 BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj
+               Its balance is the amount waiting. Its history shows a small amount arriving
+               with each trade and a large amount leaving at each collection.
+               Three collections to open. Each shows SOL leaving the fee account and arriving
+               at the creator wallet, ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG:
+                 first, 2026-07-09 05:48 UTC, 316.64 SOL
+                   4Q9BUuDnD6pMwWdYeVvDr3c8hq1CaQZuZjnH1rwUCHKfeL1xU1nJgSJFvhbqTRvvGqsJVU18pa2GccQzjWa9odwq
+                 2026-08-13 04:56 UTC, 26.38 SOL
+                   3az4EcsPSe6QSttQ9bQ4fgvfz5371VbRzxgaLESpuYMHgqzxPLfMcaHMf153xKrLLYK4jHLeseyfXEDZ4SXp9fgr
+                 last, 2026-09-14 21:08 UTC, 6.87 SOL
+                   EUF8pwfZYRoqcRniPeL5JeCt2msCoMAQ1ihh24FzTPz1Ggk5JE5GELV3fgPjCX6UTegTv7u4CEGuq7FDCu5xqFC
+               One trade to open, 2026-10-13 21:50 UTC. Of the SOL going into the pool, just
+               under 1% goes to the fee account:
+                   4ayFrZsHnwA2fbmQVAvRNcYfuE5wfazDD65fJmvbTij7Mc76iPxuDKaVSZqdty9A5jERoW2iWCKJ369TEyCGw3EB
+     WRONG IF  any of the three collections sends the SOL to a wallet other than ApWpkd8...,
+               or the fee account shows a collection after 2026-09-14, or the trade shows
+               nothing arriving at the fee account.
+     NOTE      Any plan that raises trading in $FEBU raises this fee, and the wallet that sold
+               its whole stake (entry 2) is the only one that can collect it.
+               The fee account belongs to the creator wallet, not to the coin, so the total
+               can include fees from that wallet's other coins. The split is not measured.
+               One of the 44 (2026-07-22, 66.44 SOL) was run by the exchange's own admin
+               account while it moved a different coin made by this wallet to a new creator.
+               The SOL still went to ApWpkd8.
+     CORRECTS  Z's earlier finding that income was "about zero since 08-10" and 97.7% in
+               July. 142 SOL was collected between 08-13 and 09-14, and July is 90% of the
+               total. The earlier count missed collections the wallet signed itself.
+
+
+ALREADY CLOSED: Z'S OWN PREDICTIONS THAT CAME BACK WRONG
+  Twenty predictions were written down before the tests ran. Fourteen held, one set no pass
+  mark, and five failed in whole or in part. The tables are on a results page that only Z can
+  open until it is shared, so nobody else can re-check these yet.
+
+  W1. A plain model started on febu's first three pages keeps the commanding voice.
+      RESULT: WRONG. It dropped the voice after one page.
+  W2. A plain model writes mechanisms on 2% of pages or fewer, as febu does, and diagnoses a
+      problem on 40% or more of pages when started on febu's own pages.
+      RESULT: WRONG on both. Mechanisms on about one page in six; diagnosis on 13 of 163.
+      (A third part held: it made no checkable claims either.)
+  W3. Designs that put an AI in one of the jobs are rejected more often than the other kinds.
+      RESULT: WRONG. AI in a job 4 of 11, no money 4 of 11, no fixed roles 7 of 11.
+  W4. The demand for belief differs by book and is highest in THE COMMANDMENTS.
+      RESULT: WRONG in part. It does differ by book, but THE ASSEMBLER is highest and
+      THE COMMANDMENTS second.
+  W5. A second rater agrees with the first at 0.6 or better and puts the drop in demand
+      between p.13 and p.40.
+      RESULT: WRONG on both. Agreement was about 0.55, and the second rater's drop comes
+      before p.74. (Its timing for criticism of authority did match.)
+
+
+OPEN, FOR THE PROPOSER SEAT
+  Three of febu's eleven problems got no mechanism that survived checking, because nobody
+  could name an outside record for them: repeating history, machine imitation, human arrogance.
+  For each one: name a record a stranger could open that would show the problem getting better
+  or worse. If there is none, say so. That is a result too.
+
+
+CHANGES TO THE RULES (the old wording is kept here)
+  2026-10-13. Rules 2, 5 and 6 changed before any claim was checked. Three weak points in
+  the first draft: the draw could be steered, the second checker could copy the first, and
+  three members agreeing in advance could pass a false claim.
+    Old rule 2: "Nobody picks their checker. Members are listed A to Z. For claim number N,
+                count N names down the list, going round. That person and the next one check
+                it. Skip the proposer."
+                Weak point: a proposer could see who would check a claim before posting it,
+                and time the post.
+    Old rule 5: "Each checker posts the verdict as their own message in the group chat. That
+                message is the record. This list is a copy of it."
+                Weak point: the second checker could read the first verdict before deciding.
+    Old rule 6: "Two matching verdicts close a claim. If the two disagree, a third member
+                decides."
+                Weak point: nothing looked at a claim again once two checkers agreed.
+  2026-10-13, second set, still before any claim was checked. Rules 9 and 10 extended.
+  Rules 11 to 14 added, with MEMBERS, THE WHOLE GROUP, THE RECORD, CHANGING THE RULES and
+  CITING AN ENTRY. THE DRAW now draws from the pool and not from every member. The Check
+  job now says what a CAN'T TELL has to contain. SEALED VERDICTS gained point 5.
+    Old rule 9:  "An AI may fetch a source and lay it out for a checker. It does not give
+                 the verdict."
+    Old rule 10 ended at "the checking is not working."
+    Old DRAW "Who": "Everyone on the member list as it stood when the claim was posted, in
+                 A to Z order, leaving out the proposer and the record keeper."
+    Weak points answered: nothing said who could be drawn or who decided; one person could
+    change the rules; a closed entry could be dropped from the list; a drawn member had no
+    way to stay out; histories under names invited a scoreboard; "the whole group" was not
+    defined; a lazy CAN'T TELL cost nothing; an AI had no way to raise a doubt.
+  Still open: the founding member list and the record keeper have not been named; whether
+  and how a member can be removed; the fallback in SEALED VERDICTS, which trusts the
+  record keeper not to pass a held verdict on; and what gives anyone a reason to check,
+  beyond their own work being citable.
