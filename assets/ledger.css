@@ -194,3 +194,7 @@ a.alt{font-size:.88em;white-space:nowrap}
 .person h3:first-child{margin-top:0}
 .person .entries{margin-bottom:0}
 .person .win-body>p{margin:0}
+
+/* how it works: the picture, full width, in a sunken frame; the SVG scales with the page */
+.how{margin:.6rem 0 1.1rem}
+.how img{display:block;width:100%;height:auto;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040}

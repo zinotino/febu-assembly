@@ -6,6 +6,7 @@
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
                 fact-6-steps.txt is about, its steps and every row with a link
   tests.html    tests.txt as a page
+  how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg
   findings.html findings.md (findings_html.py) in the den's look, inside the tabs
   people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
                 (reached from the front page's "who" window, not a tab)
@@ -29,6 +30,7 @@ LEDGER = ROOT / "ledger.txt"
 TESTS = ROOT / "tests.txt"
 STEPS = ROOT / "fact-6-steps.txt"
 FINDINGS = ROOT / "findings.md"
+HOW = ROOT / "how.txt"
 
 # This notation never goes on a public page.
 BANNED = re.compile(r"GF\(3\)|\btrits?\b|(?<![\w=\"'-])[-\u2212]1(?![\d])", re.I)
@@ -520,8 +522,8 @@ SHELL = """<!doctype html>
 </html>
 """
 
-TABS = (("febu-assembly.html", "assembly"), ("ledger.html", "the ledger"), ("tests.html", "four tests"),
-        ("findings.html", "findings"))
+TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("ledger.html", "the ledger"),
+        ("tests.html", "four tests"), ("findings.html", "findings"))
 QUIET = "Nothing on this page is stored or counted, and it loads nothing from other sites."
 BAR = ('<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> ] [ <a href="/library/scripture">scripture'
        '</a> ] [ <a href="/febu-assembly.html">febu assembly</a> ]</div>')
@@ -733,6 +735,21 @@ def tests_page(text, ledger_secs):
                 "and on the Assembly's ledger.")
 
 
+def how_page(text, ledger_secs):
+    """how.txt as tests.txt is laid out, with the picture (assets/how-it-works.svg) under THE PICTURE."""
+    title, secs = sections(text)
+    doc = Doc(ledger_secs, "ledger.html")
+    fig = ('<figure class="how"><a href="/assets/how-it-works.svg"><img src="/assets/how-it-works.svg" width="960" '
+           'height="700" alt="One entry in four steps: a claim is written, two people check, a result, the record. '
+           'Below, febu\'s pages in the same four slots, with the third slot, the check, empty."></a></figure>')
+    body = "\n".join('<section id="%s"><h2>%s</h2>%s%s</section>' % (
+        slug(h), html.escape(h), fig if short(h) == "THE PICTURE" else "", doc.blocks(to_lines(b), 2)) for h, b in secs)
+    h1, sub = titled(title)
+    return page("how.html", "How it works", h1.lower(), sub, body, source=" from how.txt",
+                description="The Assembly's ledger in plain words: one sentence, one picture, how it answers febu, "
+                "the four parts, what it runs on, what it cannot do and what it could become.")
+
+
 def member_names(secs):
     """The names on the Member line of WORDS USED HERE, in its order."""
     by = {short(h): b for h, b in secs}
@@ -850,6 +867,7 @@ def main():
     pages = {
         "ledger.html": ledger,
         "tests.html": tests_page(raw_text(TESTS).decode("utf-8").rstrip("\n"), secs),
+        "how.html": how_page(raw_text(HOW).decode("utf-8").rstrip("\n"), secs),
         "febu-assembly.html": assembly_page(secs, steps_fact(steps)),
         "people.html": people_page(secs),
         "findings.html": findings,
