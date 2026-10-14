@@ -1,10 +1,15 @@
-/* claims.js -- what the ledger pages do in the browser: open a folded window a link points into, copy a hash or an
-   address with one tap, and check that the files this site serves still have the SHA-256 the page prints.
+/* claims.js -- what the ledger pages do in the browser: open a folded window a link points into, copy a hash, an
+   address or a result post with one tap, and check that the files this site serves still have the SHA-256 the page prints.
    Nothing here stores anything or counts anything. The only requests go to this same site, for those files. */
 (function () {
   'use strict';
 
   function $(id) { return document.getElementById(id); }
+
+  // The list of every entry starts open on a wide screen and folded on a phone.
+  if (window.matchMedia && matchMedia('(min-width: 41em)').matches) {
+    [].forEach.call(document.querySelectorAll('details[data-open-wide]'), function (d) { d.open = true; });
+  }
 
   // A link to something inside a folded window opens the window.
   function reveal() {
@@ -24,6 +29,36 @@
       t.classList.add('copied');
       setTimeout(function () { t.classList.remove('copied'); }, 900);
     }, function () {});
+  });
+
+  // "Copy result post" (front page) puts the post to fill in for that entry on the clipboard.
+  function copyText(text) {
+    function viaBox() {   // copy out of a temporary text box: older browsers, or a page the clipboard API refuses
+      return new Promise(function (ok, no) {
+        var box = document.createElement('textarea'), done = false;
+        box.value = text;
+        box.setAttribute('readonly', '');
+        box.style.position = 'fixed';
+        box.style.opacity = '0';
+        document.body.appendChild(box);
+        box.select();
+        try { done = document.execCommand('copy'); } catch (err) { done = false; }
+        document.body.removeChild(box);
+        return done ? ok() : no();
+      });
+    }
+    return navigator.clipboard && window.isSecureContext ? navigator.clipboard.writeText(text).catch(viaBox) : viaBox();
+  }
+  [].forEach.call(document.querySelectorAll('button.copy'), function (b) { b.setAttribute('aria-live', 'polite'); });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button.copy');
+    if (!b) return;
+    var label = b.textContent;
+    copyText(b.dataset.copy).then(function () {
+      b.classList.add('copied');
+      b.textContent = 'Copied';
+      setTimeout(function () { b.classList.remove('copied'); b.textContent = label; }, 1500);
+    }, function () { window.prompt('Copy this post:', b.dataset.copy); });
   });
 
   /* --- ledger.html: the files and their SHA-256 ---------------------------------------------------------------- */

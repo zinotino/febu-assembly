@@ -501,6 +501,7 @@ SHELL = """<!doctype html>
 <meta name="referrer" content="no-referrer">
 <title>{title}</title>
 <meta name="description" content="{description}">
+{meta}
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/findings.css">
 <link rel="stylesheet" href="/assets/ledger.css">
@@ -530,6 +531,24 @@ BAR = ('<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> 
        '</a> ] [ <a href="/febu-assembly.html">febu assembly</a> ]</div>')
 
 
+SITE = "https://febu-ledger.vercel.app"                 # the card image's address must be absolute for a chat to fetch it
+CARD = SITE + "/assets/card.png"                        # 1200x630, made by make_card.py
+CARD_ALT = "A claim costs a link and a line that would prove it wrong. A check costs a click."
+
+
+def meta_tags(title, description):
+    """What a chat shows when someone pastes a link to the page: a title, two lines and the card (Open Graph, which
+    Discord, Telegram, Slack and iMessage read, and the Twitter card tags, which X reads)."""
+    t, d = html.escape(title, quote=True), html.escape(description, quote=True)
+    pairs = (("property", "og:type", "website"), ("property", "og:site_name", "febu assembly"),
+             ("property", "og:title", t), ("property", "og:description", d), ("property", "og:image", CARD),
+             ("property", "og:image:width", "1200"), ("property", "og:image:height", "630"),
+             ("property", "og:image:alt", CARD_ALT), ("name", "twitter:card", "summary_large_image"),
+             ("name", "twitter:title", t), ("name", "twitter:description", d), ("name", "twitter:image", CARD),
+             ("name", "theme-color", "#000080"))
+    return "\n".join('<meta %s="%s" content="%s">' % p for p in pairs)
+
+
 def tabs_html(name):
     tabs = TABS + ((("febu-assembly.html#background", "background: " + BACKGROUND[name]),) if name in BACKGROUND else ())
     return '<nav class="tabs" aria-label="Assembly pages">%s</nav>' % "".join(
@@ -545,12 +564,18 @@ def vetted(name, out):
     return out
 
 
-def page(name, title, h1, sub, body, mast="", foot=QUIET, connect="'none'", source="", description=""):
+def page(name, title, h1, sub, body, mast="", foot=QUIET, connect="'none'", source="", description="", share=""):
+    """`share` is the title a chat shows for the page; by default "febu assembly: " and the page's title."""
+    description = description or "The febu Assembly: a public ledger of promises and facts about febu that anyone can check."
     return vetted(name, SHELL.format(
         title=html.escape(title), h1=html.escape(h1), sub=html.escape(sub), tabs=tabs_html(name), mast=mast, body=body,
         foot=foot, connect=connect, source=source, edit="the text" if source else "the script",
-        description=html.escape(description),
+        description=html.escape(description), meta=meta_tags(share or "febu assembly: " + title.lower(), description),
         bar=BAR % "rules and entries by one author, not yet adopted or checked by anyone else"))
+
+
+FINDINGS_DESC = ("One member's study of febu, claim by claim, each with a verdict and how it was checked. "
+                 "Checked by nobody else yet.")
 
 
 def findings_page():
@@ -577,6 +602,8 @@ def findings_page():
     for pattern, repl in (
             (r"from findings\.md\.", mark + "."),
             (r"<style>.*?</style>", '<link rel="icon" href="/favicon.ico">\n<link rel="stylesheet" href="/assets/findings.css">'),
+            (r"</title>", "</title>\n" + '<meta name="description" content="%s">\n' % FINDINGS_DESC + meta_tags(
+                "febu assembly: Z's findings", FINDINGS_DESC)),
             (r"<body>\n", "<body>\n" + BAR % "one author's verdicts, not yet checked by anyone else" + "\n"),
             (r'(<h1>.*?</h1>\n<p class="sub">.*?</p>)', r'<div class="mast-title">\1</div>' + "\n" + tabs_html("findings.html"))):
         out, n = re.subn(pattern, repl, out, count=1, flags=re.S)
@@ -762,8 +789,46 @@ def member_names(secs):
     return [n.strip() for n in m.group(1).split(",")]
 
 
-def assembly_page(secs, steps_num):
-    """The Assembly's front page: every entry with whether anyone has checked it, how to check one, then the rest."""
+CHEAPEST = re.compile(r"entries ((?:\d+(?:, | and )?)+) are the cheapest", re.I)
+
+
+def cheapest(secs, items):
+    """The entries STATUS calls the cheapest to check, in its order; without that sentence, the first three facts
+    nobody has checked."""
+    m = CHEAPEST.search(re.sub(r"\s+", " ", " ".join(status(secs)[0])))
+    found = {it[2]: it for it in items if it[0] == "entry"}
+    return [found[n] for n in re.findall(r"\d+", m.group(1)) if n in found] if m else [
+        it for it in items if it[0] == "entry" and it[1] == "FACT" and not checked(it[4])][:3]
+
+
+def pick_li(kind, num, fields):
+    """One entry as a card on the front page: what it says, whether anyone has checked it, a way in, and the post to
+    fill in once you have (what rule 3 asks a result to say, and the minutes the dry run asks for)."""
+    says = " ".join(ln.txt for ln in dict(fields)[HEADLINE[kind]] if ln.txt)
+    done = checked(fields)
+    post = "\n".join(("Entry %s %s" % (kind.lower(), num), "What I saw:", "WRONG IF lines I tested:",
+                      "One thing on the page nobody has written yet:",
+                      "My result (%s):" % ("HOLDS or DOESN'T HOLD" if kind == "FACT" else "KEPT or BROKEN"),
+                      "Minutes it took:"))
+    return ('<li class="pick"><div class="top"><span class="num">%s %s</span><span class="chip%s">%s</span></div>'
+            '<p class="says">%s</p><p class="acts"><a class="btn primary" href="ledger.html#%s">Open the entry</a>'
+            '<button type="button" class="btn copy" data-copy="%s">Copy result post</button></p></li>'
+            % (kind.lower(), num, " done" if done else "", "checks posted" if done else "not yet checked",
+               html.escape(says), anchor(kind, num), html.escape(post)))
+
+
+def one_sentence(how_secs):
+    """how.txt's ONE SENTENCE as three short lines, one to a clause."""
+    body = next((b for h, b in how_secs if short(h) == "ONE SENTENCE"), None)
+    if body is None:
+        sys.exit("how.txt has no ONE SENTENCE section; the front page opens with it")
+    clauses = [c.strip().rstrip(".") for c in " ".join(r.strip() for r in body).split(";")]
+    return "".join("<span>%s.</span>" % html.escape(c[0].upper() + c[1:]) for c in clauses if c)
+
+
+def assembly_page(secs, steps_num, how_secs):
+    """The Assembly's front page, for someone who has just followed a link: what this is in a sentence, three entries
+    to check with the post to fill in afterwards, then the rest (every entry, how to check, who, the background)."""
     doc = Doc(secs, "ledger.html")
     by = {short(h): b for h, b in secs}
     members = len(member_names(secs))
@@ -774,17 +839,25 @@ def assembly_page(secs, steps_num):
         rows.append(entry_li(kind, num, fields, "checks posted" if checked(fields) else "not yet checked"))
     after = "".join(doc.blocks(to_lines(it[1]), 2) for it in items if it[0] == "text")
     intro = '<div class="intro">%s</div>' % doc.blocks(to_lines(by["WHAT THIS IS"]), 2) if "WHAT THIS IS" in by else ""
+    proposed = status(secs)[1]
 
     def small(key, title, text, href, go):
         return ('<section class="win" aria-labelledby="%s-h"><h2 class="bar" id="%s-h">%s</h2><div class="win-body">'
                 '<p>%s</p><p class="go"><a href="%s">%s</a></p></div></section>' % (key, key, title, text, href, go))
 
-    body = (intro +
-            '<section class="win lead" aria-labelledby="lead-h"><h2 class="bar" id="lead-h">the ledger: promises and facts'
-            '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></h2>'
-            '<div class="win-body"><ul class="entries">%s</ul>%s'
-            '<p class="cta"><a href="#check">Check an entry</a><a href="how.html">How it works</a><a href="ledger.html">Read the whole ledger</a></p>'
-            '</div></section>' % (len(rows), done, "".join(rows), after) + check_section(secs, doc, steps_num) +
+    start = ('<section class="win start" id="start" aria-labelledby="start-h"><h2 class="bar" id="start-h">'
+             'start here: check one claim<span class="q">%d of %d checked by someone else</span>'
+             '</h2><div class="win-body"><p class="sentence">%s</p><ul class="picks">%s</ul>%s'
+             '<p class="go"><a href="how.html">How it works, in one picture</a> <a href="#every">Every entry</a></p>'
+             '</div></section>' % (done, len(rows), one_sentence(how_secs),
+                                   "".join(pick_li(k, n, f) for _, k, n, _, f in cheapest(secs, items)),
+                                   '<p class="hint">The vote week is also a dry run. Post what you saw, and how many '
+                                   'minutes it took.</p>' if proposed else ""))
+    every = ('<details class="win lead" id="every" data-open-wide><summary><span class="t">every entry</span>'
+             '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></summary>'
+             '<div class="win-body"><ul class="entries">%s</ul>%s<p class="go"><a href="ledger.html">Read the whole '
+             'ledger</a></p></div></details>' % (len(rows), done, "".join(rows), after))
+    body = (start + intro + every + check_section(secs, doc, steps_num) +
             '<div class="more">%s</div>' % "".join([
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
                       "(rule 3). Anyone at all can reopen one.", "people.html", "See what each one wrote and checked"),
@@ -796,9 +869,11 @@ def assembly_page(secs, steps_num):
                 '<br><a href="tests.html">The four tests</a></p></div></section>']))
     return page("febu-assembly.html", "febu assembly", "febu assembly",
                 "%d members studying febu, and a ledger anyone can check" % members, body,
-                mast=status_banner(secs, doc), source=" from ledger.txt",
-                description="The febu Assembly: a public ledger of promises and facts about febu that anyone can check."
-                + (" Proposed, not yet adopted." if status(secs)[1] else ""),
+                mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
+                share="febu assembly: claims about febu that anyone can check",
+                description="%d claims about febu, each with a link and a line that would prove it wrong. %s Pick one "
+                "and check it.%s" % (len(rows), "%d checked so far." % done if done else "None checked yet.",
+                                     " Proposed, not yet adopted." if proposed else ""),
                 foot='This site and the ledger file are run by Z for now (<a href="ledger.html#bug-1">known bug 1</a>). '
                 + QUIET)
 
@@ -871,7 +946,7 @@ def main():
         "ledger.html": ledger,
         "tests.html": tests_page(raw_text(TESTS).decode("utf-8").rstrip("\n"), secs),
         "how.html": how_page(raw_text(HOW).decode("utf-8").rstrip("\n"), secs),
-        "febu-assembly.html": assembly_page(secs, steps_fact(steps)),
+        "febu-assembly.html": assembly_page(secs, steps_fact(steps), sections(raw_text(HOW).decode("utf-8").rstrip("\n"))[1]),
         "people.html": people_page(secs),
         "findings.html": findings,
     }

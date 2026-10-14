@@ -170,15 +170,35 @@ a.alt{font-size:.88em;white-space:nowrap}
 .entries a{display:grid;grid-template-columns:6rem 1fr auto;gap:.25rem .9rem;align-items:baseline;padding:.6rem .7rem;
   color:var(--ink);font-weight:400;text-decoration:none}
 .entries a:hover{background:#e8ebff;color:var(--ink)}
-.entries .num{order:0;justify-self:start;padding:0 .45rem;background:var(--silver-lt);color:var(--navy);font-weight:700;
-  font-size:.8rem;white-space:nowrap;border:2px solid;border-color:var(--up)}
-.entries .num::before{content:"?\00a0"}
+.entries .num,.pick .num{order:0;justify-self:start;padding:0 .45rem;background:var(--silver-lt);color:var(--navy);
+  font-weight:700;font-size:.8rem;white-space:nowrap;border:2px solid;border-color:var(--up)}
+.entries .num::before,.pick .num::before{content:"?\00a0"}
 .entries .state{font-size:.75rem;color:#333;white-space:nowrap}
-.cta{display:flex;flex-wrap:wrap;gap:8px;margin:.9rem 0 0}
-.cta a{padding:8px 14px;background:var(--silver-lt);color:var(--navy);text-decoration:none;border:2px solid;border-color:var(--up)}
-.cta a:first-child{background:var(--hi);color:#fff}
-.cta a:hover{background:var(--navy);color:#fff}
-.cta a:active{border-color:var(--down);transform:translate(1px,1px)}
+
+/* start here: one sentence, then three claims to check, each with the post to fill in afterwards */
+.start{margin-top:1.2rem}
+.start>.bar{flex-wrap:wrap;gap:.1rem .9rem;padding:6px 10px;font-size:.95rem}
+.sentence{margin:0 0 1rem;font:700 .98rem/1.5 var(--mono);color:var(--navy)}
+.sentence span{display:block}
+.sentence span+span{margin-top:.2rem}
+.picks{list-style:none;margin:0 0 .9rem;padding:0;display:grid;gap:10px}
+.pick{padding:.7rem .8rem .85rem;background:#fff;border:2px solid;border-color:var(--down)}
+.pick .top{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin:0 0 .5rem}
+.pick .says{margin:0 0 .8rem}
+.chip{padding:0 .5rem;font-size:.75rem;white-space:nowrap;color:#000;background:var(--note);border:1px solid #000}
+.chip.done{color:#075a2a;background:#fff;border-color:#075a2a}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:8px 14px;
+  font:700 .9rem/1.25 var(--mono);color:var(--navy);background:var(--silver-lt);text-decoration:none;cursor:pointer;
+  border:2px solid;border-color:var(--up);touch-action:manipulation}
+.btn.primary{color:#fff;background:var(--hi)}
+.btn:hover,.btn.primary:hover{color:#fff;background:var(--navy)}
+.btn:active{border-color:var(--down);transform:translate(1px,1px)}
+.btn:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.btn.copy.copied{color:#075a2a;background:#fff}
+.btn.copy.copied::before{content:"\2713\00a0"}
+.start .go a+a{margin-left:1.2rem}
+.start .hint{margin:0 0 .2rem}
 .more{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:12px;margin-top:1.4rem}
 .more .win{display:flex;flex-direction:column;margin:0}
 .more .win-body{flex:1;display:flex;flex-direction:column}
@@ -186,6 +206,12 @@ a.alt{font-size:.88em;white-space:nowrap}
 @media (max-width:40rem){
   .entries a{grid-template-columns:1fr auto}
   .entries .says{grid-column:1/-1;order:3}
+  .acts .btn{flex:1 1 9rem}
+  .tabs{grid-template-columns:repeat(auto-fit,minmax(6.2rem,1fr))}
+  .tabs a{padding:6px 4px;font-size:.8rem}
+  .banner.brief{padding:.45rem .7rem .55rem}
+  .start .go a{display:inline-block;margin:0 1rem .2rem 0}
+  .start .go a+a{margin-left:0}
 }
 
 /* people.html: a window per name, its entries listed as on the front page */

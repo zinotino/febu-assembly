@@ -15,7 +15,8 @@ findings).
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 2, 5 and 6 from public sources, for anyone to run. |
 | `build.py`, `findings_html.py` | Write the five pages from the texts. `test_build.py` tests the people page. |
-| `assets/` | The pages' stylesheets, and `claims.js` (tap to copy, hash checks). Written by hand. |
+| `assets/` | The pages' stylesheets, and `claims.js` (tap to copy a hash or a result post, hash checks). Written by hand. |
+| `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
 | `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html`, `people.html` | Written by `build.py`. Don't edit them by hand. |
 
 ## Add an entry
