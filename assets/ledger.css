@@ -187,3 +187,10 @@ a.alt{font-size:.88em;white-space:nowrap}
   .entries a{grid-template-columns:1fr auto}
   .entries .says{grid-column:1/-1;order:3}
 }
+
+/* people.html: a window per name, its entries listed as on the front page */
+.person{margin:1.2rem 0}
+.person h3{margin:1.1rem 0 .4rem;font:700 .76rem/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--navy)}
+.person h3:first-child{margin-top:0}
+.person .entries{margin-bottom:0}
+.person .win-body>p{margin:0}

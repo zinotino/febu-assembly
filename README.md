@@ -14,9 +14,9 @@ findings).
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 2, 5 and 6 from public sources, for anyone to run. |
-| `build.py`, `findings_html.py` | Write the four pages from the texts. |
+| `build.py`, `findings_html.py` | Write the five pages from the texts. `test_build.py` tests the people page. |
 | `assets/` | The pages' stylesheets, and `claims.js` (tap to copy, hash checks). Written by hand. |
-| `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html` | Written by `build.py`. Don't edit them by hand. |
+| `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html`, `people.html` | Written by `build.py`. Don't edit them by hand. |
 
 ## Add an entry
 

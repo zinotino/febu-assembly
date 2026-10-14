@@ -1,4 +1,4 @@
-"""Build the Assembly's pages, next to this file, from the texts beside them. All four share one set of tabs.
+"""Build the Assembly's pages, next to this file, from the texts beside them. All share one set of tabs.
 
   febu-assembly.html  the front page: status, every entry and whether anyone has checked it, and the ledger's
                       HOW TO CHECK AN ENTRY (#check; /start.html redirects there)
@@ -7,6 +7,8 @@
                 fact-6-steps.txt is about, its steps and every row with a link
   tests.html    tests.txt as a page
   findings.html findings.md (findings_html.py) in the den's look, inside the tabs
+  people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
+                (reached from the front page's "who" window, not a tab)
 
 ledger.txt and archive/ are served as they are; ledger.html prints their SHA-256 (rule 6 relies on that hash).
 The pages follow the texts' headings, not their line numbers: reword the texts and re-run.
@@ -346,10 +348,22 @@ def single(html_text):
     return html_text
 
 
+def seen(fields):
+    """The entry's SEEN lines as one line of text."""
+    return " ".join(ln.txt for ln in dict(fields).get("SEEN", []) if ln.txt)
+
+
 def checked(fields):
     """Whether anyone has posted what they saw on this entry (its SEEN line says someone other than "nobody")."""
-    seen = " ".join(ln.txt for ln in dict(fields).get("SEEN", []) if ln.txt)
-    return bool(seen) and not seen.lower().startswith("nobody")
+    text = seen(fields)
+    return bool(text) and not text.lower().startswith("nobody")
+
+
+def entry_li(kind, num, fields, state):
+    """One entry as a line of the front page's list: its number, what it says, where it stands, a link to it."""
+    says = " ".join(ln.txt for ln in dict(fields)[HEADLINE[kind]] if ln.txt)
+    return ('<li><a href="ledger.html#%s"><span class="num">%s %s</span><span class="says">%s</span>'
+            '<span class="state">%s</span></a></li>' % (anchor(kind, num), kind.lower(), num, html.escape(says), state))
 
 
 def entry_html(kind, num, who, fields, doc, extra=""):
@@ -444,11 +458,11 @@ def steps_html(text, doc):
         aid, html.escape(titled(title)[0].capitalize()), "".join(parts))
 
 
-def predictions(body, doc):
-    """The intro, then each W item as a window with its result in the title bar."""
-    L = to_lines(body)
+def w_items(L):
+    """Where the W items start in the lines L, and each one: (number, what it said, its result, "in part" or "",
+    what follows the result)."""
     starts = [i for i, ln in enumerate(L) if ln.txt and W_ITEM.match(ln.raw)]
-    out = [doc.blocks(L[:starts[0] if starts else len(L)], 2)]
+    out = []
     for a, b in zip(starts, starts[1:] + [len(L)]):
         item = [ln for ln in L[a:b] if ln.txt]
         num, rest = item[0].txt.split(". ", 1)
@@ -456,6 +470,16 @@ def predictions(body, doc):
         m = VERDICT.search(said)
         said, after = (said[:m.start()].strip(), said[m.end():].strip()) if m else (said, "")
         word, qual = (m.group(1), m.group(2).strip()) if m else ("see text", "")
+        out.append((num, said, word, qual, after))
+    return (starts[0] if starts else len(L)), out
+
+
+def predictions(body, doc):
+    """The intro, then each W item as a window with its result in the title bar."""
+    L = to_lines(body)
+    first, items = w_items(L)
+    out = [doc.blocks(L[:first], 2)]
+    for num, said, word, qual, after in items:
         cls = "part" if qual == "in part" else VERDICT_CLASS.get(word, "open")
         out.append('<article class="claim pred v-%s" id="%s"><div class="mark"><span class="num">%s</span>%s'
                    '<strong class="verdict">%s</strong></div><div class="body"><h3>%s</h3>%s</div></article>'
@@ -693,22 +717,25 @@ def tests_page(text, ledger_secs):
                 "and on the Assembly's ledger.")
 
 
+def member_names(secs):
+    """The names on the Member line of WORDS USED HERE, in its order."""
+    by = {short(h): b for h, b in secs}
+    m = re.search(r"\bMember\s{2,}(.+?)\.\s", " ".join(by.get("WORDS USED HERE", [])))
+    if not m:
+        sys.exit("WORDS USED HERE has no Member line; the assembly and people pages read the members from it")
+    return [n.strip() for n in m.group(1).split(",")]
+
+
 def assembly_page(secs, steps_num):
     """The Assembly's front page: every entry with whether anyone has checked it, how to check one, then the rest."""
     doc = Doc(secs, "ledger.html")
     by = {short(h): b for h, b in secs}
-    m = re.search(r"\bMember\s{2,}(.+?)\.\s", " ".join(by.get("WORDS USED HERE", [])))
-    if not m:
-        sys.exit("WORDS USED HERE has no Member line; the assembly page counts the members from it")
-    members = len(m.group(1).split(","))
+    members = len(member_names(secs))
     items = entries(entries_section(secs)[1])
     rows, done = [], 0
     for _, kind, num, _, fields in (it for it in items if it[0] == "entry"):
-        says = " ".join(ln.txt for ln in dict(fields)[HEADLINE[kind]] if ln.txt)
         done += checked(fields)
-        rows.append('<li><a href="ledger.html#%s"><span class="num">%s %s</span><span class="says">%s</span>'
-                    '<span class="state">%s</span></a></li>' % (anchor(kind, num), kind.lower(), num, html.escape(says),
-                    "checks posted" if checked(fields) else "not yet checked"))
+        rows.append(entry_li(kind, num, fields, "checks posted" if checked(fields) else "not yet checked"))
     after = "".join(doc.blocks(to_lines(it[1]), 2) for it in items if it[0] == "text")
     intro = '<div class="intro">%s</div>' % doc.blocks(to_lines(by["WHAT THIS IS"]), 2) if "WHAT THIS IS" in by else ""
 
@@ -727,7 +754,7 @@ def assembly_page(secs, steps_num):
                       "it the way Satoshi approached money. Four tests, run on febu and on this ledger.",
                       "tests.html", "Read the four tests"),
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
-                      "(rule 3). Anyone at all can reopen one.", "members.html", "See the members"),
+                      "(rule 3). Anyone at all can reopen one.", "people.html", "See what each one wrote and checked"),
                 small("from", "from: Z's findings", "One member's study of febu, checked by nobody "
                       "else. A finding counts here only once it is written as a fact and two other members check it.",
                       "findings.html", "Read Z's findings")]))
@@ -738,6 +765,63 @@ def assembly_page(secs, steps_num):
                 + (" Proposed, not yet adopted." if status(secs)[1] else ""),
                 foot='This site and the ledger file are run by Z for now (<a href="ledger.html#bug-1">known bug 1</a>). '
                 + QUIET)
+
+
+def people_page(secs):
+    """Each name the ledger gives as an entry's writer or in a SEEN line, in the Member line's order (anyone not on it
+    after, as they first appear): the entries they wrote, the entries whose SEEN lines name them, and the failed
+    predictions a heading gives them ("Z'S PREDICTIONS ..."). Nothing is totalled: the ledger keeps no totals."""
+    doc = Doc(secs, "ledger.html")
+    members = member_names(secs)
+    wrote, saw, preds = {}, {}, {}
+    for _, kind, num, who, fields in (it for it in entries(entries_section(secs)[1]) if it[0] == "entry"):
+        # rule 3 closes an entry when members' posts agree; people read that, so this says only whether any are posted
+        li = entry_li(kind, num, fields, "checks posted, see SEEN" if checked(fields) else "open, not yet checked")
+        if who:
+            wrote.setdefault(who.split(",")[0].strip(), []).append(li)
+        # ponytail: a check is credited to a name on the Member line; a non-member's needs a fixed SEEN line format
+        for name in members:
+            if re.search(r"(?<!\w)%s(?!\w)" % re.escape(name), seen(fields)):
+                saw.setdefault(name, []).append(li)
+    for head, b in secs:
+        if not any(W_ITEM.match(r) for r in b):
+            continue
+        m = re.match(r"(\w+)'S ", head)
+        owner = [n for n in members if m and n.upper().startswith(m.group(1))]
+        if len(owner) != 1:
+            sys.exit("%r: whose predictions? Its heading should start with a member's name, or its first letters, "
+                     "and 'S" % head)
+        L = to_lines(b)
+        first, items = w_items(L)
+        rows = "".join('<li><a href="ledger.html#%s"><span class="num">%s</span><span class="says">%s</span>'
+                       '<span class="state">%s</span></a></li>' % (num, num, html.escape(said), (word + " " + qual).strip().lower())
+                       for num, said, word, qual, _ in items)
+        preds.setdefault(owner[0], []).append('<h3>%s</h3>%s<ul class="entries">%s</ul>' % (
+            html.escape(short(head).capitalize()), doc.blocks(L[:first], 2), rows))
+
+    def part(title, rows):
+        return "<h3>%s</h3>%s" % (title, '<ul class="entries">%s</ul>' % "".join(rows) if rows else "<p>None yet.</p>")
+
+    def window(name):
+        pid = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        return ('<section class="win person" id="%s" aria-labelledby="%s-h"><h2 class="bar" id="%s-h">%s%s</h2>'
+                '<div class="win-body">%s%s%s</div></section>'
+                % (pid, pid, pid, html.escape(name), "" if name in members else '<span class="q">not on the Member line</span>',
+                   part("Entries written", wrote.get(name)), part("Checks posted", saw.get(name)), "".join(preds.get(name, []))))
+
+    named = set(wrote) | set(saw) | set(preds)
+    rest = [n for n in members if n not in named]
+    body = ('<div class="intro"><p>%s</p></div>' % doc.fmt(
+                "Everyone the ledger names as an entry's writer or in a SEEN line, in the order of the Member line in "
+                "WORDS USED HERE. Under each name, what they wrote and what they checked, each with where it stands "
+                "today and a link to it in the ledger. An entry is open until two members other than its writer post "
+                "the same result (rule 3). No totals, no rankings, no scores.")
+            + "".join(window(n) for n in [n for n in members if n in named] + [n for n in wrote if n not in members])
+            + ('<p class="hint">Nothing stands under these names yet: %s.</p>' % html.escape(", ".join(rest)) if rest else ""))
+    return page("people.html", "By person", "by person", "what stands under each name in the ledger, entry by entry",
+                body, mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
+                description="Each name in the febu Assembly's ledger, with the entries they wrote and the checks they "
+                "posted, entry by entry." + (" Proposed, not yet adopted." if status(secs)[1] else ""))
 
 
 def main():
@@ -751,6 +835,7 @@ def main():
         "ledger.html": ledger,
         "tests.html": tests_page(raw_text(TESTS).decode("utf-8").rstrip("\n"), secs),
         "febu-assembly.html": assembly_page(secs, steps_fact(steps)),
+        "people.html": people_page(secs),
         "findings.html": findings,
     }
     if LEDGER.read_bytes() != raw:   # the page prints the hash of the LF text, so serve exactly that
