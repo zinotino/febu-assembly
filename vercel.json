@@ -25,5 +25,6 @@
       "path": "/api/archive",
       "schedule": "41 4 * * *"
     }
-  ]
+  ],
+  "outputDirectory": "."
 }
