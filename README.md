@@ -119,6 +119,7 @@ the file's SHA-256 and nothing else, so it shows nothing about who made it. Each
 
 | Proof | File |
 |---|---|
+| `timestamps/ledger-87ddd678.txt.ots` | `ledger.txt` as version 3 was first served, 2026-10-14 |
 | `timestamps/ledger-3d9f5e36.txt.ots` | `ledger.txt` as of the dated line about these records |
 | `timestamps/ledger-b43c02f1.txt.ots` | `ledger.txt` just before it (`git show 6d519d0:ledger.txt`) |
 | `timestamps/<name>.ots` | `archive/<name>`, one for each file there |
