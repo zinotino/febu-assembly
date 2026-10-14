@@ -5,10 +5,12 @@ what the ledger says. To ask another node, your own for example, set SOLANA_RPC:
     SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py
 """
 import datetime as dt
+import http.client
 import json
 import os
 import re
 import time
+import urllib.error
 import urllib.request
 from decimal import Decimal
 from pathlib import Path
@@ -40,20 +42,28 @@ def find(pattern, where, what):
 
 def rpc(method, params):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
+    last = None
     for attempt in range(6):
+        if attempt:
+            time.sleep(3 * attempt)   # the public node's "slow down" passes after a few seconds
         req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
         try:
             r = json.load(urllib.request.urlopen(req, timeout=60))
-        except OSError:   # includes HTTP 429, the public node's "slow down"
-            time.sleep(3 * (attempt + 1))
+        except urllib.error.HTTPError as err:
+            if err.code < 500 and err.code != 429:   # refused, not busy: asking again will not help
+                raise SystemExit("%s: %s answered HTTP %d" % (method, RPC, err.code))
+            last = "HTTP %d" % err.code
+            continue
+        except (OSError, ValueError, http.client.HTTPException) as err:   # no connection, or a cut-off or non-JSON body
+            last = repr(err)
             continue
         if "error" in r and r["error"].get("code") in (429, -32429):
-            time.sleep(3 * (attempt + 1))
+            last = r["error"]
             continue
         if "error" in r:
             raise SystemExit("%s: %s" % (method, r["error"]))
         return r["result"]
-    raise SystemExit("%s: no answer from %s after 6 tries" % (method, RPC))
+    raise SystemExit("%s: no answer from %s after 6 tries (last: %s)" % (method, RPC, last))
 
 
 def tx(sig):

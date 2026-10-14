@@ -10,8 +10,8 @@ from decimal import Decimal
 
 from common import B58, RPC, WSOL, entry, find, keys, now, sol_change, short, signers, text, token_changes, tx, when
 
-ROW = re.compile(r"^\s*(\d+)\s+(\d{4}-\d\d-\d\d \d\d:\d\d)\s+(\d+\.\d+)\s+(?:https://solscan\.io/tx/)?(%s)" % B58, re.M)
-TOTAL = re.compile(r"^\s*total\s+(\d+\.\d+)\s*$", re.M)
+ROW = re.compile(r"^\s*(\d+)\s+(\d{4}-\d\d-\d\d \d\d:\d\d)\s+(\d+(?:\.\d+)?)\s+(?:https://solscan\.io/tx/)?(%s)" % B58, re.M)
+TOTAL = re.compile(r"^\s*total\s+(\d+(?:\.\d+)?)\s*$", re.M)
 
 
 def rows(steps):
@@ -23,9 +23,14 @@ def rows(steps):
 
 def arrived(r, wallet, amount):
     """How the row's amount reached the wallet: as WSOL in a token account it owns, or as SOL (adding back the network
-    fee when the wallet paid it)."""
+    fee when the wallet paid it). "none" when nothing left the fee account; "less" when the wallet is not even in
+    the transaction."""
+    if not amount:
+        return "none"
     if sum(b - a for _, owner, m, a, b in token_changes(r) if owner == wallet and m == WSOL) == amount:
         return "WSOL"
+    if wallet not in keys(r):
+        return "less"
     got = sol_change(r, wallet) + (Decimal(r["meta"]["fee"]) / 10 ** 9 if keys(r)[0] == wallet else 0)
     return "SOL" if got == amount else "SOL+more" if got > amount else "less"
 
@@ -43,10 +48,11 @@ def main():
     print()
     r = tx(sale)
     ch = token_changes(r)
-    pool = min(b - a for _, _, m, a, b in ch if m == WSOL)   # the biggest WSOL payout in the trade
-    fee = sum(b - a for acct, _, _, a, b in ch if acct == fee_account)
-    print("Step 1, the trade %s at %s: the pool paid out %s WSOL; the fee account got %s (%.3f%%)"
-          % (short(sale), when(r["blockTime"]), -pool, fee, fee / -pool * 100))
+    payouts = [a - b for _, _, m, a, b in ch if m == WSOL and b < a]
+    fee = sum((b - a for acct, _, _, a, b in ch if acct == fee_account), Decimal(0))
+    said = ("the pool paid out %s WSOL; the fee account got %s (%.3f%% of it)" % (max(payouts), fee,
+            fee / max(payouts) * 100) if payouts else "no WSOL left any account; the fee account got %s" % fee)
+    print("Step 1, the trade %s at %s: %s" % (short(sale), when(r["blockTime"]), said))
     print()
     print("Step 3, every row:")
     print("  row  time on chain            SOL in the row   out of the fee account  same  arrived as  signed by wallet")
@@ -75,7 +81,8 @@ def main():
     print("  not signed by the wallet            %s" % ", ".join(map(str, pick(
         lambda d, sol, r, out, how: wallet not in signers(r)))))
     for how, said in (("SOL", "arrived as SOL, exactly"), ("SOL+more", "arrived as SOL, plus more"),
-                      ("WSOL", "arrived as WSOL in its account"), ("less", "arrived short of the row")):
+                      ("WSOL", "arrived as WSOL in its account"), ("less", "arrived short of the row"),
+                      ("none", "nothing left the fee account")):
         print("  %-35s %s" % (said, ", ".join(map(str, pick(lambda d, sol, r, out, h: h == how)))))
     print()
     print("Not read here: whether anything left the fee account after 2026-09-14. Thousands of trades have touched")
