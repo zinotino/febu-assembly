@@ -15,8 +15,9 @@ WHAT THIS IS
 
 THE RULES
   1. The list holds promises ("I will do X by this date; here is how anyone will know") and
-     facts ("X is true; this link shows it"). Every link must open for anyone, without asking
-     the person who posted it.
+     facts ("X is true; this link shows it"). A forecast of what nobody here does ("the sun
+     will rise tomorrow") is neither; it goes in the chat. Every link must open for anyone,
+     without asking the person who posted it.
   2. Anyone may add to it. Nothing is removed or rewritten: every change is a new dated line.
      Broken promises and wrong facts stay, marked. Personal information may be replaced by
      "[removed]".
@@ -47,10 +48,14 @@ WORDS USED HERE
            works like a rule change. The weekly turn in rule 6 goes in this order. A member who
            has posted nothing in the chat for 90 days is not active: they do not count toward
            rules 3, 6 and 7 until they post again.
-  Bond     the $FEBU a promise names under IF BROKEN. It is paid from the promiser's own wallet
-           to the incinerator, 1nc1nerator11111111111111111111111111111111, where nobody can
-           spend it, or burned from that wallet; either way the transaction is the link. Whoever owes a bond posts no new promise until
-           it is paid. A promise may name no bond; then IF BROKEN says "none".
+  Bond     the $FEBU a promise names under IF BROKEN. The promiser picks the amount, with no
+           minimum, and a reader weighs the promise by it. A promise may name no bond; then
+           IF BROKEN says "none". A fact never has one: a wrong fact costs its writer the
+           DOESN'T HOLD line. Once a promise is BROKEN, the promiser pays the bond from their
+           own wallet to the incinerator, 1nc1nerator11111111111111111111111111111111, where
+           nobody can spend it, or burns it from that wallet; either way the transaction is
+           the link. No contract holds it in advance: one that did would be the pool rule 5
+           forbids. Whoever owes a bond posts no new promise until it is paid.
   Result   HOLDS or DOESN'T HOLD for a fact, KEPT or BROKEN for a promise. "The same result" is
            the same word on the same WRONG IF lines.
   Saw      you opened the link yourself. An AI may help you find something on the page. It
@@ -59,6 +64,8 @@ WORDS USED HERE
   Hash     the SHA-256 of ledger.txt. Download the file and hash the file; pasting the text into
            a box can change it. The ledger page shows the hash too.
   No totals, no rankings, no scores. What stands under a name is what happened, entry by entry.
+  Nobody judges whether an entry is worth having: one nobody needs goes unchecked and stays
+  OPEN, and ten easy ones add up to nothing.
 
 HOW TO CHECK AN ENTRY
   1. Open the link in the entry. You need no account.
@@ -297,6 +304,8 @@ RISKS WE ACCEPT
   - One person with two names, and a result an AI wrote that a person signed without opening
     the link, cannot be told from the record.
   - Members silent for 90 days stop counting, so a few active members can change the rules.
+  - An entry anyone could get right without looking can be posted and closed. It counts toward
+    PROMISE 7 and shows nothing; it stays under its writer's name for anyone to read.
 
 CHANGES TO THE RULES
   2026-10-14. Version 2 replaces Z's draft version 1, before any entry was checked. Version 1
@@ -366,3 +375,13 @@ CHANGES TO THE RULES
 
   Dropped on review: a vault, pay for checking, and a takeover of the fee. The reviews are in
   Z's repository and not public yet.
+
+  2026-10-14. After WitnesstoFebu's four questions in the chat (how big is a bond, does code
+  burn it, why take part, can "the sun will rise tomorrow" be an entry), before any entry was
+  checked. Version 3 as first served is kept word for word in archive/08_CLAIMS_LEDGER_v3.txt
+    SHA-256 87ddd6787b8b7053f855c09ce184194ec80d4baa13f0e0f2d83fab980fc33166
+  Rule 1: a forecast is neither a fact nor a promise. Bond: the promiser picks the amount, a
+  fact never has one, and no contract holds it. WORDS USED HERE: nobody judges whether an
+  entry is worth having. RISKS WE ACCEPT: easy entries. None of this changes what a rule
+  requires; it says what the text left for a reader to work out. Why: Z's post for the vote
+  said a claim costs a bond, and a member read every claim as carrying one, burned by code.
