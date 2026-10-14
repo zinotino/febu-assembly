@@ -118,6 +118,8 @@ code.tok.copied{background:var(--hi);color:#fff}
   border:2px solid;border-color:var(--down)}
 .tool input:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
 .hint{margin:.3rem 0 0;font-size:.8rem;color:#333}
+/* the second explorer beside each solscan.io link (known bug 4) */
+a.alt{font-size:.88em;white-space:nowrap}
 .msg{margin:.6rem 0 0;font-weight:700}
 .msg:empty{display:none}
 .msg.ok{color:#075a2a}.msg.ok::before{content:"\2713\00a0"}

@@ -13,6 +13,7 @@ findings).
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
+| `checks/` | Scripts that re-read facts 2, 5 and 6 from public sources, for anyone to run. |
 | `build.py`, `findings_html.py` | Write the four pages from the texts. |
 | `assets/` | The pages' stylesheets, and `claims.js` (tap to copy, hash checks). Written by hand. |
 | `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html` | Written by `build.py`. Don't edit them by hand. |
@@ -47,6 +48,9 @@ the ledger keeps off its pages, if a wallet address or transaction signature wou
 the ledger page, if a SHA-256 the ledger cites doesn't match its archive file, or if fact 6's rows aren't
 numbered 1 to n or don't add up to its total.
 
+Next to every solscan.io link on the ledger page, the build adds the same record on explorer.solana.com, so no
+check rests on one explorer (known bug 4). `ledger.txt` itself keeps only the links it has.
+
 An edit made on github.com changes `ledger.txt` but not the pages. Until someone runs the build and pushes,
 the ledger page shows the old text, and its hash check reports a different SHA-256.
 
@@ -57,6 +61,29 @@ files as committed. https://febu-assembly.vercel.app forwards the Assembly's add
 (`febu-host`'s `vercel.json`), so the links stay the same and `ledger.txt` arrives byte for byte. After a
 push, download https://febu-assembly.vercel.app/ledger.txt and check that its SHA-256 is the one the build
 printed.
+
+## Rerunnable checks
+
+`checks/` re-reads the facts a machine can read, with Python 3 and nothing else: no packages, no account, no key.
+Each takes its addresses and transactions from `ledger.txt` and `fact-6-steps.txt`, so it tests what the ledger
+says, and prints what it saw. None of them posts anything or gives a verdict: a person reads the output, compares
+it with the entry's WRONG IF lines, and posts (HOW TO CHECK AN ENTRY). Say in your post that you ran a script.
+
+| Script | Reads | Takes |
+|---|---|---|
+| `python checks/fact2.py` | Fact 2: the creator wallet's $FEBU before and after the sale the ledger links, and whether it holds any $FEBU now | seconds |
+| `python checks/fact5.py` | Fact 5: on how many of pages 1-24 and 25-164 each of the eight words appears, in the scripture copy behind the fact's link | seconds |
+| `python checks/fact6.py` | Fact 6: adds up the 44 rows, then re-reads every row's transaction and step 1's trade | a minute or two |
+
+- The chain checks ask the public node https://api.mainnet-beta.solana.com. To ask another, your own for example,
+  set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast
+  callers; the scripts wait and retry.
+- `fact5.py` takes a copy of your own too, in the same form, which is how KNOWN BUGS 3 gets fixed:
+  `python checks/fact5.py my-copy.json`. It prints the copy's SHA-256, so two people can tell whether they counted
+  the same copy.
+- `fact6.py` does not test "has received nothing from it since". Thousands of trades have touched the fee account
+  since 2026-09-14, too many for a public node; step 2's link shows its payments out.
+- `python checks/test_checks.py` tests the scripts' own reading of the texts, offline.
 
 ## Records outside the group (rule 6)
 

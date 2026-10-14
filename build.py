@@ -41,6 +41,19 @@ def raw_text(path):
     return path.read_bytes().replace(b"\r\n", b"\n")
 
 
+def explorer(url):
+    """The same record on explorer.solana.com, for a solscan.io link, so no check rests on one explorer (known bug
+    4). An account link with nothing after the address is about what the account holds: the explorer's tokens tab.
+    Any other account link (its transfers) becomes the explorer's history, newest first; it has no out-only view."""
+    m = re.match(r"https://solscan\.io/(tx|account|token)/(\w+)(\S*)$", url)
+    if not m:
+        return None
+    kind, key, rest = m.groups()
+    if kind == "tx":
+        return "https://explorer.solana.com/tx/" + key
+    return "https://explorer.solana.com/address/%s%s" % (key, "" if rest or kind == "token" else "/tokens")
+
+
 # ---------------------------------------------------------------------------------------------------------------
 # Reading the plain text. Its layout carries the structure: numbered rules, labelled rows ("Member     one of the
 # seven"), continuation lines indented under the text they continue, and anything indented further than that, or
@@ -122,7 +135,10 @@ class Doc:
             pos, s, kind = m.end(), m.group(), m.lastgroup
             if kind == "url":
                 url = s.rstrip(".,;:)")
-                out.append('<a href="%s" rel="noopener noreferrer">%s</a>%s' % (e(url), e(url), e(s[len(url):])))
+                alt = explorer(url)
+                out.append('<a href="%s" rel="noopener noreferrer">%s</a>%s%s' % (e(url), e(url), (
+                    ' <a class="alt" href="%s" rel="noopener noreferrer" title="the same on a second explorer">'
+                    '(explorer.solana.com)</a>' % e(alt)) if alt else "", e(s[len(url):])))
             elif kind == "file":
                 href = self.files.get(s)
                 out.append('<a href="%s">%s</a>' % (e(href), e(s)) if href else e(s))
@@ -385,14 +401,15 @@ def rows_html(head, body, aid, doc):
         sys.exit("%s: the line above the rows should name its four columns" % head)
     th = "".join('<th%s>%s</th>' % (' class="n"' if k == 2 else "", html.escape(c)) for k, c in enumerate(cols))
     tr = "".join('<tr id="%s-row-%s"><td>%s</td><td>%s</td><td class="n">%s%s</td><td><a href="https://solscan.io/tx/%s" '
-                 'rel="noopener noreferrer" title="open row %s on solscan.io">%s&hellip;</a></td></tr>'
-                 % (aid, n, n, d, sol, " *" if star else "", sig, n, sig[:8])
+                 'rel="noopener noreferrer" title="open row %s on solscan.io">%s&hellip;</a> <a class="alt" href="%s" '
+                 'rel="noopener noreferrer" title="open row %s on explorer.solana.com">explorer</a></td></tr>'
+                 % (aid, n, n, d, sol, " *" if star else "", sig, n, sig[:8], explorer("https://solscan.io/tx/" + sig), n)
                  for n, d, sol, sig, star in ((n, d, sol, link.rsplit("/", 1)[-1], star) for n, d, sol, link, star in rows))
     foot = '<tfoot><tr><td></td><td>total</td><td class="n">%s</td><td></td></tr></tfoot>' % total
     rest = head[len(short(head)):].strip()
     return ('<details class="win rows" id="%s-rows"><summary><span class="t">%s</span>%s</summary><div class="win-body">'
-            '<p class="hint">Each link opens that row on solscan.io. It shows the start of the transaction\'s '
-            'signature; the whole of it is in the link.</p>'
+            '<p class="hint">Each row opens on solscan.io, where the link shows the start of the transaction\'s '
+            'signature (the whole of it is in the link), and on explorer.solana.com.</p>'
             '<div class="tbl"><table><thead><tr>%s</tr></thead><tbody>%s</tbody>%s</table></div>%s</div></details>'
             % (aid, html.escape(short(head).capitalize()), ' <span class="q">%s</span>' % html.escape(rest) if rest else "",
                th, tr, foot,
