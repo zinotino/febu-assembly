@@ -86,8 +86,8 @@ WHAT IT COULD BECOME
   - The one record of what febu said and did, with dates, that a holder can check without trusting
     the Assembly.
   - A template. The file and the rules copy in a minute; any group with claims can run its own.
-  - $FEBU's first use that is not trading: a bond behind a promise. Every serious promise is
-    demand, every broken one removes supply, and the group holds nothing.
+  - $FEBU's first use that is not trading: a bond behind a promise. A broken promise's bond
+    goes where nobody can spend it, and the group holds nothing.
   - If febu returns, every new page gets a day-one entry: what it claims, what would show it wrong.
   - Prediction records without a scoreboard: KEPT and BROKEN lines with links, nothing summed.
   - The first real numbers on what a check costs in minutes, which every later decision about pay

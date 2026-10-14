@@ -783,7 +783,7 @@ def assembly_page(secs, steps_num):
             '<section class="win lead" aria-labelledby="lead-h"><h2 class="bar" id="lead-h">the ledger: promises and facts'
             '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></h2>'
             '<div class="win-body"><ul class="entries">%s</ul>%s'
-            '<p class="cta"><a href="#check">Check an entry</a><a href="ledger.html">Read the whole ledger</a></p>'
+            '<p class="cta"><a href="#check">Check an entry</a><a href="how.html">How it works</a><a href="ledger.html">Read the whole ledger</a></p>'
             '</div></section>' % (len(rows), done, "".join(rows), after) + check_section(secs, doc, steps_num) +
             '<div class="more">%s</div>' % "".join([
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
