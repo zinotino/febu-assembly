@@ -18,5 +18,11 @@
       "src": "/",
       "dest": "/febu-assembly.html"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/archive",
+      "schedule": "41 4 * * *"
+    }
   ]
 }

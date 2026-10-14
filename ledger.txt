@@ -264,3 +264,8 @@ CHANGES TO THE RULES
   is now fact-6-steps.txt (was 11_ENTRY_6_STEPS.txt). Version 2.1 as first posted is kept
   word for word in archive/08_CLAIMS_LEDGER_v2.1.txt
     SHA-256 38fa63a38d0b73b28df53cc5290945e46bbf6fcfb8bfcba4f23e660a9d7fe368
+  2026-10-14. Rule 6 gets records outside the group. Every day the site asks the Internet
+  Archive to save ledger.txt, with nobody involved. The dated copies are listed at
+    https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
+  The folder timestamps/, next to this file, holds OpenTimestamps proofs that the version
+  adding this line, and each file in archive/, existed by the time of a Bitcoin block.

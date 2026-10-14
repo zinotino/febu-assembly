@@ -11,6 +11,8 @@ findings).
 | `tests.txt` | The four tests. |
 | `findings.md` | Z's findings report. |
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
+| `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
+| `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `build.py`, `findings_html.py` | Write the four pages from the texts. |
 | `assets/` | The pages' stylesheets, and `claims.js` (tap to copy, hash checks). Written by hand. |
 | `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html` | Written by `build.py`. Don't edit them by hand. |
@@ -55,6 +57,66 @@ files as committed. https://febu-assembly.vercel.app forwards the Assembly's add
 (`febu-host`'s `vercel.json`), so the links stay the same and `ledger.txt` arrives byte for byte. After a
 push, download https://febu-assembly.vercel.app/ledger.txt and check that its SHA-256 is the one the build
 printed.
+
+## Records outside the group (rule 6)
+
+Two kinds of dated record that nobody in the group controls. The ledger's dated line of 2026-10-14 under CHANGES
+TO THE RULES names both.
+
+**The Internet Archive, every day.** `api/archive.js` runs once a day (the `crons` entry in `vercel.json`; on
+Vercel's free plan it fires some time between 04:00 and 05:00 UTC) and asks the Archive to save
+https://febu-ledger.vercel.app/ledger.txt. Nobody has to do anything. Every copy, with its date and time:
+https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt. To hash a copy, put `id_` after its date
+in the address, so you get the file as it was saved rather than the Archive's page around it. The Archive sends it
+compressed, so let your tool unpack it:
+
+```bash
+curl -s --compressed https://web.archive.org/web/20261014170819id_/https://febu-ledger.vercel.app/ledger.txt | sha256sum
+```
+
+That first copy is `b43c02f1…`, the version before the dated line.
+
+**OpenTimestamps.** `timestamps/` holds proofs that a file existed by the time of a Bitcoin block. A proof holds
+the file's SHA-256 and nothing else, so it shows nothing about who made it. Each is named after what it proves:
+
+| Proof | File |
+|---|---|
+| `timestamps/ledger-3d9f5e36.txt.ots` | `ledger.txt` as of the dated line about these records |
+| `timestamps/ledger-b43c02f1.txt.ots` | `ledger.txt` just before it (`git show 6d519d0:ledger.txt`) |
+| `timestamps/<name>.ots` | `archive/<name>`, one for each file there |
+
+Install the client (Python 3), then verify a proof against the file it names:
+
+```bash
+pip install opentimestamps-client
+```
+
+```bash
+ots verify -f ledger.txt timestamps/ledger-3d9f5e36.txt.ots
+```
+
+"Success! Bitcoin block N attests existence as of DATE" is the result. "Pending confirmation in Bitcoin
+blockchain" means the calendars have not yet put it in a block; that takes a few hours after stamping. "File does
+not match original!" means the file is not the one stamped.
+
+- **Against your own Bitcoin node.** `ots verify` asks the Bitcoin Core node on the same machine (it reads
+  `~/.bitcoin/bitcoin.conf`), or the one you name with `--bitcoin-node http://user:pass@host:8332`. It needs only
+  block headers, so a pruned node is enough. With no node, `ots --no-bitcoin verify -f FILE PROOF` prints "check
+  that Bitcoin block N has merkleroot M", which any block explorer shows; or https://opentimestamps.org checks a
+  proof in the browser against public block explorers.
+- **Upgrade.** A new proof only says which calendars promised to put it in a block. Once they have, anyone can
+  fetch the rest of the path into Bitcoin and keep it in the file, so the proof no longer needs the calendars:
+
+  ```bash
+  ots upgrade timestamps/*.ots
+  ```
+
+  Commit the upgraded files (it leaves `.bak` copies, which git ignores).
+- **Stamp a new version.** After a change to `ledger.txt` is live, any member can stamp it and commit the proof:
+
+  ```bash
+  f=timestamps/ledger-$(sha256sum ledger.txt | cut -c1-8).txt && cp ledger.txt $f && ots stamp $f && rm $f
+  ```
 
 ## A second editor
 
