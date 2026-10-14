@@ -29,11 +29,13 @@ findings).
    THE RULES, the way the lines already there do. The build stops if a cited hash doesn't match the file.
 4. Keep lines to 92 characters. A short line meant to stand on its own keeps to 80; a longer one runs on into
    the next line on the page.
-5. Rebuild, then commit `ledger.txt` and the pages together, and push.
+5. Commit and push. Vercel rebuilds the pages from the texts (see Publishing). Running the build yourself first
+   shows a mistake before anyone else does; then commit the pages it writes along with `ledger.txt`.
 
 ## Rebuild
 
-Python 3 and the `markdown` package:
+Python 3. The ledger, the front page and the tests page need nothing else; `findings.html` also needs the
+`markdown` package:
 
 ```bash
 pip install markdown
@@ -46,21 +48,30 @@ python build.py
 It prints `ledger.txt`'s SHA-256. It stops with a message, and writes nothing, if a page would show notation
 the ledger keeps off its pages, if a wallet address or transaction signature would appear anywhere but
 the ledger page, if a SHA-256 the ledger cites doesn't match its archive file, or if fact 6's rows aren't
-numbered 1 to n or don't add up to its total.
+numbered 1 to n or don't add up to its total. Without `markdown`, it keeps `findings.html` as it is if that was
+built from the same `findings.md`, and stops if `findings.md` has changed since.
 
 Next to every solscan.io link on the ledger page, the build adds the same record on explorer.solana.com, so no
 check rests on one explorer (known bug 4). `ledger.txt` itself keeps only the links it has.
 
-An edit made on github.com changes `ledger.txt` but not the pages. Until someone runs the build and pushes,
-the ledger page shows the old text, and its hash check reports a different SHA-256.
-
 ## Publishing
 
-Every push to `main` redeploys the Vercel project `febu-ledger`. There is no build step: Vercel serves the
-files as committed. https://febu-assembly.vercel.app forwards the Assembly's addresses to that project
-(`febu-host`'s `vercel.json`), so the links stay the same and `ledger.txt` arrives byte for byte. After a
-push, download https://febu-assembly.vercel.app/ledger.txt and check that its SHA-256 is the one the build
-printed.
+Every push to `main` redeploys the Vercel project `febu-ledger`. Vercel first runs `python3 build.py` (the
+`buildCommand` in `vercel.json`), then serves the folder. https://febu-assembly.vercel.app forwards the
+Assembly's addresses to that project (`febu-host`'s `vercel.json`), so the links stay the same and `ledger.txt`
+arrives byte for byte. After a push, download https://febu-assembly.vercel.app/ledger.txt and check that its
+SHA-256 is the one the build printed (Vercel's build log prints it too).
+
+### Editing in the browser, with no tools
+
+Open `ledger.txt` on GitHub, press the pencil (Edit this file), make the change, and commit it to `main`. Vercel
+rebuilds the pages from it in a minute or two. If the edit breaks something the build checks (the list under
+Rebuild), the build stops, that deployment fails, and the site keeps serving the version before it. GitHub then
+shows a red cross beside the commit, with Vercel's message behind it. The broken commit stays in the history
+(rule 2); fix it with another commit. The build checks only that list: any other edit goes live as written.
+
+After such an edit the pages in the repository lag behind `ledger.txt` until someone runs the build and commits
+them. The site does not lag, because Vercel builds its own.
 
 ## Rerunnable checks
 
@@ -147,9 +158,9 @@ not match original!" means the file is not the one stamped.
 
 ## A second editor
 
-Z adds them on GitHub: Settings, Collaborators, Add people, role Write. They then clone, edit, build and push
-the same way Z does. On Vercel's free plan a collaborator's push deploys only because this repository is
-public. Anyone else can propose a change as a pull request, or copy the whole thing and run it their own way
+Z adds them on GitHub: Settings, Collaborators, Add people, role Write. They can then edit in the browser, or
+clone, edit, build and push the same way Z does. On Vercel's free plan a collaborator's push deploys only because
+this repository is public. Anyone else can propose a change as a pull request, or copy the whole thing and run it their own way
 (rule 7).
 
 ## Checking the history (rule 2)

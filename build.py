@@ -22,8 +22,6 @@ from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 
-import findings_html
-
 ROOT = Path(__file__).resolve().parent
 LEDGER = ROOT / "ledger.txt"
 TESTS = ROOT / "tests.txt"
@@ -528,9 +526,27 @@ def page(name, title, h1, sub, body, mast="", foot=QUIET, connect="'none'", sour
 
 def findings_page():
     """findings.md as findings_html.py lays it out, with the den's stylesheet in place of its own, the archive bar,
-    and the tabs. Returns the page and its verdict counts."""
+    and the tabs. Returns the page and its verdict counts.
+
+    findings_html.py needs the markdown package, which Vercel's build image lacks. Without it the page built from
+    this same findings.md is kept as it is (counts None), so the ledger's pages still build with Python alone; if
+    findings.md has changed since, the build stops rather than serve the old findings.
+    ponytail: the mark covers findings.md only. After changing TABS, BAR or findings_html.py, rebuild with markdown
+    and commit findings.html, or Vercel keeps serving the old one beside new pages."""
+    mark = "from findings.md (sha256 %s)" % hashlib.sha256(raw_text(FINDINGS)).hexdigest()[:16]   # 32+ would be an "address"
+    try:
+        import findings_html
+    except ModuleNotFoundError as err:
+        built = ROOT / "findings.html"
+        if err.name != "markdown":
+            raise
+        if built.exists() and mark in built.read_text(encoding="utf-8"):
+            return built.read_text(encoding="utf-8"), None
+        sys.exit("findings.md has changed since findings.html was built, and building it needs the markdown package "
+                 "(pip install markdown)")
     out, counts = findings_html.build(FINDINGS.read_text(encoding="utf-8"))
     for pattern, repl in (
+            (r"from findings\.md\.", mark + "."),
             (r"<style>.*?</style>", '<link rel="icon" href="/favicon.ico">\n<link rel="stylesheet" href="/assets/findings.css">'),
             (r"<body>\n", "<body>\n" + BAR % "one author's verdicts, not yet checked by anyone else" + "\n"),
             (r'(<h1>.*?</h1>\n<p class="sub">.*?</p>)', r'<div class="mast-title">\1</div>' + "\n" + tabs_html("findings.html"))):
@@ -757,9 +773,10 @@ def main():
         LEDGER.write_bytes(raw)
     for name, out in pages.items():
         (ROOT / name).write_text(out, encoding="utf-8", newline="\n")
-    print("ledger.txt sha256 %s (%d bytes); %s; wrote %s; findings: %d claims %s" % (
+    print("ledger.txt sha256 %s (%d bytes); %s; wrote %s; findings: %s" % (
         hashlib.sha256(raw).hexdigest(), len(raw), ", ".join("%s sha256 %s" % (p, d[:16]) for p, _, d in archives),
-        ", ".join(pages), sum(counts.values()), dict(counts)))
+        ", ".join(pages), "%d claims %s" % (sum(counts.values()), dict(counts)) if counts else
+        "kept as built from this findings.md (no markdown package here)"))
 
 
 if __name__ == "__main__":
