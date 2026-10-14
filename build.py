@@ -5,9 +5,9 @@
   ledger.html   ledger.txt as a page, in the text's own order: STATUS as a banner, each entry as a card
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
                 fact-6-steps.txt is about, its steps and every row with a link
-  tests.html    tests.txt as a page
   how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg
-  findings.html findings.md (findings_html.py) in the den's look, inside the tabs
+  tests.html    tests.txt as a page       (background: no tab; the front page's "background" window links it)
+  findings.html findings.md (findings_html.py) in the den's look   (background: same)
   people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
                 (reached from the front page's "who" window, not a tab)
 
@@ -522,16 +522,19 @@ SHELL = """<!doctype html>
 </html>
 """
 
-TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("ledger.html", "the ledger"),
-        ("tests.html", "four tests"), ("findings.html", "findings"))
+TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("ledger.html", "the ledger"))
+# Reading, not the experiment: no tab. Each shows as one extra marked tab that leads back to the front page's window.
+BACKGROUND = {"tests.html": "four tests", "findings.html": "findings"}
 QUIET = "Nothing on this page is stored or counted, and it loads nothing from other sites."
 BAR = ('<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> ] [ <a href="/library/scripture">scripture'
        '</a> ] [ <a href="/febu-assembly.html">febu assembly</a> ]</div>')
 
 
 def tabs_html(name):
+    tabs = TABS + ((("febu-assembly.html#background", "background: " + BACKGROUND[name]),) if name in BACKGROUND else ())
     return '<nav class="tabs" aria-label="Assembly pages">%s</nav>' % "".join(
-        '<a href="%s"%s>%s</a>' % (href, ' aria-current="page"' if href == name else "", label) for href, label in TABS)
+        '<a href="%s"%s>%s</a>' % (href, ' aria-current="page"' if href == name or href.endswith("#background") else "",
+                                   label) for href, label in tabs)
 
 
 def vetted(name, out):
@@ -783,14 +786,14 @@ def assembly_page(secs, steps_num):
             '<p class="cta"><a href="#check">Check an entry</a><a href="ledger.html">Read the whole ledger</a></p>'
             '</div></section>' % (len(rows), done, "".join(rows), after) + check_section(secs, doc, steps_num) +
             '<div class="more">%s</div>' % "".join([
-                small("why", "why: four tests", "Witness asked what an answer to febu would look like if we approached "
-                      "it the way Satoshi approached money. Four tests, run on febu and on this ledger.",
-                      "tests.html", "Read the four tests"),
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
                       "(rule 3). Anyone at all can reopen one.", "people.html", "See what each one wrote and checked"),
-                small("from", "from: Z's findings", "One member's study of febu, checked by nobody "
-                      "else. A finding counts here only once it is written as a fact and two other members check it.",
-                      "findings.html", "Read Z's findings")]))
+                '<section class="win" id="background" aria-labelledby="background-h"><h2 class="bar" id="background-h">'
+                'background: not part of the experiment</h2><div class="win-body"><p>Reading, for anyone who wants it. Z\'s '
+                'findings are one member\'s study of febu, checked by nobody else; the four tests answer Witness\'s '
+                'question about Satoshi. Nothing in either is an entry. A finding counts as one only once it is written '
+                'as a fact and two other members check it.</p><p class="go"><a href="findings.html">Z\'s findings</a>'
+                '<br><a href="tests.html">The four tests</a></p></div></section>']))
     return page("febu-assembly.html", "febu assembly", "febu assembly",
                 "%d members studying febu, and a ledger anyone can check" % members, body,
                 mast=status_banner(secs, doc), source=" from ledger.txt",
