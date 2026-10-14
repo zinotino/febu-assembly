@@ -2,7 +2,7 @@
 
 One claim per row. The verdicts are Z's and have not been checked by anyone else yet.
 Under the group's ledger rules a verdict stands only after two other members check it
-(`share/08_CLAIMS_LEDGER.txt`).
+(`ledger.txt`).
 
 **Verdicts:** Holds / Does not hold / Partly / Open.
 
@@ -86,7 +86,7 @@ model text grading model text. It sorts designs and shows none of them works. Ro
 ## 6. What we got wrong along the way
 
 - **Five of twenty written predictions failed**, two outright and three in part. They are
-  listed as W1 to W5 in `share/08_CLAIMS_LEDGER.txt`.
+  listed as W1 to W5 in `ledger.txt`.
 - **The news lead was withdrawn and then restored.** The general vocabulary does not move at
   the August restart, but event words double there (P183, P185).
 - **"No page was ever held back" was too strong.** Page numbers have no gaps, but six time

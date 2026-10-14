@@ -164,7 +164,7 @@ THE ENTRIES
     SAYS      The wallet that created $FEBU received 2,939.10 SOL from its creator-fee account
               in 44 payments between 2026-07-09 and 2026-09-14, and has received nothing from
               it since. Trades on the main $FEBU pool pay into that account.
-    LINK      Four steps, each a link, with all 44 payments, in 11_ENTRY_6_STEPS.txt and
+    LINK      Four steps, each a link, with all 44 payments, in fact-6-steps.txt and
               under this fact on the group site. The fee account's outgoing payments, newest
               first:
                 https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
@@ -260,3 +260,7 @@ CHANGES TO THE RULES
   2026-10-14. WHEN THIS HAS FAILED: it also fails if Z wrote every closed entry.
   2026-10-14. KNOWN BUGS 2 and 5 now have dates (rule 8).
   2026-10-14. Facts 1, 2 and 6 changed before any check: see each CHANGED line.
+  2026-10-14. The ledger's files moved to a repository of their own, so fact 6's steps file
+  is now fact-6-steps.txt (was 11_ENTRY_6_STEPS.txt). Version 2.1 as first posted is kept
+  word for word in archive/08_CLAIMS_LEDGER_v2.1.txt
+    SHA-256 38fa63a38d0b73b28df53cc5290945e46bbf6fcfb8bfcba4f23e660a9d7fe368

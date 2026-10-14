@@ -4,7 +4,7 @@
                       HOW TO CHECK AN ENTRY (#check; /start.html redirects there)
   ledger.html   ledger.txt as a page, in the text's own order: STATUS as a banner, each entry as a card
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
-                11_ENTRY_6_STEPS.txt is about, its steps and every row with a link
+                fact-6-steps.txt is about, its steps and every row with a link
   tests.html    tests.txt as a page
   findings.html findings.md (findings_html.py) in the den's look, inside the tabs
 
@@ -27,7 +27,7 @@ import findings_html
 ROOT = Path(__file__).resolve().parent
 LEDGER = ROOT / "ledger.txt"
 TESTS = ROOT / "tests.txt"
-STEPS = ROOT / "11_ENTRY_6_STEPS.txt"
+STEPS = ROOT / "fact-6-steps.txt"
 FINDINGS = ROOT / "findings.md"
 
 # This notation never goes on a public page.
@@ -553,7 +553,8 @@ def status_banner(secs, doc, brief=False):
 def archived(text):
     """Each archive/... text the ledger names: (path, bytes, SHA-256), checked against any SHA-256 printed beside it."""
     out = []
-    for path in sorted(set(re.findall(r"\barchive/[\w.-]+\.txt\b", text))):
+    named = set(re.findall(r"\barchive/[\w.-]+\.txt\b", text))
+    for path in sorted(named, key=lambda p: [int(n) for n in re.findall(r"\d+", p)]):   # v1, v2, v2.1
         src = ROOT / path
         if not src.exists():
             sys.exit("the ledger names %s, which is not in archive/" % path)
@@ -573,7 +574,7 @@ def files_html(current, archives):
                 % (label, path, path, "{:,}".format(len(raw)), path, path, digest))
     rows = [item("this version", "ledger.txt", *current)]
     for path, raw, digest in archives:
-        v = re.search(r"_v(\d+)\.txt$", path)
+        v = re.search(r"_v(\d+(?:\.\d+)?)\.txt$", path)
         rows.append(item("version %s" % v.group(1) if v else "archived", path, raw, digest))
     return ('<section id="the-text"><h2>THE TEXT ITSELF</h2>'
             '<p>This page is laid out from a plain text file, and the file is the ledger. The hash in rule 6 is this '
