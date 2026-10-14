@@ -50,6 +50,8 @@ $FEBU
   checked, that wallet's own 09-22 sale, just under 1% of the SOL (fact 6, step 1). pump.fun lets a community apply to move an abandoned
   coin's fee to a new wallet. Whether to apply, and who would hold that wallet, is a decision
   in the group's name (rule 7).
+  Version 3 (2026-10-14) proposes not to apply: the creator wallet is active, and the takeover
+  is run by pump.fun's own multisig (fact 9), so the fee would be held at its pleasure.
   Witness's four ifs: a working system, people taking part, a role for $FEBU, demand growing
   against supply. The first three can be written as promises with dates and links. The fourth
   is a price, and nobody can promise a price.

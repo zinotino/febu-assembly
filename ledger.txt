@@ -2,8 +2,8 @@ THE LEDGER: PROMISES AND FACTS (version 3)
 
 STATUS
   Proposed by Z on 2026-10-14. Nothing here is adopted yet. It becomes the group's rules the
-  way rule 7 says: posted in the chat for 7 days, at least four members write "yes", and at
-  most one writes "object". Versions 1, 2 and 2.1 were never adopted either; all are kept in
+  way rule 7 says: posted in the chat for 7 days, at least four active members write "yes",
+  and at most one writes "object". Versions 1, 2 and 2.1 were never adopted either; all are kept in
   archive/. The week of the vote is also a dry run: entries 3, 8 and 9 are the cheapest to
   check. Post what you saw, and how many minutes it took.
 
@@ -25,17 +25,17 @@ THE RULES
      reopened, the same way: two people, member or not, post the same different result and
      what they saw. One person's disagreement goes under the entry as a NOTE, and the entry
      stays as it was.
-  4. If people saw different things, the entry stays open with both posts on it. After 30 days
-     without agreement it is marked CAN'T TELL.
+  4. An entry kept open or reopened under rule 3 carries both results. After 30 days without
+     closing under rule 3 it is marked CAN'T TELL.
   5. Money moves wallet to wallet, as promises kept. No pool and no treasury. The group makes no
      new token. The only token used here is $FEBU. A broken promise's bond goes to the
      incinerator (see Bond). No entry, and no post in the group's name, states or implies a
      price for $FEBU.
   6. Each week a different member checks both ways: every result posted in the chat that week
      is in this file, and every SEEN line in this file has its post in the chat. That member
-     makes the week's changes, starting from the file whose SHA-256 was last posted, and posts
-     the new file's SHA-256 somewhere the group does not control. The ledger is the file that
-     matches the last posted hash, wherever it is served.
+     adds whatever was posted that week and is not yet in the file, starting from the file
+     whose SHA-256 was last posted, and posts the new file's SHA-256 somewhere the group does
+     not control. The ledger is the file that matches the last posted hash, wherever it is served.
   7. A rule changes, and anything is done in the group's name, only after it has been posted in
      the chat for 7 days, at least four active members have written "yes" (every active member,
      if fewer than five are active), and at most one has written "object". The old wording
@@ -49,7 +49,7 @@ WORDS USED HERE
            rules 3, 6 and 7 until they post again.
   Bond     the $FEBU a promise names under IF BROKEN. It is paid from the promiser's own wallet
            to the incinerator, 1nc1nerator11111111111111111111111111111111, where nobody can
-           spend it; the transaction is the link. Whoever owes a bond posts no new promise until
+           spend it, or burned from that wallet; either way the transaction is the link. Whoever owes a bond posts no new promise until
            it is paid. A promise may name no bond; then IF BROKEN says "none".
   Result   HOLDS or DOESN'T HOLD for a fact, KEPT or BROKEN for a promise. "The same result" is
            the same word on the same WRONG IF lines.
@@ -203,18 +203,19 @@ THE ENTRIES
     KNOWN BY  ledger.txt on that date, and its Internet Archive copies:
                 https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
     IF BROKEN none. We say so in the chat, and rewrite this or stop.
-    SEEN      results, on or after the date
+    SEEN      nobody yet
 
   FACT 8. (Zurandol, 2026-10-14)
     SAYS      The $FEBU creator-fee account from fact 6 has paid nothing out since 2026-09-14,
-              and held 11.125 SOL on 2026-10-14, up from 3.873 SOL on 2026-09-22.
+              and held 11.125 SOL on 2026-10-14, up from 3.873 SOL at the start of 2026-09-22
+              (00:00 UTC).
     LINK      The account's payments out, newest first:
                 https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
               Its balance, and its balance history, on the account page:
                 https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj
     WRONG IF  a payment out after 2026-09-14 shows; or the balance on the day you look is below
-              11.12 SOL and no payment out explains it; or the balance on 2026-09-22 was not
-              between 3.8 and 3.95 SOL.
+              11.12 SOL and no payment out explains it; or the balance at any time on 2026-09-22
+              was not between 3.8 and 4.1 SOL.
     NOTE      The account holds wrapped SOL, so explorers show the amount as WSOL. Newer trades
               keep the fee in the pool until someone sweeps it, so this understates what has
               been earned. Reading the 09-22 balance takes a while; say what you looked at.
@@ -222,9 +223,8 @@ THE ENTRIES
 
   FACT 9. (Zurandol, 2026-10-14)
     SAYS      Fact 6's row 20 (2026-07-22, 66.44 SOL) was run by a Squads multisig, not by the
-              febu wallet, and in the same transaction that multisig set a new creator on another
-              coin the febu wallet had made that day. The program accepted it, so the multisig is
-              one of pump.fun's own admin wallets.
+              febu wallet, and in the same transaction that multisig set a new creator on
+              another coin.
     LINK      The transaction:
                 https://solscan.io/tx/3rJRommVgnUg7c3YtR1cRLbN7ojdGRv428szwUMwawkXXS5N2NsMYpmyPPd7FvEM9L1DziB1pRmmEcqKKHTQ4cJU
               Its signer is F2fRg5Etr3tW58rcNezPJcT9iZ5AedmE1SWPFTAZR9tk. Its program logs list
@@ -233,9 +233,10 @@ THE ENTRIES
               UqN2p5bAzBqYdHXcgB6WLtuVrdvmy9JSAtgqZb3CMKw.
     WRONG IF  the transaction's signer is not F2fRg5Et...; or its logs show no AdminSetCreator;
               or UqN2p5bA... is not among its accounts; or the transaction failed.
-    NOTE      Why it is here: the "community takeover" in KNOWN BUGS 5 is this same
-              instruction, run by this same wallet. Whoever holds a coin's fee holds it at that
-              wallet's pleasure. Z also read UqN2p5bA... inside pump.fun's settings account on
+    NOTE      Only an authority pump.fun has named can set a coin's creator, and the program
+              accepted this one, so the multisig is one of pump.fun's own admin wallets. Why it
+              is here: the "community takeover" in KNOWN BUGS 5 is this same instruction, run by
+              this same wallet. Whoever holds a coin's fee holds it at that wallet's pleasure. Z also read UqN2p5bA... inside pump.fun's settings account on
               the chain; that needs a script and is not part of this fact.
     SEEN      nobody yet
 
@@ -260,9 +261,9 @@ OPEN QUESTION
   this list cannot hold it.
 
 WHEN THIS HAS FAILED
-  PROMISE 7 says it: 30 days after these rules are adopted, fewer than three entries have
-  closed under rule 3, or none of the closed entries was written by someone other than Z. If
-  it is BROKEN we say so in the chat, and rewrite this or stop.
+  This is PROMISE 7. If, 30 days after these rules are adopted, fewer than three entries have
+  closed under rule 3, or none of them was written by someone other than Z, it is BROKEN: we
+  say so in the chat, and rewrite this or stop.
 
 KNOWN BUGS (rule 8)
   1. This file lives in Z's repository and on Z's site. If Z stops, it stops being updated.
@@ -274,7 +275,8 @@ KNOWN BUGS (rule 8)
   3. Facts 4 and 5 rest on a scripture copy Z saved. Fix: find a copy someone else saved.
      Fix by: 2026-11-14, or say there is none.
   4. Most chain links point at one explorer, solscan.io. Fix: give each a second explorer.
-     Fix by: 2026-11-14.
+     Fix by: 2026-11-14. Fixed 2026-10-14: the group site shows an explorer.solana.com link
+     beside every solscan.io link; the file itself still names one.
   5. Every trade in $FEBU pays a fee to the wallet that created it, the one that sold its
      stake (facts 2 and 6). So anything that raises $FEBU trading pays that wallet, including
      buying $FEBU for a bond. pump.fun moves a coin's fee only by its own decision, with its own
@@ -291,6 +293,7 @@ RISKS WE ACCEPT
   - A bond is paid by the promiser, or not. Nothing holds it in advance. An unpaid bond stays
     under the name, with BROKEN, and that is the whole enforcement.
   - Two members who agree in advance can close a bonded promise KEPT.
+  - Two people who agree in advance can hold any entry open until CAN'T TELL.
   - One person with two names, and a result an AI wrote that a person signed without opening
     the link, cannot be told from the record.
   - Members silent for 90 days stop counting, so a few active members can change the rules.
@@ -335,20 +338,31 @@ CHANGES TO THE RULES
     https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
   The folder timestamps/, next to this file, holds OpenTimestamps proofs that the version
   adding this line, and each file in archive/, existed by the time of a Bitcoin block.
+
   2026-10-14. Version 3 replaces version 2.1 after four outside reviews and a re-reading of
   the chain, before any entry was checked. Version 2.1 as last served is kept word for word in
   archive/08_CLAIMS_LEDGER_v2.1-final.txt
     SHA-256 3d9f5e367fbca21dc8c0a7fe239d3475563b9160e0596f7b03ee1af43ef4b4e5
-  Rule 3: a disagreement or a reopening needs two people, the same bar as closing; one person's
-  disagreement is a NOTE. Why: as written, one post from anyone could hold every entry open.
-  Rule 5: a bond, in $FEBU, to the incinerator; no price talk. Why: a broken promise cost a word.
-  Rule 6: the ledger is the file matching the last posted hash, and the weekly member makes the
-  week's changes. Why: the file was Z's (KNOWN BUGS 1).
+
+  Rule 3: a disagreement or a reopening needs two people, the same bar as closing; one
+  person's disagreement is a NOTE. Why: one post from anyone could hold every entry open.
+  Rule 4: reworded to match.
+
+  Rule 5: a bond, in $FEBU, to the incinerator; no price talk. Why: a broken promise cost a
+  word.
+
+  Rule 6: the ledger is the file matching the last posted hash, and the weekly member adds the
+  week's posts. Why: the file was Z's (KNOWN BUGS 1).
+
   Rule 7 and Member: members silent for 90 days do not count. Why: four quiet members would
   stop every change for good.
+
   HOW TO CHECK AN ENTRY: a result names one thing not already written. Why: a copied result
   looked like a check.
-  WHEN THIS HAS FAILED is now PROMISE 7, an entry like any other. Facts 8 and 9 added. KNOWN
-  BUGS 5: a proposed close. RISKS WE ACCEPT: four lines added.
+
+  WHEN THIS HAS FAILED is now PROMISE 7, an entry like any other. Facts 8 and 9 added.
+  KNOWN BUGS 5: a proposed close. KNOWN BUGS 4: fixed on the site. RISKS WE ACCEPT: five
+  lines added.
+
   Dropped on review: a vault, pay for checking, and a takeover of the fee. The reviews are in
   Z's repository and not public yet.
