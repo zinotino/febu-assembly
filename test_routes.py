@@ -87,9 +87,8 @@ def test():
     assert ots[0] == ("file", "/timestamps/ledger-d3e17658.txt.ots") and ots[1]["Content-Type"] == "application/octet-stream"
     assert csp(DEN, "/timestamps/ledger-d3e17658.txt.ots")
     assert "functions" not in CFG                                                                 # no member-facing function is left
-    lj = serve(DEN, "/ledger.json")                                                               # the read-only index: a file, strict CSP, any origin may read it
-    assert lj[0] == ("file", "/ledger.json") and csp(DEN, "/ledger.json") and lj[1]["Access-Control-Allow-Origin"] == "*"
-    assert "ledger.json" in FILES and "Access-Control-Allow-Origin" not in serve(DEN, "/ledger.txt")[1]   # only that one file
+    assert serve(DEN, "/ledger.json")[0] == ("file", "/ledger.json") and csp(DEN, "/ledger.json")   # the read-only index: a file, strict CSP
+    assert "ledger.json" in FILES                                                                 # (Vercel's own default lets any origin read a static file)
     assert serve(DEN, "/z")[0] == ("rewrite", "/index.html")                                     # no findings page
     assert serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")
     assert serve(DEN, "/start")[0] == ("redirect", 308, "/febu-assembly.html#check")

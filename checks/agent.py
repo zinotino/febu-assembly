@@ -2,9 +2,13 @@
 USED HERE, Saw), so nothing here posts, signs or edits a file.
 
     python checks/agent.py status                  the ledger's and process.md's hashes, the members, each entry's state
-    python checks/agent.py run 8                   fact 8's scripts from checks/, then one line saying what ran
+    python checks/agent.py run 8                   fact 8's scripts from checks/, then one line saying what ran and where
     python checks/agent.py draft 8 --as Laura      run them, then print a CHECK post with Saw: and New: left empty
     python checks/agent.py lint post.txt           would the weekly page take this post? ("-" reads stdin)
+
+run and draft take --rpc https://your-node to read through another Solana node than the default. The Script: line ends in
+"via <host>" (the host only: a path or query can hold an API key, and it is cut from the output too). lint takes several
+posts, the week's chat for example, and notes where two members' results on one entry name the same source.
 
 draft never writes "I opened the link myself." and never fills Saw: or New:: only a person who opened the link can.
 lint refuses the post until they are there, by the weekly page's own reading of it (assets/claims.js, needs node), and
@@ -21,14 +25,23 @@ import shutil
 import subprocess
 import sys
 import threading
+import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "checks"
+sys.path.insert(0, str(HERE))   # common.py sits beside this file
+import common  # noqa: E402
 # Fact -> the scripts that read it. Fact 8 needs both reads (process.md, section 5). Fact 7 is a promise: no script.
 SCRIPTS = {1: ["resolve.py fact1"], 2: ["fact2.py"], 3: ["resolve.py fact3"], 4: ["resolve.py fact4"], 5: ["fact5.py"],
            6: ["fact6.py"], 8: ["resolve.py fact8", "resolve.py door2"], 9: ["resolve.py test9"]}
 AUTHOR = "Zurandol"   # wrote every script in checks/ (process.md section 5); the Script: line names them (rule 3)
+# Where an entry's scripts read from, named on the Script: line so two results can be told apart by it. These facts read the
+# Solana node (SOLANA_RPC, or --rpc, or common.py's default); these read the link the entry itself carries, found with the
+# same patterns resolve.py and fact5.py use.
+RPC_FACTS = {1, 2, 6, 8, 9}
+LINK_FACTS = {3: r"https://web\.archive\.org/web/\d{14}if_/\S+", 4: r"https://\S+/scripture\.html", 5: r"LINK\s+(https://\S+)"}
+LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 SCRIPT_TIMEOUT = 600   # seconds per script; fact 8's door 2 takes about three minutes
 VERDICT = re.compile(r"^verdict[^:\n]*:\s*(HOLDS|DOESN'T HOLD|CAN'T TELL)", re.M)
 NAME = re.compile(r"[^\W_][\w .'-]{0,39}")   # a name as it is written in the chat: one line, nothing the post's format reads
@@ -45,11 +58,13 @@ const input = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const claims = require(input.claims), p = claims.parse(input.text), r = claims.review(p, input.data, input.now);
 const lines = input.text.replace(/\r\n?/g, '\n').split('\n');
 const solid = s => /[A-Za-z0-9]/.test(s);   // "." and "?" are not an answer; "none" is
-const extra = [];
+const extra = [], posts = [];
 p.votes.concat(p.entries).forEach(x => extra.push('line ' + x.at + ': a ' + x.type + ' post is not a check, and lint reads check posts only'));
 p.checks.forEach(c => {
   const name = c.kind + ' ' + c.num, block = [];
   for (let i = c.at - 1; i < lines.length && lines[i].trim(); i++) block.push(lines[i].trim());
+  const via = (block.map(l => l.match(/^Script: .* via (\S+)$/i)).find(Boolean) || [])[1] || null;
+  posts.push({kind: c.kind, num: c.num, who: c.who, via});
   if (!block.some(l => /^I opened the link myself\b/i.test(l))) extra.push(name + ': the line "I opened the link myself." is missing from the post');
   if (c.saw.some(s => !solid(s.text))) extra.push(name + ' has a Saw: line with nothing in it (a dot or a question mark is not an answer)');
   if (c.fresh && !solid(c.fresh)) extra.push(name + ' has a New: line with nothing in it');
@@ -59,7 +74,8 @@ p.checks.forEach(c => {
 console.log(JSON.stringify({
   checks: p.checks.length,
   held: r.held.map(h => h.post.kind + ' ' + h.post.num + ': ' + h.why).concat(extra),
-  add: r.add.reduce((n, a) => n + a.posts.length, 0)
+  add: r.add.reduce((n, a) => n + a.posts.length, 0),
+  posts
 }));
 """
 
@@ -84,6 +100,56 @@ def ledger_data():
     return data
 
 
+HOST = re.compile(r"[A-Za-z0-9.:\[\]-]+")
+# --rpc: http(s), a plain host or an IPv6 literal, a port, then anything printable. No user:password@, no space, no
+# non-ASCII, no control character: an error from the HTTP library echoes parts of the address, and the host goes into a post.
+RPC_URL = re.compile(r"(https?)://(?:([A-Za-z0-9.-]+)|\[([0-9A-Fa-f:]+)\])(?::(\d{1,5}))?(?:[/?#][!-~]*)?")
+
+
+def host_of(url):
+    """The host of an address, with its port if it has one, and nothing else: a path or query can hold a key, and this goes
+    into a post line, so anything but letters, digits and . : - [ ] reads as unknown."""
+    try:
+        p = urllib.parse.urlparse(url)
+        host = ("[%s]" % p.hostname if p.hostname and ":" in p.hostname else p.hostname or "") + (":%d" % p.port if p.port else "")
+    except ValueError:
+        return "unknown"
+    return host if HOST.fullmatch(host) else "unknown"
+
+
+def check_rpc(url):
+    """--rpc: the https address of a Solana node, or http for a node on this machine (common.py's own example)."""
+    m = RPC_URL.fullmatch(url)
+    if not m or (m.group(4) and int(m.group(4)) > 65535) or (m[1] == "http" and (m[2] or m[3]).lower() not in LOOPBACK):
+        raise Refused("--rpc takes the https address of a Solana node (http only for a node on your own machine)")
+    return url
+
+
+def is_loopback(via):
+    return re.sub(r":\d+$", "", via).strip("[]") in LOOPBACK
+
+
+def source_of(num, rpc=None):
+    """The host this entry's scripts read from, as the Script: line names it."""
+    if num in RPC_FACTS:
+        return host_of(rpc if rpc is not None else common.RPC)
+    try:
+        m = re.search(LINK_FACTS[num], common.entry(num))
+    except (KeyError, SystemExit):
+        m = None
+    return host_of(m.group(m.lastindex or 0)) if m else "unknown"
+
+
+def redact(text, url):
+    """The node's address cut to scheme and host in a script's output: its path, query or fragment can hold an API key."""
+    m = re.match(r"[A-Za-z]+://[^/?#]*", url or "")
+    if not m:
+        return text
+    text = text.replace(url, "%s://%s" % (url.split(":", 1)[0], host_of(url)))
+    rest = url[m.end():]
+    return text.replace(rest, "<cut>") if len(rest) >= 6 else text   # a part of it echoed alone, in a request line say
+
+
 def status_text():
     d = ledger_data()
     rows = ["ledger.txt %s | process.md %s" % (sha8("ledger.txt"), sha8("process.md")),
@@ -92,7 +158,7 @@ def status_text():
     for e in d["entries"]:
         rows.append("%-8s %-3d writer %-14s %d WRONG IF line%s, %d check%s, script %s" % (
             e["kind"], e["num"], e["writer"], e["lines"], "" if e["lines"] == 1 else "s", len(e["results"]),
-            "" if len(e["results"]) == 1 else "s", "yes" if e["num"] in SCRIPTS else "no"))
+            "" if len(e["results"]) == 1 else "s", "reads " + source_of(e["num"]) if e["num"] in SCRIPTS else "no"))
     return "\n".join(rows)
 
 
@@ -105,10 +171,15 @@ def verdict_of(outputs):
     return next((w for w in ("DOESN'T HOLD", "CAN'T TELL") if w in got), "HOLDS")
 
 
-def execute(num, say=lambda s: None):
-    """Run the entry's scripts: (the commands as typed, their outputs). A script that fails or hangs stops everything."""
+def execute(num, say=lambda s: None, rpc=None):
+    """Run the entry's scripts: (the commands as typed, their outputs). A script that fails or hangs stops everything.
+    rpc points the scripts that read the node at another one."""
     if num not in SCRIPTS:
         raise Refused("entry %d has no script in checks/: open its link and look" % num)
+    if rpc is not None and num not in RPC_FACTS:
+        raise Refused("entry %d reads a link, not the Solana node: --rpc does nothing here" % num)
+    url = check_rpc(rpc) if rpc is not None else common.RPC
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", **({"SOLANA_RPC": rpc} if rpc is not None else {})}
     if not _busy.acquire(blocking=False):
         raise Refused("another script run is still going: wait for it")
     try:
@@ -120,30 +191,32 @@ def execute(num, say=lambda s: None):
                 done = subprocess.run([sys.executable, str(HERE / name), *args], cwd=ROOT, capture_output=True, text=True,
                                       encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL, timeout=SCRIPT_TIMEOUT,
                                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                                      env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                                      env=env)
             except subprocess.TimeoutExpired:
                 raise Refused("python checks/%s ran over %d seconds and was stopped" % (spec, SCRIPT_TIMEOUT))
+            shown = redact(done.stdout, url) if num in RPC_FACTS else done.stdout
             if done.returncode:
-                raise Refused("python checks/%s failed:\n%s%s" % (spec, done.stdout, done.stderr))
+                raise Refused("python checks/%s failed:\n%s%s" % (spec, shown, redact(done.stderr, url)))
             cmds.append("python checks/" + spec)
-            outs.append(done.stdout)
+            outs.append(shown)
         return cmds, outs
     finally:
         _busy.release()
 
 
-def script_line(cmds, word, when):
-    """What ran and whose it is (the weekly page keeps both in the SEEN item), then what it said, on which ledger, when."""
-    return "Script: %s by %s said %s on ledger %s at %s" % (
-        " and ".join(cmds), AUTHOR, word or "no verdict", sha8("ledger.txt"), when)
+def script_line(cmds, word, when, source):
+    """What ran and whose it is (the weekly page keeps both in the SEEN item), what it said, on which ledger, when, and
+    where it read from: two results that name one source are one witness, so lint says so."""
+    return "Script: %s by %s said %s on ledger %s at %s via %s" % (
+        " and ".join(cmds), AUTHOR, word or "no verdict", sha8("ledger.txt"), when, source)
 
 
-def run_entry(num, say=lambda s: None):
+def run_entry(num, say=lambda s: None, rpc=None):
     """(the scripts' output, the closing Script: line)."""
-    cmds, outs = execute(num, say)
+    cmds, outs = execute(num, say, rpc)
     word = verdict_of(outs)
     when = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")   # the ledger's dates are UTC
-    return "\n".join(outs), script_line(cmds, word, when)
+    return "\n".join(outs), script_line(cmds, word, when, source_of(num, rpc))
 
 
 def check_name(who):
@@ -164,14 +237,14 @@ def draft_post(entry, who, date, word, script):
     return post
 
 
-def draft(num, who, say=lambda s: None):
+def draft(num, who, say=lambda s: None, rpc=None):
     """(the post, notes for the person). The entry and the name are checked before a script that can take minutes."""
     check_name(who)
     data = ledger_data()
     entry = next((e for e in data["entries"] if e["num"] == num), None)
     if not entry:
         raise Refused("the ledger has no entry %d" % num)
-    cmds, outs = execute(num, say)
+    cmds, outs = execute(num, say, rpc)
     word = verdict_of(outs)
     if word == "CAN'T TELL":
         raise Refused("the script says CAN'T TELL: that is not a result, so there is nothing to post")
@@ -181,11 +254,34 @@ def draft(num, who, say=lambda s: None):
         word = None
         notes.append("The script leaves part of this entry unsettled (NOT SETTLED in its output): the result and the "
                      "lines are yours to decide, and those lines are by hand.")
-    return draft_post(entry, who, when[:10], word, script_line(cmds, verdict_of(outs), when)), notes + [NEXT_STEP]
+    line = script_line(cmds, verdict_of(outs), when, source_of(num, rpc))
+    return draft_post(entry, who, when[:10], word, line), notes + [NEXT_STEP]
+
+
+def source_notes(posts, data):
+    """One note for each entry where two checkers (members other than the writer) name the same node: that is one witness,
+    not two. Only the facts that read the node, since --rpc is what changes it; a node on a member's own machine is
+    their own."""
+    writer = {e["num"]: e["writer"].lower() for e in data["entries"]}
+    members = {m.lower() for m in data["members"]}
+    by = {}
+    for p in posts:
+        via = (p["via"] or "").rstrip(".,;)").lower()   # a person's full stop after the host is not a second source
+        if p["num"] in RPC_FACTS and via and via != "unknown" and not is_loopback(via)                 and p["who"].lower() in members and p["who"].lower() != writer.get(p["num"]):
+            by.setdefault((p["kind"], p["num"], via), set()).add(p["who"])
+    return ["%s %d: %s all read via %s, which is one source, not two. What makes them two checks is the link each opened "
+            "by hand and the new thing each named (process.md, section 5); a second node (--rpc) is a second source."
+            % (kind, num, " and ".join(sorted(who)), via) for (kind, num, via), who in sorted(by.items()) if len(who) > 1]
 
 
 def lint(text, data, now=None):
     """The reasons the weekly page, or this helper, would hold this post back. An empty list means it would go in."""
+    return review(text, data, now)[0]
+
+
+def review(text, data, now=None):
+    """(the reasons to hold the post back, notes that hold nothing back). More than one post in the text is fine: the
+    notes compare them."""
     node = shutil.which("node")
     if not node:
         raise Refused("lint needs node (test_claims.js does too)")
@@ -196,11 +292,12 @@ def lint(text, data, now=None):
     if done.returncode:
         raise Refused("node failed:\n" + done.stderr)
     out = json.loads(done.stdout)
+    notes = source_notes(out["posts"], data)
     if not out["checks"]:
-        return ["no CHECK line found: the first line is CHECK FACT n | HOLDS or DOESN'T HOLD | lines 1,2 | Name | YYYY-MM-DD"]
+        return ["no CHECK line found: the first line is CHECK FACT n | HOLDS or DOESN'T HOLD | lines 1,2 | Name | YYYY-MM-DD"], notes
     if not out["held"] and not out["add"]:
-        return ["nothing to add: the ledger already has this result"]
-    return out["held"]
+        return ["nothing to add: the ledger already has this result"], notes
+    return out["held"], notes
 
 
 def read_post(arg):
@@ -210,6 +307,21 @@ def read_post(arg):
         return raw.decode("utf-16") if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else raw.decode("utf-8-sig")
     except (OSError, UnicodeError) as e:
         raise Refused("cannot read the post: %s" % e)
+
+
+def options(args, allowed):
+    """{--as: name, --rpc: node} from the words after the entry number. An option that is not allowed here, one given twice
+    or one with no value is refused: a typo (--rcp, --rpc=URL) or an empty $NODE must not run on the default node."""
+    got = {}
+    for i in range(0, len(args), 2):
+        name = args[i]
+        if name not in allowed or name in got:
+            raise Refused("%r is not an option here, or is given twice (this command takes %s; put a name with a space in "
+                          "quotes)" % (name, " ".join(allowed)))
+        if i + 1 >= len(args):
+            raise Refused("%s needs a value after it" % name)
+        got[name] = args[i + 1]
+    return got
 
 
 def main(argv):
@@ -222,17 +334,19 @@ def main(argv):
         if cmd == "status":
             print(status_text())
         elif cmd == "run" and num is not None:
-            out, line = run_entry(num, err)
+            out, line = run_entry(num, err, options(argv[3:], ("--rpc",)).get("--rpc"))
             print(out + "\n" + line)
         elif cmd == "draft" and num is not None:
-            if "--as" not in argv[:-1]:
+            opt = options(argv[3:], ("--as", "--rpc"))
+            if "--as" not in opt:
                 raise Refused("draft needs --as <your name in the chat>")
-            post, notes = draft(num, argv[argv.index("--as") + 1], err)
+            post, notes = draft(num, opt["--as"], err, opt.get("--rpc"))
             print(post, end="")
             err("\n".join(notes))
         elif cmd == "lint" and len(argv) > 2:
-            why = lint(read_post(argv[2]), ledger_data())
+            why, notes = review("\n\n".join(read_post(a) for a in argv[2:]), ledger_data())
             print("\n".join(why) if why else "ok: the weekly page would take this post")
+            print("".join("note: %s\n" % n for n in notes), end="")
             sys.exit(1 if why else 0)
         else:
             print(__doc__)

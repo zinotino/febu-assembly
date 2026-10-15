@@ -46,13 +46,6 @@
       "continue": true
     },
     {
-      "src": "/ledger\\.json",
-      "headers": {
-        "Access-Control-Allow-Origin": "*"
-      },
-      "continue": true
-    },
-    {
       "src": "/timestamps/.+\\.ots",
       "headers": {
         "Content-Type": "application/octet-stream"
