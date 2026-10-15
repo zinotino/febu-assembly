@@ -1,5 +1,4 @@
 HOW IT WORKS (the ledger in plain words, written 2026-10-14 by Z, checked by nobody yet)
-
 ONE SENTENCE
   A claim costs a link and a line saying what would prove it wrong; a check costs a click by two
   people who did not write it; the result goes in one text file that anyone can copy and nobody
@@ -19,6 +18,47 @@ HOW IT CONNECTS
   site is built from the file and adds nothing. The only way into the file is the weekly
   turn; the only way an entry closes is two SEEN lines; the only thing that counts is what
   the file shows.
+
+THE FOUR PARTS
+  1. The file. ledger.txt: FACT and PROMISE entries, eight rules, KNOWN BUGS, RISKS, CHANGES.
+     Served byte for byte. The pages are built from it and add nothing.
+  2. The people. Seven named members, no accounts, no scores. Two close an entry, two keep it
+     open, four say yes to a rule change, one per week adds the week's posts and publishes the
+     hash.
+  3. The outside record. Four things the group does not control: the GitHub history, the hash
+     posted outside the chat, a daily Internet Archive capture, and an OpenTimestamps proof in a
+     Bitcoin block. None of them stop an edit. Together they make every edit visible, with a date
+     nobody in the group set.
+  4. The bond. Optional, per promise, in $FEBU. BROKEN means the promiser sends it to the
+     incinerator and the transaction is the link. No new promise while a bond is owed. The group
+     never holds it.
+
+WHAT IT RUNS ON
+  GitHub for the history, Vercel for the pages (a static build and one daily call to the Internet
+  Archive), a public Solana RPC and explorer links for chain facts, web.archive.org, the
+  OpenTimestamps calendars and Bitcoin for the stamps, and the group chat for posts. It costs
+  nothing. If Vercel or GitHub vanish, the file survives in every archive and every copy. If the
+  Internet Archive vanishes, the Bitcoin proof survives. If the chat vanishes, the posts move; the
+  ledger does not.
+
+  Bitcoin is used for one thing: a timestamp no member could have forged. Not for money, not for
+  agreement, not for identity. That is the whole lean.
+
+WHAT IT CANNOT DO
+  - Hold a claim with no public record. "Febu is honest" cannot be an entry. "The fee account paid
+    nothing out since 09-14" can.
+  - Settle what a link means. It settles what a link shows. Interpretation stays in the chat.
+  - Work among strangers. It cannot tell one person from two names, or a real check from a copied
+    one beyond the "one new thing" rule.
+  - Pay anyone or make anyone look. If the seven do not check, PROMISE 7 breaks, and that is the
+    honest result. The week-one dry run exists to measure this before anyone argues about pay.
+  - Stop an edit. Anyone with the repository can edit; the edit cannot be hidden. The archive and
+    the stamps prove what the file was, not that the file was right.
+  - Bind anyone. No entity, no contract, no legal weight. A bond is kept by the rule and by shame,
+    not by code.
+  - Detect a machine. A check written by a model and posted by a person is undetectable; the AI
+    line is a rule, not a filter.
+  - Show that anyone outside the seven wants it. Seven people and 30 days will say.
 
 HOW IT ANSWERS FEBU
   Febu's pages name eleven problems: corrupt leaders, invented debt, repeating history, arrogance,
@@ -52,20 +92,6 @@ HOW IT ANSWERS FEBU
   repeating history                      a result cannot be un-posted; CAN'T TELL after 30 days
                                          is itself a record
 
-THE FOUR PARTS
-  1. The file. ledger.txt: FACT and PROMISE entries, eight rules, KNOWN BUGS, RISKS, CHANGES.
-     Served byte for byte. The pages are built from it and add nothing.
-  2. The people. Seven named members, no accounts, no scores. Two close an entry, two keep it
-     open, four say yes to a rule change, one per week adds the week's posts and publishes the
-     hash.
-  3. The outside record. Four things the group does not control: the GitHub history, the hash
-     posted outside the chat, a daily Internet Archive capture, and an OpenTimestamps proof in a
-     Bitcoin block. None of them stop an edit. Together they make every edit visible, with a date
-     nobody in the group set.
-  4. The bond. Optional, per promise, in $FEBU. BROKEN means the promiser sends it to the
-     incinerator and the transaction is the link. No new promise while a bond is owed. The group
-     never holds it.
-
 FOUR QUESTIONS FROM THE CHAT
   WitnesstoFebu read it as: a claim with a link, a WRONG IF and a bond; a cheap check; a result
   set by what the link shows; a record that builds up. Right, except the bond: only a promise
@@ -90,33 +116,6 @@ FOUR QUESTIONS FROM THE CHAT
      refuses anything. It costs two checkers a minute and earns nothing, because nothing is
      added up. Usefulness is decided by whether anyone bothers to check: an entry nobody needs
      stays OPEN. An easy entry could still count toward PROMISE 7 (RISKS WE ACCEPT).
-
-WHAT IT RUNS ON
-  GitHub for the history, Vercel for the pages (a static build and one daily call to the Internet
-  Archive), a public Solana RPC and explorer links for chain facts, web.archive.org, the
-  OpenTimestamps calendars and Bitcoin for the stamps, and the group chat for posts. It costs
-  nothing. If Vercel or GitHub vanish, the file survives in every archive and every copy. If the
-  Internet Archive vanishes, the Bitcoin proof survives. If the chat vanishes, the posts move; the
-  ledger does not.
-
-  Bitcoin is used for one thing: a timestamp no member could have forged. Not for money, not for
-  agreement, not for identity. That is the whole lean.
-
-WHAT IT CANNOT DO
-  - Hold a claim with no public record. "Febu is honest" cannot be an entry. "The fee account paid
-    nothing out since 09-14" can.
-  - Settle what a link means. It settles what a link shows. Interpretation stays in the chat.
-  - Work among strangers. It cannot tell one person from two names, or a real check from a copied
-    one beyond the "one new thing" rule.
-  - Pay anyone or make anyone look. If the seven do not check, PROMISE 7 breaks, and that is the
-    honest result. The week-one dry run exists to measure this before anyone argues about pay.
-  - Stop an edit. Anyone with the repository can edit; the edit cannot be hidden. The archive and
-    the stamps prove what the file was, not that the file was right.
-  - Bind anyone. No entity, no contract, no legal weight. A bond is kept by the rule and by shame,
-    not by code.
-  - Detect a machine. A check written by a model and posted by a person is undetectable; the AI
-    line is a rule, not a filter.
-  - Show that anyone outside the seven wants it. Seven people and 30 days will say.
 
 WHAT IT COULD BECOME
   - The one record of what febu said and did, with dates, that a holder can check without trusting

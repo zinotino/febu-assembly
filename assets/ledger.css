@@ -285,7 +285,7 @@ pre.post .first{display:block;margin:-3px -5px 3px;padding:2px 5px;color:#fff;ba
 
 /* your next move: a name, then what that name can do */
 .next{margin-top:1.2rem}
-.next>.bar{padding:6px 10px;font-size:.95rem}
+.next>.bar{flex-wrap:wrap;gap:.1rem .9rem;padding:6px 10px;font-size:.95rem}
 .names{display:flex;flex-wrap:wrap;gap:6px}
 .names>legend{float:left;width:100%}
 .name{position:relative}
@@ -353,3 +353,26 @@ pre.unread{max-height:22rem;overflow:auto;white-space:pre}
 /* how it works: the picture, full width, in a sunken frame; the SVG scales with the page */
 .how{margin:.6rem 0 1.1rem}
 .how img{display:block;width:100%;height:auto;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040}
+
+/* the banner's due line; your week as four steps; the reminder; background folded in place on how and process */
+.due{margin:.45rem 0 0;font-size:.86rem}
+.due b{margin-right:.4rem;color:#7a0000}
+.due time{font-weight:700}
+.steps{list-style:none;margin:0;padding:0}
+.st{display:grid;grid-template-columns:1.9rem 1fr;gap:.3rem .7rem;padding:.75rem 0 .6rem;border-top:2px groove #fff}
+.st:first-child{border-top:0;padding-top:.2rem}
+.st .n{display:grid;place-items:center;width:1.8rem;height:1.8rem;background:var(--hi);color:#fff;font-weight:700}
+.st h3{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:.25rem 0 .45rem}
+.st .chip{font:400 .72rem/1.3 var(--mono);letter-spacing:0;text-transform:none;padding:2px 7px;color:#000;background:#fff;
+  border:1px solid #808080}
+.st .chip.due{background:var(--note);border-color:#000}
+.st .chip.you{color:#fff;background:#075a2a;border-color:#075a2a}
+.st .todo{margin-top:.2rem}
+.remind{margin-top:1.1rem;padding-top:.2rem;border-top:2px groove #fff}
+.remind pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.fold>summary{cursor:pointer;list-style:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary h2{display:inline}
+.fold>summary::after{content:"\00a0+";font-weight:700}
+.fold[open]>summary::after{content:"\00a0\2212"}
+.fold>summary:hover h2{text-decoration:underline}

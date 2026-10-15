@@ -360,7 +360,16 @@
       var days = Math.floor((Date.parse(today()) - Date.parse(from)) / DAY);
       if (!from || !(days >= 0)) return null;
       var w = Math.floor(days / 7), start = Date.parse(from) + w * 7 * DAY;
-      return { who: order[w % order.length], after: order[(w + 1) % order.length], start: iso(start), end: iso(start + 6 * DAY) };
+      return { w: w, who: order[w % order.length], after: order[(w + 1) % order.length], start: iso(start), end: iso(start + 6 * DAY) };
+    };
+    var daysLeft = function (d) { return Math.round((Date.parse(d) - Date.parse(today())) / DAY); };
+    var left = function (n) { return n < 0 ? 'closed' : n === 0 ? 'today' : n + ' day' + (n === 1 ? '' : 's') + ' left'; };
+    each('[data-due]', function (t) { t.insertAdjacentText('beforeend', ' (' + left(daysLeft(t.dataset.due)) + ')'); });
+    var post = $('due-post'), copyBtn = post && post.parentNode.querySelector('button.copy');
+    var fill = function (text, t) {   // the reminder's dates: days left, and this week's turn
+      return text.replace(/\{days\}/g, post.dataset.by ? left(daysLeft(post.dataset.by)) : '')
+        .replace(/\{turn\}/g, t ? t.who : 'see the site').replace(/\{turnend\}/g, t ? t.end : 'the end of the week')
+        .replace(/\{next\}/g, t ? t.after : 'the next in order');
     };
     var showTurn = function () {
       var t = week();
@@ -369,7 +378,18 @@
           '. Next week: ' + t.after + '. A turn not done by the end of its week passes to the next member. Weeks are ' +
           'counted from ' + from + ', the date in STATUS, in Member order.';
       }
-      turn.querySelector('.turn-you').hidden = !(t && me === t.who);
+      each('.due-turn', function (s) { if (t) s.textContent = t.who + ', to ' + t.end; });
+      each('.turn-me', function (p) {   // each member's own week: this one, or k weeks on
+        if (!t) return;
+        var k = ((order.indexOf(p.dataset.name) - t.w % order.length) + order.length) % order.length;
+        var s = Date.parse(t.start) + k * 7 * DAY, chip = next.querySelector('.turn-chip[data-name="' + p.dataset.name + '"]');
+        p.textContent = k ? 'Yours in ' + k + ' week' + (k === 1 ? '' : 's') + ': ' + iso(s) + ' to ' + iso(s + 6 * DAY) + '.'
+          : 'Yours this week, to ' + t.end + '.';
+        if (chip) { chip.textContent = k ? 'in ' + k + ' week' + (k === 1 ? '' : 's') : 'this week: you'; chip.classList.toggle('you', !k); }
+      });
+      each('.turn-you', function (p) { p.hidden = !(t && me === t.who); }, next);
+      if (post) { post.textContent = fill(post.dataset.text || (post.dataset.text = post.textContent), t).replace(/\{today\}/g, today()); }
+      if (copyBtn) { copyBtn.dataset.copy = fill(copyBtn.dataset.text || (copyBtn.dataset.text = copyBtn.dataset.copy), t); }
     };
     next.addEventListener('change', function (e) {
       if (e.target.name !== 'me') return;

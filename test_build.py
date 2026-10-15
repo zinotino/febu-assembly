@@ -100,5 +100,18 @@ class ProcessTables(unittest.TestCase):
         self.assertTrue(out.startswith('<div class="tbl stack"><table>'))
 
 
+class Calendar(unittest.TestCase):
+    def test_events(self):
+        secs = build.sections(LEDGER + "\nKNOWN BUGS (rule 8)\n  1. One thing. Fix by: 2026-11-14.\n")[1]
+        ics = build.calendar_ics([("version 0", "2026-10-22"), ("the Saw line", "2026-10-22")],
+                                 ["Ann", "Bo Cat", "Zed"], "2026-10-14", secs)
+        self.assertIn("SUMMARY:Assembly vote closes: version 0; the Saw line", ics)
+        self.assertEqual(ics.count("SUMMARY:Assembly vote closes"), 1)
+        self.assertIn("DTSTART;VALUE=DATE:20261021\r\nDTEND;VALUE=DATE:20261028\r\nSUMMARY:Assembly weekly turn: Bo Cat",
+                      ics)
+        self.assertIn("SUMMARY:Assembly: known bug 1, fix by", ics)
+        self.assertEqual(ics.count("BEGIN:VEVENT"), 1 + 12 + 1)
+
+
 if __name__ == "__main__":
     unittest.main()

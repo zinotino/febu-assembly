@@ -1,0 +1,140 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//febu assembly//ledger.txt//EN
+BEGIN:VEVENT
+UID:vote-2026-10-22@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261022
+DTEND;VALUE=DATE:20261023
+SUMMARY:Assembly vote closes: version 3; the Saw line; the stop rule
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-10-14@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261021
+SUMMARY:Assembly weekly turn: CrypticK (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-10-21@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261021
+DTEND;VALUE=DATE:20261028
+SUMMARY:Assembly weekly turn: Crypto Fish (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-10-28@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261028
+DTEND;VALUE=DATE:20261104
+SUMMARY:Assembly weekly turn: Ksizzle (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-11-04@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261104
+DTEND;VALUE=DATE:20261111
+SUMMARY:Assembly weekly turn: Laura (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-11-11@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261111
+DTEND;VALUE=DATE:20261118
+SUMMARY:Assembly weekly turn: Merc (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-11-18@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261118
+DTEND;VALUE=DATE:20261125
+SUMMARY:Assembly weekly turn: WitnesstoFebu (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-11-25@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261125
+DTEND;VALUE=DATE:20261202
+SUMMARY:Assembly weekly turn: Zurandol (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-12-02@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261202
+DTEND;VALUE=DATE:20261209
+SUMMARY:Assembly weekly turn: CrypticK (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-12-09@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261209
+DTEND;VALUE=DATE:20261216
+SUMMARY:Assembly weekly turn: Crypto Fish (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-12-16@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261216
+DTEND;VALUE=DATE:20261223
+SUMMARY:Assembly weekly turn: Ksizzle (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-12-23@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261223
+DTEND;VALUE=DATE:20261230
+SUMMARY:Assembly weekly turn: Laura (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:turn-2026-12-30@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261230
+DTEND;VALUE=DATE:20270106
+SUMMARY:Assembly weekly turn: Merc (rule 6)
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:bug-1@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261115
+SUMMARY:Assembly: known bug 1, fix by
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:bug-2@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261115
+SUMMARY:Assembly: known bug 2, fix by
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:bug-3@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261115
+SUMMARY:Assembly: known bug 3, fix by
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+BEGIN:VEVENT
+UID:bug-4@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261115
+SUMMARY:Assembly: known bug 4, fix by
+URL:https://febu-ledger.vercel.app
+END:VEVENT
+END:VCALENDAR

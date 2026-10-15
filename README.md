@@ -18,7 +18,7 @@ findings).
 | `build.py`, `findings_html.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
-| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html` | Written by `build.py`. Don't edit them by hand. |
+| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
 
 ## Member flows
 
@@ -28,10 +28,12 @@ Each turns one job into one page and one message for the chat. None of them post
   saw on each, name one new thing on the page, pick your result. Copy waits until the new thing is filled in. The post's
   first line is the part a machine reads: `CHECK FACT 8 · HOLDS · lines 1,3 · Laura · 2026-10-15`. WRONG IF lines are
   numbered by clause, split at ", or" and "; or", the way `checks/resolve.py` names them.
-- **Your next move** (front page): pick your name to see the entries you can check, the open votes with their closing date
-  (the version from STATUS and the last "yes" or "object" date in the ledger; more subjects from one STATUS line
-  `Also up for the vote by 2026-10-22: the Saw line; the stop rule.`), and whose weekly turn it is. Weeks are counted from
-  the first date in STATUS, in Member order, on the reader's own clock.
+- **Your week** (front page): pick your name to see four numbered steps. Check: the entries open to you. Vote: what is
+  open, with its closing date (the version from STATUS and the last "yes" or "object" date in the ledger; more subjects
+  from one STATUS line `Also up for the vote by 2026-10-22: the Saw line; the stop rule.`). Weekly turn: when yours comes,
+  counted from the first date in STATUS in Member order, on the reader's own clock. Write. Under the steps, a reminder
+  post of what is due for anyone to paste into the chat, and `assembly.ics`: the vote's closing day, twelve weekly turns
+  and each known bug's fix-by day as all-day calendar events. The banner's Due line shows the same dates.
 - **The weekly turn** (`weekly.html`, rule 6): paste the week's chat. It reads the CHECK, VOTE and ENTRY posts and lists
   the SEEN lines to add in the ledger's layout, the SEEN lines with no post, the entries rule 3 would close, the votes
   against rule 7, and every line it could not read. You paste its blocks into `ledger.txt` (Editing in the browser).

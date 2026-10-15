@@ -23,6 +23,7 @@ The pages follow the texts' headings, not their line numbers: reword the texts a
 They load nothing from other sites. Styling is assets/findings.css plus assets/ledger.css; the browser side is
 assets/claims.js (tap to copy, and the hash checks).
 """
+import datetime
 import hashlib
 import html
 import json
@@ -623,6 +624,7 @@ def findings_page():
 PROCESS_DESC = ("The Assembly's whole process in one file: the ledger, the scripts that check it, money, the 30-day "
                 "clock and its stop rule, and the decisions waiting. Adds no rule.")
 PROCESS_CLOCK = "process.html#7-the-clock-from-now-to-a-decision"
+PROCESS_FOLD = ("1-why-it-exists", "9-what-it-cannot-do", "11-what-became-of-what-you-have-seen")   # folded in place
 
 
 def md_tables(out):
@@ -661,6 +663,10 @@ def process_page():
     body = re.sub(r'<h2 id="([^"]+)">', lambda m: '</section><section id="%s"><h2>' % m.group(1), body)
     body = '<section class="md-lead">' + body + "</section>"
     body = body.replace('<section class="md-lead"></section>', "")
+    for sid in PROCESS_FOLD:   # background, folded where it stands: the heading opens it
+        body = re.sub(r'<section id="%s"><h2>(.*?)</h2>(.*?)</section>' % re.escape(sid),
+                      r'<section id="%s"><details class="fold"><summary><h2>\1</h2></summary>\2</details></section>'
+                      % sid, body, count=1, flags=re.S)
     return page("process.html", "The process", h1.lower(), sub.lower(), '<div class="md">%s</div>' % body,
                 source=" " + mark, description=PROCESS_DESC)
 
@@ -819,9 +825,13 @@ def tests_page(text, ledger_secs):
                 "and on the Assembly's ledger.")
 
 
+HOW_FOLD = ("HOW IT ANSWERS FEBU", "FOUR QUESTIONS FROM THE CHAT", "WHAT IT COULD BECOME")   # reading, folded
+
+
 def how_page(text, ledger_secs):
     """how.txt as tests.txt is laid out, with a picture under THE PICTURE (assets/how-it-works.svg) and under
-    HOW IT CONNECTS (assets/how-it-connects.svg)."""
+    HOW IT CONNECTS (assets/how-it-connects.svg). The sections in HOW_FOLD, which how.txt keeps last, are one
+    folded window at the end: background, not the process."""
     title, secs = sections(text)
     doc = Doc(ledger_secs, "ledger.html")
 
@@ -835,8 +845,16 @@ def how_page(text, ledger_secs):
                                     "checkers, a voter), the chat with its ENTRY, CHECK and VOTE posts, the file "
                                     "ledger.txt, and the copies outside. Under the chat and the file, the weekly turn "
                                     "copies the week's posts into the file and posts its hash.")}
-    body = "\n".join('<section id="%s"><h2>%s</h2>%s%s</section>' % (
-        slug(h), html.escape(h), figs.get(short(h), ""), doc.blocks(to_lines(b), 2)) for h, b in secs)
+    def sec(h, b):
+        return '<section id="%s"><h2>%s</h2>%s%s</section>' % (slug(h), html.escape(h), figs.get(short(h), ""),
+                                                             doc.blocks(to_lines(b), 2))
+    core = [(h, b) for h, b in secs if short(h) not in HOW_FOLD]
+    more = [(h, b) for h, b in secs if short(h) in HOW_FOLD]
+    body = "\n".join(sec(h, b) for h, b in core)
+    if more:
+        body += ('<details class="win lead" id="more" data-open-wide><summary><span class="t">more</span><span class="q">'
+                 '%s</span></summary><div class="win-body">%s</div></details>'
+                 % (html.escape(", ".join(short(h).lower() for h, _ in more)), "\n".join(sec(h, b) for h, b in more)))
     h1, sub = titled(title)
     return page("how.html", "How it works", h1.lower(), sub, body, source=" from how.txt",
                 description="The Assembly's ledger in plain words: one sentence, one picture, how it answers febu, "
@@ -1013,57 +1031,111 @@ def turn_start(secs):
     return m.group() if m else None
 
 
+def calendar_ics(votes, members, start, secs):
+    """The ledger's dates as a calendar file, all-day events only: each vote's closing day, the weekly turns for
+    twelve weeks from the first date in STATUS in Member order (rule 6), and each known bug's fix-by day."""
+    def day(d):
+        return d.replace("-", "")
+
+    def plus(d, n):
+        return (datetime.date.fromisoformat(d) + datetime.timedelta(days=n)).isoformat()
+    ev = []
+    for by in sorted({b for _, b in votes if b}):
+        ev.append((by, plus(by, 1), "Assembly vote closes: " + "; ".join(v for v, b in votes if b == by), "vote-" + by))
+    if start:
+        for w in range(12):
+            d = plus(start, 7 * w)
+            ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)" % members[w % len(members)], "turn-" + d))
+    bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
+    for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z]).*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
+        ev.append((d, plus(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
+    out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
+    for a, b, what, uid in ev:
+        out += ["BEGIN:VEVENT", "UID:%s@febu-ledger.vercel.app" % uid, "DTSTAMP:%sT000000Z" % day(start or a),
+                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + what, "URL:" + SITE,
+                "END:VEVENT"]
+    return "\r\n".join(out + ["END:VCALENDAR"]) + "\r\n"
+
+
 def next_number(items):
     m = re.search(r"next entry is number (\d+)", " ".join(" ".join(it[1]) for it in items if it[0] == "text"))
     return int(m.group(1)) if m else 1 + max([int(it[2]) for it in items if it[0] == "entry"] or [0])
 
 
-def next_move(members, todo, votes, start):
-    """Pick your name, see your next move: the entries you can check (not yours, no SEEN line of yours yet), the open
-    votes with their closing dates, and whose weekly turn it is. One panel per name, written here; claims.js shows the
-    one picked and works out this week's turn from the device's date."""
+def next_move(members, todo, votes, start, posted, remind):
+    """Pick your name, see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
+    of yours yet), vote (what is open, with its closing date), the weekly turn (yours when the order reaches you) and
+    write. One panel per name, written here; claims.js shows the one picked, counts the days to each date and works
+    out the turns from the device's date. Under the steps: a post that reminds the group what is due, for anyone to
+    send, and the dates as a calendar file (assembly.ics)."""
+    def chip(text, cls="", **attrs):
+        return '<span class="chip%s"%s>%s</span>' % (" " + cls if cls else "", "".join(
+            ' data-%s="%s"' % (k, html.escape(v)) for k, v in attrs.items()), html.escape(text))
+
+    def step(n, title, chip_html, body):
+        return '<li class="st"><span class="n">%d</span><div><h3>%s %s</h3>%s</div></li>' % (n, title, chip_html, body)
+
     def panel(name):
         mine = [t for t in todo if name == "*" or (t[3] != name and not re.search(r"(?<!\w)%s(?!\w)" % re.escape(name), t[4]))]
         rows = "".join('<li><a href="#check-%s"><span class="num">%s %s</span><span class="says">%s</span></a></li>'
                        % (anchor(k, n), k.lower(), n, html.escape(s)) for k, n, s, _, _ in mine)
         if rows:
-            check = '<ul class="todo">%s</ul>' % rows
+            check, c = '<ul class="todo">%s</ul>' % rows, chip("%d open to you" % len(mine), "due")
         elif name != "*" and todo and all(t[3] == name for t in todo):
-            check = "<p>None: you wrote every open entry, and nobody checks their own (rule 3). Write one for the others.</p>"
+            check, c = ("<p>None: you wrote every open entry, and nobody checks their own (rule 3). Write one for the "
+                        "others.</p>", chip("none: all yours"))
         else:
-            check = "<p>None open to you right now.</p>"
+            check, c = "<p>None open to you right now.</p>", chip("none open")
         if name == "*":
             check = ('<p class="hint">Your result counts toward keeping an entry open or reopening it, not toward '
-                     'closing it (rule 3).</p>') + check
-            vote = "<p>Only members vote (rule 7).</p>"
-        elif votes:
-            vote = "".join(
-                '<p>Ledger %s: &ldquo;yes&rdquo; or &ldquo;object&rdquo; %s (rule 7).</p><p class="acts">'
-                '<button type="button" class="btn copy" data-copy="%s">Copy a yes</button>'
-                '<button type="button" class="btn copy" data-copy="%s">Copy an objection</button></p>'
-                % (html.escape(v), "by %s" % by if by else "within 7 days of the post that showed it",
-                   html.escape(CHAT.join(("VOTE YES", v, name, "{today}"))),
-                   html.escape(CHAT.join(("VOTE OBJECT", v, name, "{today}")) + "\nWhich line is wrong: \n"
-                               "What would change my mind: ")) for v, by in votes)
+                     'closing it (rule 3). Post it in the chat; any member adds the line.</p>') + check
+            vote, v = "<p>Only members vote (rule 7).</p>", chip("members only")
+            turn, t = "<p>Only members take the turn (rule 6).</p>", chip("members only")
         else:
-            vote = "<p>Nothing is up for a vote in the ledger.</p>"
-        return ('<div class="moves" data-who="%s" hidden><h3>Check</h3>%s<h3>Vote</h3>%s<h3>Write</h3>'
-                '<p><a href="write.html">Write an entry</a>: a fact, a link anyone can open, and what would prove it '
-                'wrong.</p></div>' % (html.escape(name), check, vote))
+            if posted.get(name):
+                check = '<p class="hint">You have posted %d check%s so far.</p>' % (
+                    posted[name], "" if posted[name] == 1 else "s") + check
+            if votes:
+                vote = "".join(
+                    '<p>Ledger %s: &ldquo;yes&rdquo; or &ldquo;object&rdquo; %s (rule 7).</p><p class="acts">'
+                    '<button type="button" class="btn copy" data-copy="%s">Copy a yes</button>'
+                    '<button type="button" class="btn copy" data-copy="%s">Copy an objection</button></p>'
+                    % (html.escape(v), "by %s" % by if by else "within 7 days of the post that showed it",
+                       html.escape(CHAT.join(("VOTE YES", v, name, "{today}"))),
+                       html.escape(CHAT.join(("VOTE OBJECT", v, name, "{today}")) + "\nWhich line is wrong: \n"
+                                   "What would change my mind: ")) for v, by in votes)
+                v = chip("by " + votes[0][1], "due", due=votes[0][1]) if votes[0][1] else chip("7 days from the post", "due")
+            else:
+                vote, v = "<p>Nothing is up for a vote in the ledger.</p>", chip("none open")
+            turn = ('<p class="turn-me" data-name="%s">Yours when the order reaches you%s.</p><p class="turn-you" hidden>'
+                    '<b>That is you this week.</b><a class="btn primary" href="weekly.html">Do the weekly turn</a></p>'
+                    '<p class="hint">Paste the week\'s chat. The page lists the SEEN lines to add, the entries that '
+                    'would close and the votes, for you to copy into the ledger (rule 6).</p>'
+                    % (html.escape(name), ", counted from %s" % start if start else ""))
+            t = chip("in Member order", "turn-chip", name=name)
+        write = ('<p><a href="write.html">Write an entry</a>: a fact, a link anyone can open, and one line for each '
+                 'part of it that would prove it wrong. The page lays it out for the ledger and the chat.</p>')
+        return ('<ol class="steps moves" data-who="%s" hidden>%s%s%s%s</ol>'
+                % (html.escape(name), step(1, "Check", c, check), step(2, "Vote", v, vote),
+                   step(3, "Weekly turn", t, turn), step(4, "Write", chip("any time"), write)))
 
     chips = "".join('<label class="name"><input type="radio" name="me" value="%s"><span>%s</span></label>'
                     % (html.escape(n), html.escape(n if n != "*" else "someone else")) for n in members + ["*"])
     turn = ('<div class="turn" data-from="%s" data-order="%s"><h3>Weekly turn (rule 6)</h3><p class="turn-now">One '
-            'member a week, in this order%s: %s. A turn not done by the end of its week passes to the next.</p>'
-            '<p class="turn-you" hidden><b>That is you this week.</b><a class="btn primary" href="weekly.html">Do the weekly '
-            'turn</a></p></div>'
+            'member a week, in this order%s: %s. A turn not done by the end of its week passes to the next.</p></div>'
             % (start or "", html.escape("|".join(members)), ", counted from %s" % start if start else "",
                html.escape(", ".join(members))))
-    return ('<section class="win next" id="next" aria-labelledby="next-h"><h2 class="bar" id="next-h">your next move'
-            '</h2><div class="win-body"><fieldset class="names"><legend>Pick your name</legend>%s</fieldset>'
-            '<p class="hint moves-none">Pick a name to see what you can check, what is up for a vote, and when your '
-            'weekly turn comes.</p>%s%s</div></section>'
-            % (chips, "".join(panel(n) for n in members + ["*"]), turn))
+    remind_html = ('<div class="remind"><h3>Remind the group</h3><p>What is due, as one post for the chat. Anyone '
+                   'can send it; the dates come from the ledger.</p><pre class="lit keep" id="due-post" data-by="%s">%s'
+                   '</pre><p class="acts"><button type="button" class="btn copy" data-copy="%s">Copy the reminder'
+                   '</button><a class="btn" href="assembly.ics" download>Add the dates to your calendar</a></p></div>'
+                   % (html.escape(votes[0][1] if votes and votes[0][1] else ""), html.escape(remind), html.escape(remind)))
+    return ('<section class="win next" id="next" aria-labelledby="next-h"><h2 class="bar" id="next-h">your week'
+            '<span class="q">pick your name, then the four steps</span></h2><div class="win-body"><fieldset class="names">'
+            '<legend>Pick your name</legend>%s</fieldset><p class="hint moves-none">Pick a name to see what you can '
+            'check, what is up for a vote, and when your weekly turn comes. The first line of every post is what the '
+            'weekly page reads: keep it as the buttons write it.</p>%s%s%s</div></section>'
+            % (chips, "".join(panel(n) for n in members + ["*"]), turn, remind_html))
 
 
 def one_sentence(how_secs):
@@ -1078,9 +1150,9 @@ def one_sentence(how_secs):
 def assembly_page(title, secs, steps_num, how_secs):
     """The Assembly's front page, for someone who has just followed a link: the task now and the group's goal in the
     banner, what this is in a sentence, three entries to check, each with its check card, and the other open ones
-    folded under them; then your next move by name, and the rest (every entry, how to check, who, the weekly turn,
-    writing an entry, the scripts). Z's findings and the four tests are reading, not the experiment: served, not
-    linked from here."""
+    folded under them; then your week by name (check, vote, the weekly turn, write, with what is due, a reminder
+    post and the calendar file), every entry, how to check, who and the scripts. Z's findings and the four tests are
+    reading, not the experiment: served, not linked from here."""
     doc = Doc(secs, "ledger.html")
     by = {short(h): b for h, b in secs}
     names = member_names(secs)
@@ -1113,6 +1185,30 @@ def assembly_page(title, secs, steps_num, how_secs):
                     ", ".join(html.escape(v) for v, _ in votes[:-1]) + (" and " if len(votes) > 1 else "")
                     + html.escape(votes[-1][0])))
     task += "</p>"
+    posted = {n: sum(1 for it in ents if re.search(r"(?<!\w)%s(?!\w)" % re.escape(n), seen(it[4]))) for n in names}
+    start = turn_start(secs)
+    by = votes[0][1] if votes and votes[0][1] else ""
+    due = []
+    if by:
+        due.append('vote closes <time data-due="%s">%s</time>' % (by, by))
+    if start:
+        due.append('weekly turn this week: <span class="due-turn">in Member order from %s</span>' % start)
+    due.append('<a href="assembly.ics" download>the dates as a calendar</a>')
+    task += '<p class="due"><b>Due</b> %s</p>' % " &middot; ".join(due)
+    remind = ["DUE" + CHAT + "{today}"]
+    if votes:
+        remind.append("Vote %s: %s. Post: VOTE YES%s<what>%s<your name>%s<date>."
+                      % ("by %s ({days})" % by if by else "within 7 days of the post", "; ".join(v for v, _ in votes),
+                         CHAT, CHAT, CHAT))
+    if open_:
+        remind.append("Open to check: %s%s. Post: CHECK FACT n%sHOLDS%slines 1,3%s<your name>%s<date>."
+                      % (", ".join("%s %s" % (k.lower(), n) for _, k, n, _, _ in open_[:3]),
+                         " and %d more" % (len(open_) - 3) if len(open_) > 3 else "", CHAT, CHAT, CHAT, CHAT))
+    if start:
+        remind.append("Weekly turn this week, to {turnend}: {turn}. Next: {next}.")
+    if goal:
+        remind.append("Goal (PROMISE %s): %d of %d entries closed." % (goal[2], shut, len(ents)))
+    remind = "\n".join(remind + [SITE])
     if goal:
         task += ('<p><strong>The group&rsquo;s goal</strong> (<a href="ledger.html#%s">PROMISE %s</a>): %s %s '
                  'Closed so far: %d of %d.</p>' % (anchor("PROMISE", goal[2]), goal[2],
@@ -1124,7 +1220,7 @@ def assembly_page(title, secs, steps_num, how_secs):
         return ('<section class="win" aria-labelledby="%s-h"><h2 class="bar" id="%s-h">%s</h2><div class="win-body">'
                 '<p>%s</p><p class="go"><a href="%s">%s</a></p></div></section>' % (key, key, title, text, href, go))
 
-    start = ('<section class="win start" id="start" aria-labelledby="start-h"><h2 class="bar" id="start-h">'
+    first_win = ('<section class="win start" id="start" aria-labelledby="start-h"><h2 class="bar" id="start-h">'
              'start here: check one claim<span class="q">%d of %d checked by someone else</span>'
              '</h2><div class="win-body"><p class="sentence">%s</p>%s%s'
              '<p class="go"><a href="how.html">How it works, in one picture</a> <a href="#every">Every entry</a></p>'
@@ -1135,17 +1231,11 @@ def assembly_page(title, secs, steps_num, how_secs):
              '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></summary>'
              '<div class="win-body"><ul class="entries">%s</ul>%s<p class="go"><a href="ledger.html">Read the whole '
              'ledger</a></p></div></details>' % (len(rows), done, "".join(rows), after))
-    body = (start + next_move(names, todo, votes, turn_start(secs)) + every +
+    body = (first_win + next_move(names, todo, votes, start, posted, remind) + every +
             check_section(secs, doc, steps_num) +
             '<div class="more">%s</div>' % "".join([
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
                       "(rule 3). Anyone at all can reopen one.", "people.html", "See what each one wrote and checked"),
-                small("weekly", "the weekly turn", "Paste the week's chat. The page lists the SEEN lines to add, the "
-                      "entries that would close and the votes, for you to copy into the ledger (rule 6).",
-                      "weekly.html", "Do the weekly turn"),
-                small("write", "write an entry", "A fact, a link anyone can open, and one line for each part of it that "
-                      "would prove it wrong. The page lays it out for the ledger and the chat.", "write.html",
-                      "Write an entry"),
                 small("scripts", "run a script", "Eight entries have a script that reads their record for you, with "
                       "Python 3 and no account or key. Say in your post that you ran one, and still open one link by "
                       "hand: until the Saw line is adopted, a script run alone is not a Saw. <code>python "
@@ -1354,6 +1444,8 @@ def main():
         LEDGER.write_bytes(raw)
     for name, out in pages.items():
         (ROOT / name).write_text(out, encoding="utf-8", newline="\n")
+    (ROOT / "assembly.ics").write_bytes(calendar_ics(open_votes(title, secs), member_names(secs), turn_start(secs),
+                                                     secs).encode("utf-8"))
     print("ledger.txt sha256 %s (%d bytes); %s; wrote %s; findings: %s" % (
         hashlib.sha256(raw).hexdigest(), len(raw), ", ".join("%s sha256 %s" % (p, d[:16]) for p, _, d in archives),
         ", ".join(pages), "%d claims %s" % (sum(counts.values()), dict(counts)) if counts else
