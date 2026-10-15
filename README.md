@@ -26,7 +26,13 @@ findings).
 
 ## One project
 
-This repo is the whole of https://febu-assembly.vercel.app: the Assembly's pages, the ledger, the claim and record API, and the unofficial archive of imfebu.com (the "den") that used to live in the private repo `febu-host`. One Vercel project, one Supabase project (`febu-host`, ref `tytebptpuiiemuxlaeab`).
+This repo is the whole of the Assembly: the pages, the ledger, the claim and record API, and the unofficial archive of imfebu.com (the "den"). It replaces two repos and two project names that were easy to confuse:
+
+| Old name | What it was | Now |
+|---|---|---|
+| `febu-host` (private GitHub repo) | The den, the scripture reader, the members page, and a proxy to this repo | Folded in here on 2026-10-15; the repo is archived. Every current file is here byte for byte. Only superseded page renders, the dropped draw page and earlier den bundles exist solely in its history. |
+| Vercel project `febu-assembly` | Deployed from `febu-host` | Deploys from this repo. https://febu-assembly.vercel.app is the front door. |
+| Vercel project `febu-ledger` | This repo, under another project name | Kept, same repo, until after the 2026-10-22 vote. `ledger.txt`'s own lines and the daily Internet Archive capture cite https://febu-ledger.vercel.app/ledger.txt, and changing the ledger's text restarts rule 7's seven days. After the vote: a dated CHANGED line moves the citation to https://febu-assembly.vercel.app/ledger.txt, `api/archive.js` captures that address too, and the old project redirects. |
 
 | Path | What it is |
 |---|---|
@@ -35,9 +41,10 @@ This repo is the whole of https://febu-assembly.vercel.app: the Assembly's pages
 | `api/keepalive.js` | A daily read so the free Supabase project is not paused. |
 | `test_routes.py` | Checks `vercel.json`: the Assembly's security headers sit on the Assembly's files only (the den needs inline styles and Supabase), `/` is the den here and the front page on the old domain, unknown paths reach the den. |
 
-`febu-ledger.vercel.app` is the same repo under its old project name. `ledger.txt`'s own lines and the daily Internet Archive capture cite it, so it keeps serving the same bytes until the ledger says otherwise. Its `/` still shows the front page; unknown paths still 404.
+**Two addresses, one rule.** Sign-in (the name claim, seconds and checks) lives only on https://febu-ledger.vercel.app. The den's scripts render other people's posts (its bundle has 16 `dangerouslySetInnerHTML`) and share browser storage with everything else on their address, so a member's token kept there would be one script bug from being read. Set `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` and `ASSEMBLY_STRANGERS` only in the `febu-ledger` project: the same code on febu-assembly.vercel.app then answers 503 "not set up", and nothing can be claimed there. Everything read-only is identical on both addresses. To end up with one address, the den would first have to go, or be rewritten without user-posted HTML.
 
-Environment variables the project needs (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (keep the same value on every project, or stranger hashes stop matching), `ASSEMBLY_STRANGERS`, `CRON_SECRET`.
+Environment variables (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (one value, kept), `ASSEMBLY_STRANGERS`, `CRON_SECRET`. The first four only in `febu-ledger`; `CRON_SECRET` in both.
+
 ## Member flows
 
 Each turns one job into one page and one message for the chat. None of them posts, stores or sends anything.
@@ -102,10 +109,8 @@ check rests on one explorer (known bug 4). `ledger.txt` itself keeps only the li
 
 ## Publishing
 
-Every push to `main` redeploys the Vercel project `febu-ledger`. Vercel first runs `python3 build.py` (the
-`buildCommand` in `vercel.json`), then serves the folder. https://febu-assembly.vercel.app forwards the
-Assembly's addresses to that project (`febu-host`'s `vercel.json`), so the links stay the same and `ledger.txt`
-arrives byte for byte. After a push, download https://febu-assembly.vercel.app/ledger.txt and check that its
+Every push to `main` redeploys the Vercel projects built from this repo (`febu-assembly`, and `febu-ledger` until it is retired). Vercel first runs `python3 build.py` (the
+`buildCommand` in `vercel.json`), then serves the folder, so `ledger.txt` arrives byte for byte. After a push, download https://febu-assembly.vercel.app/ledger.txt and check that its
 SHA-256 is the one the build printed (Vercel's build log prints it too).
 
 ### Editing in the browser, with no tools
@@ -264,9 +269,9 @@ What the claim protects and what it does not:
   would give them the key, keep the variables to the Production environment, and if you can, protect `main` (require a
   review; CODEOWNERS on `api/`, `build.py`, `vercel.json`, `claims.py` and `claims.sql`). That slows the browser-edit
   flow in "A second editor", which is the trade.
-- Claim on https://febu-ledger.vercel.app, never on febu-assembly.vercel.app. The second is the community site's
-  address: it forwards the pages but not `/api/claim`, and its own scripts share its browser storage, so a token kept
-  there would sit beside them. The messages `claims.py` prints use the first.
+- Claim on https://febu-ledger.vercel.app, never on febu-assembly.vercel.app. The den's scripts share that address's
+  browser storage, so a token kept there would sit beside them. Set the Supabase variables only in the `febu-ledger`
+  project and the other answers 503. The messages `claims.py` prints use the first.
 - Losing the claims table costs seven reissued codes and nothing else. The record's own durable copies are the exported
   SEEN lines in `ledger.txt`, the git history, the daily Internet Archive capture and the Bitcoin timestamps.
 - The site sends a strict content-security policy (`vercel.json`): its own scripts and styles only, no connections
