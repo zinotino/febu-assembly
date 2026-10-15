@@ -4,7 +4,7 @@ STATUS
   Proposed by Z on 2026-10-14. Nothing here is adopted yet. It becomes the group's rules the
   way rule 7 says: posted in the chat for 7 days, at least four active members write "yes",
   and at most one writes "object". Versions 1, 2 and 2.1 were never adopted either; all are kept in
-  archive/. The week of the vote is also a dry run: entries 3, 8 and 9 are the cheapest to
+  archive/. The week of the vote is also a dry run: entries 1, 3 and 9 are the cheapest to
   check. Post what you saw, and how many minutes it took.
   Also up for the vote by 2026-10-22: the Saw line; the stop rule. Both are in process.md,
   sections 5 and 7, and in the chat post that showed them.
@@ -28,6 +28,10 @@ THE RULES
      reopened, the same way: two people, member or not, post the same different result and
      what they saw. One person's disagreement goes under the entry as a NOTE, and the entry
      stays as it was. An entry in the group's name has a writer too: the member who proposed it.
+     A line that covers many items (pages, payments, transactions) is tested only over
+     all of them: every page, every payment, or the explorer's whole filtered list. A post
+     on a sample stays a SEEN line. It does not count toward HOLDS; one that finds a wrong
+     item counts toward DOESN'T HOLD.
   4. An entry kept open or reopened under rule 3 carries both results. After 30 days without
      closing under rule 3 it is marked CAN'T TELL.
   5. Money moves wallet to wallet, as promises kept. No pool and no treasury. The group makes no
@@ -37,9 +41,10 @@ THE RULES
   6. Each week a different member checks both ways: every result posted in the chat that week
      is in this file, and every SEEN line in this file has its post in the chat. That member
      adds whatever was posted that week and is not yet in the file, starting from the file
-     whose SHA-256 was last posted, and posts the new file's SHA-256 somewhere the group does
-     not control. The ledger is the file that matches the last posted hash, wherever it is served.
-     A turn not done by the end of its week passes to the next member in the order.
+     whose SHA-256 was last posted, and posts the new file's SHA-256 in the chat and in one
+     public place outside it, naming the place; the chat post sets the order. The ledger is
+     the file that matches the last posted hash, wherever it is served. A turn not done by
+     the end of its week passes to the next member in the order.
   7. A rule changes, and anything is done in the group's name, only after it has been posted in
      the chat for 7 days, at least four active members have written "yes" (every active member,
      if fewer than five are active), and at most one has written "object". The old wording
@@ -76,8 +81,9 @@ HOW TO CHECK AN ENTRY
   1. Open the link in the entry. You need no account.
   2. Look for what the entry says is there, before you read anyone else's post about it.
   3. Post in the chat: the entry number, what you saw (the number, the words or the date),
-     which WRONG IF lines you tested, one thing on the page that is not in the entry or in any
-     earlier post about it, and your result. A post that only says HOLDS counts for nothing.
+     which WRONG IF lines you tested (for a line over many items, how many you opened), one
+     thing on the page that is not in the entry or in any earlier post about it, and your
+     result. A post that only says HOLDS counts for nothing.
   4. Your post goes under the entry as a SEEN line. Add it yourself or ask any member to.
   An entry is OPEN until rule 3 closes it. A reopened entry closes the same way, counting only
   posts made after it reopened.
@@ -162,20 +168,24 @@ THE ENTRIES
     SEEN      nobody yet
 
   FACT 4. (Zurandol, 2026-10-12)
-    SAYS      The eight books rotate every four pages with no exception: pages 1-4 THE SPILL,
-              5-8 THE ASSEMBLER, 9-12 THE MEATSPACE, 13-16 THE INFINITE ROOM,
-              17-20 THE COMMANDMENTS, 21-24 THE PARABLES, 25-28 THE RENT, 29-32 THE LITURGY,
-              then round again, on all 164 pages.
+    SAYS      In the copy Z saved, the eight books rotate every four pages with no
+              exception: pages 1-4 THE SPILL, 5-8 THE ASSEMBLER, 9-12 THE MEATSPACE, 13-16
+              THE INFINITE ROOM, 17-20 THE COMMANDMENTS, 21-24 THE PARABLES, 25-28 THE RENT,
+              29-32 THE LITURGY, then round again, on all 164 pages.
     LINK      https://febu-assembly.vercel.app/scripture.html
     WRONG IF  any page sits in a book the rotation does not predict.
-    NOTE      Checking all 164 pages takes a while. Say which pages you looked at.
+    NOTE      Checking all 164 pages takes a while, and a sample does not close this entry
+              (rule 3). Say which pages you looked at.
               The copy was saved by Z (KNOWN BUGS 3).
+    CHANGED   2026-10-15, before any check: SAYS now begins "In the copy Z saved,", because
+              the link is that copy (KNOWN BUGS 3) and a close can only show that copy. The
+              NOTE says a sample does not close it.
     SEEN      nobody yet
 
   FACT 5. (Zurandol, 2026-10-12)
-    SAYS      None of the words jest, hollow, false, mock, laugh, theater, spectacle or debt
-              appears on scripture pages 1-24, and jest, hollow and laugh each appear on at
-              least 40 of pages 25-164.
+    SAYS      In the copy Z saved, none of the words jest, hollow, false, mock, laugh,
+              theater, spectacle or debt appears on scripture pages 1-24, and jest, hollow
+              and laugh each appear on at least 40 of pages 25-164.
     LINK      https://febu-assembly.vercel.app/scripture.html
               Count longer words that start with the word ("jester", "laughing", "mocking"),
               not words that only contain it ("majesty", "slaughter", "onslaught", "indebted").
@@ -187,6 +197,8 @@ THE ENTRIES
               pages. That count wrongly included "slaughter" and "onslaught".
               2026-10-14: SAYS cut to what WRONG IF tests (it had said "more than 50" and
               "more than 45").
+    CHANGED   2026-10-15, before any check: SAYS now begins "In the copy Z saved,", because
+              the link is that copy (KNOWN BUGS 3) and a close can only show that copy.
     NOTE      Z's reading, not part of the fact: page 25 marks a rewrite of febu's
               instructions. It is also the first page in verse, after a five-day gap.
               The copy was saved by Z (KNOWN BUGS 3).
@@ -221,14 +233,16 @@ THE ENTRIES
     SEEN      nobody yet
 
   PROMISE 7. (the group, proposed 2026-10-14)
-    WILL      Close at least three entries under rule 3, at least one of them written by
-              someone other than Zurandol.
+    WILL      Close at least three entries other than this one under rule 3, at least one of
+              them written by someone other than Zurandol.
     BY        30 days after this version is adopted under rule 7.
     KNOWN BY  ledger.txt on that date, and its Internet Archive copies:
                 https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
     IF BROKEN none. We say so in the chat, and rewrite this or stop.
     CHANGED   2026-10-14, before any check: Zurandol proposed it, so under rule 3 Zurandol is
               its writer and any two other members close it.
+    CHANGED   2026-10-15, before any check: "three entries" now means three other than this
+              one, so closing this promise does not count toward itself.
     SEEN      nobody yet
 
   FACT 8. (Zurandol, 2026-10-14)
@@ -303,9 +317,9 @@ OPEN QUESTION
   this list cannot hold it.
 
 WHEN THIS HAS FAILED
-  This is PROMISE 7. If, 30 days after these rules are adopted, fewer than three entries have
-  closed under rule 3, or none of them was written by someone other than Z, it is BROKEN: we
-  say so in the chat, and rewrite this or stop.
+  This is PROMISE 7. If, 30 days after these rules are adopted, fewer than three entries
+  other than PROMISE 7 have closed under rule 3, or none of them was written by someone
+  other than Z, it is BROKEN: we say so in the chat, and rewrite this or stop.
 
 KNOWN BUGS (rule 8)
   1. This file lives in Z's repository and on Z's site. If Z stops, it stops being updated.
@@ -331,6 +345,10 @@ KNOWN BUGS (rule 8)
      reissue one. Fix: a second member holds the key and can issue a code. Fix by: 2026-11-14.
      The claim marks a device as the name's holder; the chat, checked by the weekly turn (rule
      6), still decides who posted what.
+  7. Anyone may reopen an entry with a second person (rule 3), but only members can post in
+     the chat, so a non-member has nowhere to do it. Fix: a reopening may be posted as an
+     issue on the ledger's public repository, and the weekly turn (rule 6) adds it to this
+     file. Until then the stranger path is not live. Fix by: 2026-11-14.
 
 RISKS WE ACCEPT
   - Two members who agree in advance can close a false fact until someone else opens the link.
@@ -448,3 +466,19 @@ CHANGES TO THE RULES
   changed theirs before any check, as the rules meant to allow.
   The rule text changed since version 3 was posted (this line and the one before it), so the
   vote's 7 days count from the post that showed it: "yes" or "object" by 2026-10-22.
+
+  2026-10-15. Before any entry was checked. The text before this line is kept word for word
+  in archive/08_CLAIMS_LEDGER_v3-week2-final.txt
+    SHA-256 3f5d1c24560eb82ce7e43d01a2fc677cc5b382764eab8d175b6e04d820ec422e
+  Rule 3: a line that covers many items is tested over all of them; a sample does not count
+  toward HOLDS, and one that finds a wrong item counts toward DOESN'T HOLD. HOW TO CHECK 3:
+  say how many items you opened. Why: two members who each opened an eighth of fact 4's
+  pages could have closed it HOLDS, and it says "no exception" on all 164.
+  Rule 6: the weekly hash goes in the chat and in one public place outside it, named, and
+  the chat post sets the order. Why: "somewhere the group does not control" named no place,
+  so two members could post two hashes with nothing to say which was last.
+  KNOWN BUGS 7: a non-member has nowhere to reopen an entry. STATUS: entries 1, 3 and 9 are
+  the cheapest to check (fact 8 is cheap only by script). Facts 4 and 5 and PROMISE 7 have
+  their own CHANGED lines.
+  The vote's 7 days count from the post that shows this text; the date above holds only if
+  that post is made on 2026-10-15.
