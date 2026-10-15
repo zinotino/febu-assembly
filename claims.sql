@@ -14,3 +14,5 @@ alter table public.assembly_claims add column if not exists failed_at timestampt
 alter table public.assembly_claims enable row level security;
 -- The two public roles get nothing, so a later policy or a switched-off RLS cannot open the table by itself.
 revoke all on public.assembly_claims from anon, authenticated;
+-- The service key's role is named outright: a project whose default privileges skip new tables answers 403 otherwise.
+grant all on public.assembly_claims to service_role;
