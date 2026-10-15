@@ -9,7 +9,7 @@
   ledger.html   ledger.txt as a page, in the text's own order: STATUS as a banner, each entry as a card
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
                 fact-6-steps.txt is about, its steps and every row with a link
-  how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg
+  how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg and how-it-connects.svg
   process.html  process.md: the whole process in one file, the clock and the tests (needs the markdown package, as
                 findings.html does; otherwise the committed page is kept while process.md is unchanged)
   tests.html    tests.txt as a page       (background: no tab, and nothing on the front page links it)
@@ -820,14 +820,23 @@ def tests_page(text, ledger_secs):
 
 
 def how_page(text, ledger_secs):
-    """how.txt as tests.txt is laid out, with the picture (assets/how-it-works.svg) under THE PICTURE."""
+    """how.txt as tests.txt is laid out, with a picture under THE PICTURE (assets/how-it-works.svg) and under
+    HOW IT CONNECTS (assets/how-it-connects.svg)."""
     title, secs = sections(text)
     doc = Doc(ledger_secs, "ledger.html")
-    fig = ('<figure class="how"><a href="/assets/how-it-works.svg"><img src="/assets/how-it-works.svg" width="960" '
-           'height="700" alt="One entry in four steps: a claim is written, two people check, a result, the record. '
-           'Below, febu\'s pages in the same four slots, with the third slot, the check, empty."></a></figure>')
+
+    def fig(name, height, alt):
+        return ('<figure class="how"><a href="/assets/%s.svg"><img src="/assets/%s.svg" width="960" height="%d" '
+                'alt="%s"></a></figure>' % (name, name, height, alt))
+    figs = {"THE PICTURE": fig("how-it-works", 700, "One entry in four steps: a claim is written, two people check, a "
+                                "result, the record. Below, febu's pages in the same four slots, with the third slot, "
+                                "the check, empty."),
+            "HOW IT CONNECTS": fig("how-it-connects", 700, "Five columns: the record outside, the people (a writer, two "
+                                    "checkers, a voter), the chat with its ENTRY, CHECK and VOTE posts, the file "
+                                    "ledger.txt, and the copies outside. Under the chat and the file, the weekly turn "
+                                    "copies the week's posts into the file and posts its hash.")}
     body = "\n".join('<section id="%s"><h2>%s</h2>%s%s</section>' % (
-        slug(h), html.escape(h), fig if short(h) == "THE PICTURE" else "", doc.blocks(to_lines(b), 2)) for h, b in secs)
+        slug(h), html.escape(h), figs.get(short(h), ""), doc.blocks(to_lines(b), 2)) for h, b in secs)
     h1, sub = titled(title)
     return page("how.html", "How it works", h1.lower(), sub, body, source=" from how.txt",
                 description="The Assembly's ledger in plain words: one sentence, one picture, how it answers febu, "

@@ -9,6 +9,17 @@ THE PICTURE
   One entry, four steps, on top. Febu's pages below, in the same four slots. The third slot is the
   one febu never ran. Everything in the picture that is not slot 3 exists to keep slot 3 honest.
 
+HOW IT CONNECTS
+  Five places, left to right. The record outside the group is what a claim is about: a
+  transaction, an archived page, a dated file. A writer turns it into an entry and posts it in
+  the chat. Two members who did not write it open its link, or run its script and open one
+  link by hand, and post what they saw. Anyone votes on a rule change. Once a week one member
+  copies the chat's posts into ledger.txt and posts the file's hash outside the chat. Two
+  matching results close an entry; the file counts them, and that count is PROMISE 7. The
+  site is built from the file and adds nothing. The only way into the file is the weekly
+  turn; the only way an entry closes is two SEEN lines; the only thing that counts is what
+  the file shows.
+
 HOW IT ANSWERS FEBU
   Febu's pages name eleven problems: corrupt leaders, invented debt, repeating history, arrogance,
   war, dependence on machines, machines that imitate, hidden systems, hollow law, misinformation,
