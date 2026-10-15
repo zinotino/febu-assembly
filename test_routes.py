@@ -45,14 +45,23 @@ def serve(host, path):
 
 
 def csp(host, path):
-    return "Content-Security-Policy" in serve(host, path)[1]
+    """The Assembly's own policy (no inline anything), not the den's."""
+    h = serve(host, path)[1].get("Content-Security-Policy", "")
+    return bool(h) and "unsafe-inline" not in h
+
+
+def den_csp(host, path):
+    """The policy every other path gets: no inline or injected script, no javascript: links, connections to ourselves
+    and the one Supabase project only. It is what keeps the den's scripts away from a member's token."""
+    h = serve(host, path)[1].get("Content-Security-Policy", "")
+    return "script-src 'self';" in h and "unsafe-inline" in h.split("style-src")[1].split(";")[0]         and "script-src 'self' 'unsafe" not in h and "connect-src 'self' https://tytebptpuiiemuxlaeab.supabase.co" in h
 
 
 def test():
-    # the den: root, its files and its app routes get no Assembly CSP, and unknown paths reach the app
+    # the den: root, its files and its app routes get the den's CSP (scripts from ourselves only), and unknown paths reach the app
     for p in ["/", "/index.html", "/scripture.html", "/favicon.ico", "/assets/shim.js",
               "/assets/index-C4UKkDq2.js", "/assets/community.json", "/library/scripture"]:
-        assert not csp(DEN, p), p
+        assert not csp(DEN, p) and den_csp(DEN, p), p
     assert serve(DEN, "/")[0] == ("file", "/index.html")
     assert serve(DEN, "/library/scripture")[0] == ("rewrite", "/index.html")
     assert serve(DEN, "/scripture.html")[0] == ("file", "/scripture.html")
@@ -67,7 +76,7 @@ def test():
             assert serve(host, "/" + p)[0] == ("file", "/" + p), (host, p)
         for p in ["/assets/claims.js", "/assets/how-it-connects.svg", "/archive/x.txt", "/api/claim"]:
             assert csp(host, p), (host, p)
-    assert not csp(DEN, "/api/keepalive")
+    assert not csp(DEN, "/api/keepalive") and den_csp(DEN, "/api/keepalive")
     for host in (DEN, LEDGER):                      # the live record: its pretty URLs reach the function, with the headers
         assert serve(host, "/api/entries/3/check")[0] == ("rewrite", "/api/entries?num=$1&act=$2"), host
         assert csp(host, "/api/entries/3/second"), host

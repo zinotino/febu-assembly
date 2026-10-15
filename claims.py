@@ -17,8 +17,8 @@ import urllib.request
 
 import build
 
-SITE = "https://febu-ledger.vercel.app/api/claim"
-HOME = "https://febu-ledger.vercel.app/"       # the ledger's own origin: the community site shares febu-assembly's
+SITE = "https://febu-assembly.vercel.app/api/claim"
+HOME = build.FRONT                            # "/" on this address is the den, so the DM names the front page
 ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"                  # no 0, o, 1, l or i: the code is read out of a DM
 TABLE = "/rest/v1/assembly_claims"
 
@@ -88,7 +88,7 @@ def listing():
 def diagnose(code):
     """The setup step a status code from GET /api/claim?name=... points at (README, The one-time name claim)."""
     return {
-        503: "OFF. Step 2: set SUPABASE_URL and SUPABASE_SERVICE_KEY in the febu-ledger Vercel project, then redeploy.",
+        503: "OFF. Step 2: set SUPABASE_URL and SUPABASE_SERVICE_KEY in the febu-assembly Vercel project, then redeploy.",
         502: "ON, but the record does not answer. Step 1: run claims.sql once in the febu-host Supabase SQL editor "
              "(or the service key is wrong).",
         404: "ON, no codes yet. Step 3: python claims.py issue (with the two variables in your shell).",

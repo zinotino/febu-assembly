@@ -30,7 +30,7 @@ This repo is the whole of the Assembly: the pages, the ledger, the claim and rec
 |---|---|---|
 | `febu-host` (private GitHub repo) | The den, the scripture reader, the members page, and a proxy to this repo | Folded in here on 2026-10-15; the repo is archived. Every current file is here byte for byte. Only superseded page renders, the dropped draw page and earlier den bundles exist solely in its history. |
 | Vercel project `febu-assembly` | Deployed from `febu-host` | Deploys from this repo. https://febu-assembly.vercel.app is the front door. |
-| Vercel project `febu-ledger` | This repo, under another project name | Kept, same repo, until after the 2026-10-22 vote. `ledger.txt`'s own lines and the daily Internet Archive capture cite https://febu-ledger.vercel.app/ledger.txt, and changing the ledger's text restarts rule 7's seven days. After the vote: a dated CHANGED line moves the citation to https://febu-assembly.vercel.app/ledger.txt, `api/archive.js` captures that address too, and the old project redirects. |
+| Vercel project `febu-ledger` | This repo, under another project name | A second address for the same files, kept only until after the 2026-10-22 vote. `ledger.txt`'s own lines and the daily Internet Archive capture cite https://febu-ledger.vercel.app/ledger.txt, and changing the ledger's text restarts rule 7's seven days. After the vote: a dated CHANGED line moves the citation to https://febu-assembly.vercel.app/ledger.txt, `api/archive.js` captures that address too, the old project is deleted, and its routes in `vercel.json` and `test_routes.py` go with it. Nothing new points at it. |
 
 | Path | What it is |
 |---|---|
@@ -39,9 +39,13 @@ This repo is the whole of the Assembly: the pages, the ledger, the claim and rec
 | `api/keepalive.js` | A daily read so the free Supabase project is not paused. |
 | `test_routes.py` | Checks `vercel.json`: the Assembly's security headers sit on the Assembly's files only (the den needs inline styles and Supabase), `/` is the den here and the front page on the old domain, unknown paths reach the den. |
 
-**Two addresses, one rule.** Sign-in (the name claim, seconds and checks) lives only on https://febu-ledger.vercel.app. The den's scripts render other people's posts (its bundle has 16 `dangerouslySetInnerHTML`) and share browser storage with everything else on their address, so a member's token kept there would be one script bug from being read. Set `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` and `ASSEMBLY_STRANGERS` only in the `febu-ledger` project: the same code on febu-assembly.vercel.app then answers 503 "not set up", and nothing can be claimed there. Everything read-only is identical on both addresses. To end up with one address, the den would first have to go, or be rewritten without user-posted HTML.
+**One address.** Sign-in (the name claim, seconds and checks) and the den share https://febu-assembly.vercel.app, so they share browser storage: a script that runs in the den can read a member's token. What keeps one in from the other:
 
-Environment variables (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (one value, kept), `ASSEMBLY_STRANGERS`, `CRON_SECRET`. The first four only in `febu-ledger`; `CRON_SECRET` in both.
+- Every path that is not an Assembly file gets a content-security policy (the first route in `vercel.json`): scripts from this address only, no inline script, no `javascript:` links, connections to this address and the one Supabase project only. A post that smuggles in a script, an event handler or a `javascript:` link does nothing. Checked in a browser on 2026-10-15: with the policy on, the den's home, library and community pages load with no violations, and an inline script and a `javascript:` link are both refused.
+- The den's bundle puts raw HTML into the page in two places only, both react-tweet's rendering of a tweet's own text, and in one theme script the policy blocks. The count of 16 this file used to give was the string `dangerouslySetInnerHTML` appearing in React's own code. Posts and comments are drawn as text.
+- Not covered: a bug in the bundle's own code that a post can steer into running, which the policy does not stop; and the token is still stored in the browser and never expires (KNOWN BUGS 6). If either worries you, the den goes, and nothing else changes.
+
+`test_routes.py` checks both policies on every path. Environment variables (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (one value, kept), `ASSEMBLY_STRANGERS`, `CRON_SECRET`, all in the `febu-assembly` project, the first four for Production only. Until they are moved there from `febu-ledger`, `/api/claim` and `/api/entries` answer 503 on this address.
 
 ## Member flows
 
@@ -238,7 +242,7 @@ not switched on and everything else works as before.
 
 ### Switching it on
 
-Nothing below is done yet, and each step is Z's: they need the service key. `python claims.py status` reads the live
+Each step is Z's: they need the service key. Steps 1 to 3 were done on 2026-10-15 in the `febu-ledger` project; what is left is to set the same variables in `febu-assembly` (the one address). `python claims.py status` reads the live
 endpoint, needs no key, and names the first step still missing.
 
 Use a Supabase project of the Assembly's own (the free plan allows two), not febu-host's. The service key sits in the
@@ -247,7 +251,7 @@ would open the community's posts and uploads too.
 
 1. Create the project. In its SQL editor run `claims.sql` once: one table, row-level security on, no policies, and
    nothing granted to the public roles.
-2. In the febu-ledger Vercel project set `SUPABASE_URL` (the project URL) and `SUPABASE_SERVICE_KEY` (the service role
+2. In the febu-assembly Vercel project set `SUPABASE_URL` (the project URL) and `SUPABASE_SERVICE_KEY` (the service role
    key: never the publishable one, never in this repository) for Production only, so a preview deployment never sees
    them. Redeploy. `python claims.py status` should now say "ON, no codes yet".
 3. On your machine, with the same two variables in the shell for that one session, run `python claims.py issue`. It
@@ -267,9 +271,8 @@ What the claim protects and what it does not:
   would give them the key, keep the variables to the Production environment, and if you can, protect `main` (require a
   review; CODEOWNERS on `api/`, `build.py`, `vercel.json`, `claims.py` and `claims.sql`). That slows the browser-edit
   flow in "A second editor", which is the trade.
-- Claim on https://febu-ledger.vercel.app, never on febu-assembly.vercel.app. The den's scripts share that address's
-  browser storage, so a token kept there would sit beside them. Set the Supabase variables only in the `febu-ledger`
-  project and the other answers 503. The messages `claims.py` prints use the first.
+- The den's scripts share this address's browser storage with the token; see "One address" for what stands between them.
+  The messages `claims.py` prints link https://febu-assembly.vercel.app/febu-assembly.html.
 - Losing the claims table costs seven reissued codes and nothing else. The record's own durable copies are the exported
   SEEN lines in `ledger.txt`, the git history, the daily Internet Archive capture and the Bitcoin timestamps.
 - The site sends a strict content-security policy (`vercel.json`): its own scripts and styles only, no connections

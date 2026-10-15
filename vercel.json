@@ -2,6 +2,13 @@
   "buildCommand": "python3 build.py",
   "routes": [
     {
+      "src": "/(.*)",
+      "headers": {
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' https://tytebptpuiiemuxlaeab.supabase.co wss://tytebptpuiiemuxlaeab.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+      },
+      "continue": true
+    },
+    {
       "src": "/(?:(?:febu-assembly|how|people|process|weekly|write|ledger|tests)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|start(?:\\.html)?|api/(?!keepalive).+|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
       "headers": {
         "X-Content-Type-Options": "nosniff",
