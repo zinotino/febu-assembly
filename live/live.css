@@ -1,0 +1,71 @@
+/* The live record on the ledger page (live/live.js). Nothing new in palette or type: every colour is one of the den's
+   (assets/findings.css, assets/ledger.css). Each form opens as a small window of the den's own kind, title bar and
+   all, under the entry it is about. Tooltip yellow stays the colour for "not settled yet". */
+
+.live-note{margin:-.4rem 0 .9rem;padding:.4rem .8rem;font-size:.84rem;color:#000;background:#fff;border:1px dashed var(--navy)}
+.live-note::before{content:"\25CF\00a0";color:#075a2a}
+
+.live{margin:.9rem 0 0;padding-top:.75rem;border-top:2px groove #fff}
+.live>.acts{margin:0}
+.live .next{margin:.55rem 0 0;font-size:.82rem;color:#333}
+.live>.msg{margin:.55rem 0 0}
+.live>.msg:focus{outline:1px dotted var(--navy);outline-offset:2px}
+
+.btn:disabled,.btn:disabled:hover{color:#808080;text-shadow:1px 1px #fff;background:var(--silver-lt);cursor:not-allowed}
+.btn:disabled:active{border-color:var(--up);transform:none}
+
+/* a form: a window with a title bar and a close box, sunken fields on silver */
+.dialog{margin:.8rem 0 0;background:var(--silver-lt);border:2px solid;border-color:var(--up);
+  box-shadow:inset -1px -1px #808080,4px 4px 0 rgba(0,0,0,.25)}
+.dialog>.bar{justify-content:space-between;padding:3px 3px 3px 8px}
+.dialog .x{display:grid;place-items:center;flex:none;width:1.6rem;height:1.4rem;padding:0;color:#000;
+  font:700 1rem/1 var(--mono);background:var(--silver);border:2px solid;border-color:var(--up);cursor:pointer}
+.dialog .x:hover{background:#fff}
+.dialog .x:active{border-color:var(--down)}
+.dialog .x:focus-visible{outline:1px dotted #fff;outline-offset:1px}
+.dialog form{display:grid;gap:.9rem;padding:12px 14px 14px}
+.dialog .field{display:grid;gap:.25rem}
+.dialog .field .name,.dialog legend{color:var(--navy);font-size:.85rem;font-weight:700}
+.dialog .help{font-size:.78rem;color:#333}
+.dialog input[type=text],.dialog input[type=number],.dialog textarea{box-sizing:border-box;width:100%;margin:0;
+  padding:6px 7px;color:var(--ink);font:.92rem/1.45 var(--mono);background:#fff;border:2px solid;
+  border-color:var(--down);border-radius:0}
+.dialog textarea{min-height:4.4rem;resize:vertical}
+.dialog input[type=number]{width:8rem}
+.dialog :is(input,textarea):focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+.dialog fieldset{margin:0;padding:.3rem .8rem .5rem;border:2px groove #fff}
+.dialog legend{padding:0 .3rem}
+.dialog .choice,.dialog .tick{display:flex;align-items:center;gap:.55rem;min-height:2.75rem;color:#000;font-size:.9rem;
+  cursor:pointer}
+.dialog .choice{display:inline-flex;margin-right:1.4rem}
+.dialog .tick{align-items:flex-start;min-height:0;padding:.35rem 0}
+.dialog .tick input{margin-top:.1rem}
+.dialog input[type=radio],.dialog input[type=checkbox]{flex:none;width:1.15rem;height:1.15rem;margin:0;
+  accent-color:var(--hi);cursor:pointer}
+.dialog .msg{margin:0}
+.dialog .acts{margin:0}
+
+/* the checks under SEEN, folded until asked for */
+.seen-list>summary{cursor:pointer;color:var(--navy);font-weight:700;min-height:2rem;display:list-item}
+.seen-list>summary:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+.seen-list .hint{margin:.2rem 0 .5rem}
+.seen-list ul{margin:0;padding:0;list-style:none}
+.seen-list li{padding:.5rem .6rem;background:#fff;border:1px solid #808080}
+.seen-list li+li{margin-top:.4rem}
+.seen-list li p{margin:0 0 .2rem}
+.seen-list li p:last-child{margin:0}
+.seen-list .q{margin-right:.45em;color:var(--navy);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.seen-list .res{font-weight:700}
+.seen-list .res.v-yes{color:#075a2a}
+.seen-list .res.v-no{color:#a30000}
+.seen-list .mins{font-size:.8rem;color:#333}
+
+@media (max-width:40rem){
+  .dialog form{padding:10px}
+  .dialog input[type=text],.dialog input[type=number],.dialog textarea{font-size:16px}
+  .live>.acts .btn{flex:1 1 9rem}
+}
+@media (prefers-reduced-motion:no-preference){
+  .dialog{animation:live-open .14s steps(3,end)}
+  @keyframes live-open{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
+}

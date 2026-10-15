@@ -4,17 +4,20 @@ in the environment; it writes neither anywhere, and the codes are printed once a
     python claims.py issue           a code for every name on the ledger's Member line that has no row yet
     python claims.py reissue NAME    a fresh code for one name (a lost device): the old claim is cleared
     python claims.py list            each name: claimed when, wrong codes so far
+    python claims.py status          which setup step is missing, read from the live site (needs no key)
 """
 import hashlib
 import json
 import os
 import secrets
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 
 import build
 
+SITE = "https://febu-ledger.vercel.app/api/claim"
 ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"                  # no 0, o, 1, l or i: the code is read out of a DM
 TABLE = "/rest/v1/assembly_claims"
 
@@ -74,10 +77,32 @@ def listing():
             r["issued_at"][:10]))
 
 
+def diagnose(code):
+    """The setup step a status code from GET /api/claim?name=... points at (README, The one-time name claim)."""
+    return {
+        503: "OFF. Step 2: set SUPABASE_URL and SUPABASE_SERVICE_KEY in the febu-ledger Vercel project, then redeploy.",
+        502: "ON, but the record does not answer. Step 1: run claims.sql once in the febu-host Supabase SQL editor "
+             "(or the service key is wrong).",
+        404: "ON, no codes yet. Step 3: python claims.py issue (with the two variables in your shell).",
+        200: "ON. Codes are issued; python claims.py list shows who has claimed.",
+    }.get(code, "Unexpected answer %s: look at the function's log in Vercel." % code)
+
+
+def status():
+    name = members()[0]
+    try:
+        with urllib.request.urlopen(SITE + "?name=" + urllib.parse.quote(name), timeout=15) as r:
+            code = r.status
+    except urllib.error.HTTPError as e:
+        code = e.code
+    print(diagnose(code))
+
+
 def selfcheck():
     c = code()
     assert len(c) == 19 and c.count("-") == 3 and set(norm(c)) <= set(ALPHABET), c
     assert norm("AB12-CD34") == "ab12cd34" and len(hsh("x")) == 64
+    assert diagnose(503).startswith("OFF") and diagnose(502).startswith("ON, but") and diagnose(999).startswith("Unexpected")
 
 
 if __name__ == "__main__":
@@ -89,5 +114,7 @@ if __name__ == "__main__":
         reissue(sys.argv[2])
     elif cmd == ["list"]:
         listing()
+    elif cmd == ["status"]:
+        status()
     else:
         sys.exit(__doc__)

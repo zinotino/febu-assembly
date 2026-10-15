@@ -226,4 +226,22 @@ not switched on and everything else works as before.
 4. `python claims.py list` shows who has claimed. `python claims.py reissue Laura` clears a claim and prints a new
    code, for a lost device or a name locked by five wrong codes.
 
+5. `python claims.py status` asks the live site and names the step still missing (it needs no key).
+
 `node test_api.js` runs the endpoint against a fake database.
+
+### The live record's sign-in
+
+`live/server.py` is the prototype of the live record (seconds and checks posted from the ledger page; `python
+live/test_live.py` tests it). With `ASSEMBLY_CLAIMS_URL` set to the site's `/api/claim`, every post must carry the
+token this claim left on the device (`Authorization: Bearer`), and the record takes the poster's name from the claim
+endpoint's answer, not from what was typed. Without it the name is typed, which is fine on one machine and for no one
+else. Not deployed: the record runs on this machine only.
+
+**The stranger lane.** With `ASSEMBLY_STRANGERS=1` as well, a device with no claim may post a check, never a second,
+under a name that is not a member's (plain ASCII, however spaced or capitalised it is written). Rule 3 already says
+what that is worth: two people, member or not, posting the other result reopen a closed entry or split an open one, and
+only two members close one. The record keeps a salted hash of the poster's address (`live/salt`, not in git), never
+shows it, and takes one check per source per entry, five per source per day and six from outside the seven per entry.
+A bad or reissued token is refused, not treated as a stranger. A person with several addresses gets past all of
+this; the ledger lists that under RISKS WE ACCEPT.
