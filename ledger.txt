@@ -25,7 +25,7 @@ THE RULES
      writer have posted the same result and what they saw at the link. It is kept open, or
      reopened, the same way: two people, member or not, post the same different result and
      what they saw. One person's disagreement goes under the entry as a NOTE, and the entry
-     stays as it was.
+     stays as it was. An entry in the group's name has a writer too: the member who proposed it.
   4. An entry kept open or reopened under rule 3 carries both results. After 30 days without
      closing under rule 3 it is marked CAN'T TELL.
   5. Money moves wallet to wallet, as promises kept. No pool and no treasury. The group makes no
@@ -37,6 +37,7 @@ THE RULES
      adds whatever was posted that week and is not yet in the file, starting from the file
      whose SHA-256 was last posted, and posts the new file's SHA-256 somewhere the group does
      not control. The ledger is the file that matches the last posted hash, wherever it is served.
+     A turn not done by the end of its week passes to the next member in the order.
   7. A rule changes, and anything is done in the group's name, only after it has been posted in
      the chat for 7 days, at least four active members have written "yes" (every active member,
      if fewer than five are active), and at most one has written "object". The old wording
@@ -51,11 +52,13 @@ WORDS USED HERE
   Bond     the $FEBU a promise names under IF BROKEN. The promiser picks the amount, with no
            minimum, and a reader weighs the promise by it. A promise may name no bond; then
            IF BROKEN says "none". A fact never has one: a wrong fact costs its writer the
-           DOESN'T HOLD line. Once a promise is BROKEN, the promiser pays the bond from their
-           own wallet to the incinerator, 1nc1nerator11111111111111111111111111111111, where
-           nobody can spend it, or burns it from that wallet; either way the transaction is
-           the link. No contract holds it in advance: one that did would be the pool rule 5
-           forbids. Whoever owes a bond posts no new promise until it is paid.
+           DOESN'T HOLD line. Within 7 days of a promise closing BROKEN, the promiser pays the
+           bond from their own wallet to the incinerator,
+           1nc1nerator11111111111111111111111111111111, where nobody can spend it, or burns it
+           from that wallet; either way the transaction is the link. No contract holds it in
+           advance: one that did would be the pool rule 5 forbids. Unpaid after 7 days, the
+           entry says UNPAID until it is paid. Whoever owes a bond posts no new promise until
+           it is paid.
   Result   HOLDS or DOESN'T HOLD for a fact, KEPT or BROKEN for a promise. "The same result" is
            the same word on the same WRONG IF lines.
   Saw      you opened the link yourself. An AI may help you find something on the page. It
@@ -210,6 +213,8 @@ THE ENTRIES
     KNOWN BY  ledger.txt on that date, and its Internet Archive copies:
                 https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
     IF BROKEN none. We say so in the chat, and rewrite this or stop.
+    CHANGED   2026-10-14, before any check: Zurandol proposed it, so under rule 3 Zurandol is
+              its writer and any two other members close it.
     SEEN      nobody yet
 
   FACT 8. (Zurandol, 2026-10-14)
@@ -385,3 +390,13 @@ CHANGES TO THE RULES
   entry is worth having. RISKS WE ACCEPT: easy entries. None of this changes what a rule
   requires; it says what the text left for a reader to work out. Why: Z's post for the vote
   said a claim costs a bond, and a member read every claim as carrying one, burned by code.
+
+  2026-10-14. Three holes found on a re-read, before any entry was checked. The text as served
+  before this line is kept word for word in archive/08_CLAIMS_LEDGER_v3-answers.txt
+    SHA-256 6930c4f689a5054270fa5372d5d92feef7c314fe0faf24da32a4feb8dad50e72
+  Rule 3: an entry in the group's name has a writer, the member who proposed it. Why: PROMISE 7
+  was the group's, so no member was "other than its writer" and nobody could close it.
+  Bond: paid within 7 days of BROKEN, or the entry says UNPAID. Why: with no date, "owes"
+  never ran out and nothing in the record showed it.
+  Rule 6: a turn not done by the end of its week passes on. Why: one member skipping stopped
+  the weekly check, and KNOWN BUGS 2's fix rests on it.

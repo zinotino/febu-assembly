@@ -63,11 +63,11 @@ FOUR QUESTIONS FROM THE CHAT
   1. How big is a bond? The promiser picks it, in $FEBU, with no minimum. A reader weighs the
      promise by it: a promise backed by 10 $FEBU says less than one backed by a million. The
      group never says what that is worth in money (rule 5).
-  2. Does a smart contract burn it? No. Once a promise is BROKEN, the promiser sends the bond to
-     the incinerator, or burns it, and the transaction is the link. A contract holding bonds in
-     advance would be a pool, which rule 5 forbids, and code someone has to write and run, which
-     rule 8 calls a bug. An unpaid bond stays under the name as owed, and its owner posts no new
-     promise until it is paid. That is all the enforcement there is.
+  2. Does a smart contract burn it? No. Within 7 days of a promise closing BROKEN, the promiser
+     sends the bond to the incinerator, or burns it, and the transaction is the link. A contract
+     holding bonds in advance would be a pool, which rule 5 forbids, and code someone has to
+     write and run, which rule 8 calls a bug. Unpaid after 7 days, the entry says UNPAID, and
+     its owner posts no new promise until it is paid. That is all the enforcement there is.
   3. Why take part? Nobody is paid, and reputation here is a list, not a score: nothing is
      summed. A writer gets a fact anyone can cite without trusting them, once two others close
      it. A promiser gets believed: a promise with a date and a bond counts for more than a chat
