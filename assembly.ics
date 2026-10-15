@@ -14,7 +14,7 @@ UID:turn-2026-10-14@febu-ledger.vercel.app
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261014
 DTEND;VALUE=DATE:20261021
-SUMMARY:Assembly weekly turn: CrypticK (rule 6)
+SUMMARY:Assembly weekly turn: CrypticK (rule 6)\, a dry run: the vote is open
 URL:https://febu-assembly.vercel.app/febu-assembly.html
 END:VEVENT
 BEGIN:VEVENT

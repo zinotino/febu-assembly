@@ -311,6 +311,18 @@ def starts_block(L, j):
 ENTRY = re.compile(r"  (FACT|PROMISE) (\d+)\.\s*(?:\((.*)\))?\s*$")
 FIELD = re.compile(r"([A-Z]+(?: [A-Z]+)?)(?: {2,}| (?=[a-z])|$)")   # "SAYS      one", "IF BROKEN what"
 HEADLINE = {"FACT": "SAYS", "PROMISE": "WILL"}
+
+# What the site adds beside an entry, never in it. Fact 1: Solscan's $FEBU filter on the creator wallet's transfers
+# shows nothing (not even fact 2's sale), so point at the wallet's $FEBU account; checks/resolve.py fact1 derives it.
+FACT1_ACCOUNT = "https://solscan.io/account/6PeGko4hvJn8EioYxKera24TrKMfkGUVM7egzrRwNVTo"
+SITE_NOTES = {("FACT", "1"): (
+    '<p class="hint">Beside the entry, not part of it: Solscan&rsquo;s $FEBU filter on this wallet&rsquo;s transfers '
+    'shows nothing, not even the 09-22 sale (fact 2). The wallet&rsquo;s $FEBU account lists its $FEBU swaps, with the '
+    'sale as a control: <a href="%s" rel="noopener noreferrer">%s</a> <a class="alt" href="%s" rel="noopener noreferrer">'
+    '(explorer.solana.com)</a></p>' % (FACT1_ACCOUNT, FACT1_ACCOUNT, explorer(FACT1_ACCOUNT)))}
+CARD_NOTES = {("FACT", "1"): 'Solscan&rsquo;s $FEBU filter on this wallet&rsquo;s transfers shows nothing, not even the '
+                             '09-22 sale: use the wallet&rsquo;s $FEBU account, <a href="ledger.html#fact-1">linked under '
+                             'fact 1 on the ledger page</a>.'}
 W_ITEM = re.compile(r"  (W\d+)\. ")                         # a prediction carried over from version 1
 VERDICT = re.compile(r"\b(FAILED|HELD|HOLDS|DOESN'T HOLD|KEPT|BROKEN|CAN'T TELL)((?: (?:in|on) [a-z]+)?)[.:]\s*")
 VERDICT_CLASS = {"HELD": "yes", "HOLDS": "yes", "KEPT": "yes", "FAILED": "no", "DOESN'T HOLD": "no", "BROKEN": "no"}
@@ -720,7 +732,8 @@ def ledger_page(text, raw, steps_text):
                 out.append(doc.blocks(to_lines(it[1]), 2))
             else:
                 _, kind, num, who, fields = it
-                out.append(entry_html(kind, num, who, fields, doc, walk if (kind, num) == ("FACT", num6) else ""))
+                out.append(entry_html(kind, num, who, fields, doc, (walk if (kind, num) == ("FACT", num6) else "")
+                                      + SITE_NOTES.get((kind, num), "")))
         return "".join(out)
 
     ids = {"THE RULES": "rule-", "KNOWN BUGS": "bug-"}
@@ -931,6 +944,8 @@ def check_card(kind, num, author, fields, members):
     yes, no = RESULTS[kind]
     who = ('<span class="by">%s wrote it, so %s cannot check it (rule 3).</span>' % ((html.escape(author),) * 2)
            if author in members else "")
+    if (kind, num) in CARD_NOTES:
+        who += " " + CARD_NOTES[(kind, num)]
     return (
         '<div class="cc" id="check-%s" data-kind="%s" data-num="%s" data-writer="%s" hidden>'
         '<p class="cc-lead">Open the entry\'s link and look before you read anyone\'s post about it. Fill this in and '
@@ -1004,10 +1019,13 @@ def calendar_ics(votes, members, start, secs):
     ev = []
     for by in sorted({b for _, b in votes if b}):
         ev.append((by, plus(by, 1), "Assembly vote closes: " + "; ".join(v for v, b in votes if b == by), "vote-" + by))
+    close = max((b for _, b in votes if b), default="")
     if start:
         for w in range(12):
             d = plus(start, 7 * w)
-            ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)" % members[w % len(members)], "turn-" + d))
+            dry = ", a dry run: the vote is open" if plus(d, 7) <= close else ""   # process.md section 10, the freeze
+            ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)%s" % (members[w % len(members)], dry),
+                       "turn-" + d))
     bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
     for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
         ev.append((d, plus(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
@@ -1167,7 +1185,8 @@ def assembly_page(title, secs, steps_num, how_secs):
     if by:
         due.append('vote closes <time data-due="%s">%s</time>' % (by, by))
     if start:
-        due.append('weekly turn this week: <span class="due-turn">in Member order from %s</span>' % start)
+        due.append('weekly turn: <span class="due-turn">in Member order from %s, a dry run until the vote closes</span>'
+                   % start)
     due.append('<a href="assembly.ics" download>the dates as a calendar</a>')
     task += '<p class="due"><b>Due</b> %s</p>' % " &middot; ".join(due)
     remind = ["DUE" + CHAT + "{today}"]
@@ -1332,9 +1351,12 @@ def weekly_page(title, secs):
             + step(5, "w-votes", "votes (rule 7)", out("w-votes-out"), hidden=True)
             + step(6, "w-unread", "lines it could not read", out("w-unread-out"), hidden=True)
             + step(7, "w-file", "put it in the file, then post the hash",
-                   '<ol class="plain"><li><a href="%s" rel="noopener noreferrer">Open ledger.txt on GitHub</a> and press '
+                   '<ol class="plain"><li>Not during a vote: until the vote closes the file does not change, so this '
+                   'week stops at step 6 and you post what it would add.</li><li><a href="%s" rel="noopener '
+                   'noreferrer">Open ledger.txt on GitHub</a> and press '
                    'the pencil (README, &ldquo;Editing in the browser&rdquo;).</li><li>Paste each block where step 2 '
-                   'says, lined up like the lines around it. Add nothing else.</li><li>Commit to main. The site '
+                   'says, lined up like the lines around it. Add nothing else.</li><li>Commit to main (only Z can '
+                   'today, KNOWN BUGS 1; anyone else gets &ldquo;Propose changes&rdquo;, which Z merges). The site '
                    'rebuilds in a minute or two; if the build stops, GitHub shows a red cross and the site keeps the '
                    'version before.</li><li>Open <a href="ledger.html#the-text">the ledger page</a> and copy the new '
                    'SHA-256. Post it somewhere the group does not control, then in the chat.</li></ol>' % GITHUB_EDIT)
@@ -1384,10 +1406,12 @@ def write_page(secs):
                    'sends nothing. Until the first SEEN line you may change WRONG IF with a dated CHANGED line; after '
                    'that, never.</p>' % copy("w-copy-chat", "Copy the chat post"))
             + step(3, "w-file", "put it in ledger.txt",
-                   '<pre class="post keep entry-out"></pre>%s<p class="hint">You or the week\'s member: on <a href="%s" '
-                   'rel="noopener noreferrer">ledger.txt on GitHub</a>, press the pencil, paste it under THE ENTRIES '
-                   'above &ldquo;The next entry is number %d.&rdquo;, and raise that number by one (README, Add an '
-                   'entry).</p>' % (copy("w-copy-entry", "Copy the entry"), GITHUB_EDIT, n))
+                   '<pre class="post keep entry-out"></pre>%s<p class="hint">Not during a vote: until the vote closes '
+                   'the file does not change, and your chat post waits in the chat. After it, the week\'s member: on '
+                   '<a href="%s" rel="noopener noreferrer">ledger.txt on GitHub</a>, press the pencil, paste it under '
+                   'THE ENTRIES above &ldquo;The next entry is number %d.&rdquo;, and raise that number by one (README, '
+                   'Add an entry). Only Z can commit there today (KNOWN BUGS 1); anyone else gets &ldquo;Propose '
+                   'changes&rdquo;, which Z merges.</p>' % (copy("w-copy-entry", "Copy the entry"), GITHUB_EDIT, n))
             + '<details class="win" id="how-written"><summary><span class="t">how an entry is written</span><span '
               'class="q">in the ledger\'s own words</span></summary><div class="win-body">%s</div></details>'
             % doc.blocks(to_lines(how), 2))

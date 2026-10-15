@@ -9,10 +9,11 @@ amount or price appears here (rule 5).
 
 Exists only if a member offers money. The group still pays nobody.
 
-- The offer is that member's own **PROMISE 10**, with a bond: WILL pay A $FEBU to the member whose script for a named
-  entry passes its controls, carries an ASSUMES list, and is reproduced by two other members who closed the entry under
-  rule 3; and a $FEBU to each of those two, 14 days after the close, if the entry is still closed. BY a date. Terms met
-  and not paid is BROKEN, and the bond burns. Each payment is a FACT.
+- The offer is that member's own **PROMISE** (the next number), with a bond: WILL pay A $FEBU to the member, not the
+  entry's writer (section 5), whose script for a named entry passes its controls, carries an ASSUMES list, and is
+  reproduced by two other members who closed the entry under rule 3; and a $FEBU to each of those two, 14 days after
+  the close, if the entry is still closed. BY a date. Terms met and not paid is BROKEN, and the bond burns. Each
+  payment is a FACT.
 - **Both roles are paid, the author more.** The split follows the minutes each role took in the rehearsal (section 7).
   This reverses "checking stays unpaid" for paid scripts only; unpaid checks go on as before.
 - **The loss for a wrong check.** Every simulated design that held charged one, and a fact carries no bond. The nearest
@@ -33,7 +34,7 @@ Exists only if a member offers money. The group still pays nobody.
 - **Not before day 30.** Paid closes inside the 30 days would make PROMISE 7 unreadable, so the lane opens only after
   the stop rule's dated line says keep.
 - **Not covered:** creative work (a book, a video). No record settles whether it is good, so it would need its own track.
-- **The funder answers four questions first:** scope; money (PROMISE 10, with a bond); subjects (up to three things a
+- **The funder answers four questions first:** scope; money (a PROMISE with a bond); subjects (up to three things a
   record settles); and the stop rule, written before anything runs. E4 and E5 (section 7) are a starting point for it.
 
 ## Its own two tests
