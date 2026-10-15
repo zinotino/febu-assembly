@@ -18,7 +18,7 @@ findings).
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
-| `audit/` | A dated review of a release, each finding marked RAN, READ or NOT CHECKED, and the chat post it recommended. Reading, not the experiment; it adds no rule. Like everything in the root it is served as a static file; no page links to it. |
+| `papers/` | The Assembly's working papers: the design, the four reviews of 10-14, the audit of 10-15, and the chat-post drafts. Reading, not the experiment; they add no rule. Served as static files like everything in the root; no page links to them. Index: `papers/README.md`. |
 | `build.py`, `findings_html.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |

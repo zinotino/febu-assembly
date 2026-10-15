@@ -1,5 +1,5 @@
-DRAFT for Z to post in the Assembly chat on 2026-10-15. Edit freely. It replaces docs/assembly/posts/ASSEMBLY_POST_20261014_V3.txt
-(in the dossier), which names the first version-3 hash and a 10-21 deadline; both are out of date. ledger.txt says the 10-22 date
+DRAFT for Z to post in the Assembly chat on 2026-10-15. Edit freely. It replaces papers/posts/ASSEMBLY_POST_20261014_V3.txt,
+which names the first version-3 hash and a 10-21 deadline; both are out of date. ledger.txt says the 10-22 date
 holds only if the post that shows this text is made on 2026-10-15.
 
 Before posting: run  python checks/release.py --posted 847a7347  from a network that can reach the site. No line should say FAIL.
