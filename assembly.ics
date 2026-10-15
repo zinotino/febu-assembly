@@ -137,4 +137,12 @@ DTEND;VALUE=DATE:20261115
 SUMMARY:Assembly: known bug 4\, fix by
 URL:https://febu-ledger.vercel.app
 END:VEVENT
+BEGIN:VEVENT
+UID:bug-6@febu-ledger.vercel.app
+DTSTAMP:20261014T000000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261115
+SUMMARY:Assembly: known bug 6\, fix by
+URL:https://febu-ledger.vercel.app
+END:VEVENT
 END:VCALENDAR

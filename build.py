@@ -1048,7 +1048,7 @@ def calendar_ics(votes, members, start, secs):
             d = plus(start, 7 * w)
             ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)" % members[w % len(members)], "turn-" + d))
     bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
-    for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z]).*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
+    for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
         ev.append((d, plus(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
     def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
         return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
@@ -1066,7 +1066,7 @@ def next_number(items):
 
 
 def next_move(members, todo, votes, start, posted, remind):
-    """Pick your name, see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
+    """Pick your name, claim it once by the code you were sent (api/claim.js), see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
     of yours yet), vote (what is open, with its closing date), the weekly turn (yours when the order reaches you) and
     write. One panel per name, written here; claims.js shows the one picked, counts the days to each date and works
     out the turns from the device's date. The device remembers the name (claims.js), and #me=Name in the address
@@ -1124,8 +1124,16 @@ def next_move(members, todo, votes, start, posted, remind):
             '<p class="mylink">Your link, for a bookmark or your DM thread: <a href="#me=%s">%s/#me=%s</a> '
             '<button type="button" class="btn copy" data-copy="%s/#me=%s">Copy your link</button></p>'
             % (quote(name), SITE.split("//")[1], quote(name), SITE, quote(name)))
-        return ('<div class="moves" data-who="%s" hidden><ol class="steps">%s%s%s%s</ol>%s</div>'
-                % (html.escape(name), step(1, "Check", c, check), step(2, "Vote", v, vote),
+        claim = "" if name == "*" else (
+            '<div class="claim" data-name="%s"><h3>Your name</h3><p class="claim-state">Checking whether this name is '
+            'claimed&hellip;</p><div class="claim-form" hidden><label class="f">The claim code you were sent'
+            '<input type="text" class="code" autocomplete="off" spellcheck="false" placeholder="xxxx-xxxx-xxxx-xxxx">'
+            '</label><p class="acts"><button type="button" class="btn primary claim-go">Claim this name</button></p>'
+            '</div><p class="claim-msg" role="status"></p><p class="hint">One claim per name, by a code Z sends once '
+            '(<a href="ledger.html#bug-6">known bug 6</a>). It marks this device as the name\'s holder; it proves '
+            'nothing about a post in the chat.</p></div>' % html.escape(name))
+        return ('<div class="moves" data-who="%s" hidden>%s<ol class="steps">%s%s%s%s</ol>%s</div>'
+                % (html.escape(name), claim, step(1, "Check", c, check), step(2, "Vote", v, vote),
                    step(3, "Weekly turn", t, turn), step(4, "Write", chip("any time"), write), link))
 
     chips = "".join('<label class="name"><input type="radio" name="me" value="%s"><span>%s</span></label>'
@@ -1259,14 +1267,14 @@ def assembly_page(title, secs, steps_num, how_secs):
                       "https://github.com/zinotino/febu-assembly/tree/main/checks", "The scripts, with a line each")]))
     return page("febu-assembly.html", "febu assembly", "febu assembly",
                 "%d members studying febu, and a ledger anyone can check" % members, body,
-                mast=status_banner(secs, doc, brief=True, task=task), source=" from ledger.txt",
+                mast=status_banner(secs, doc, brief=True, task=task), source=" from ledger.txt", connect="'self'",
                 share="febu assembly: claims about febu that anyone can check",
                 description="%d claims about febu, each with a link and a line that would prove it wrong. %s Pick one "
                 "and check it.%s" % (len(rows), "%d checked so far." % done if done else "None checked yet.",
                                      " Proposed, not yet adopted." if proposed else ""),
                 foot='This site and the ledger file are run by Z for now (<a href="ledger.html#bug-1">known bug 1</a>). '
-                'This page keeps your name and unfinished posts on your device only, and loads nothing from other '
-                'sites. Nothing is counted.')
+                'This page keeps your name and unfinished posts on your device only, asks this site\'s own server one '
+                'question (whether a name is claimed), and loads nothing from other sites. Nothing is counted.')
 
 
 def people_page(secs):

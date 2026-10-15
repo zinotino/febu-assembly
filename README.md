@@ -10,6 +10,7 @@ findings).
 | `fact-6-steps.txt` | Fact 6 as four steps, each a link, with all 44 payments. |
 | `tests.txt` | The four tests. Reading, not the experiment: served at `/tests.html`, not linked from the front page. |
 | `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, built like `findings.html`: needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
+| `claims.sql`, `api/claim.js`, `api/_claims.js`, `claims.py` | The one-time name claim: the table, the function, its pure part, the script that issues codes. Setup below. |
 | `paid.md` | The shape for a member who wants to pay for scripts: their own promise, the cap, two tests of its own. Not linked from the site, not part of the vote. |
 | `findings.md` | Z's findings report. Reading, not the experiment: served at `/findings.html` (and `/z`), not linked from the front page. |
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
@@ -207,3 +208,22 @@ this repository is public. Anyone else can propose a change as a pull request, o
 
 `git log -p -- ledger.txt` shows every change to the ledger since it moved here on 2026-10-14. Earlier
 versions are in `archive/`, with the SHA-256 the ledger cites for each one.
+
+
+## The one-time name claim
+
+A name on the Member line belongs to whoever enters its invite code first on the front page; that browser then
+holds a token, and the panel says "Claimed <date>, on this device". It marks a device, not a post: the chat, checked
+by the weekly turn, still decides who posted what (KNOWN BUGS 6). Without the setup below the panel says claims are
+not switched on and everything else works as before.
+
+1. In the febu-host Supabase project, run `claims.sql` once in the SQL editor (one table, row-level security on,
+   no policies: only the service key reaches it).
+2. In the febu-ledger Vercel project, set two environment variables: `SUPABASE_URL` (the project URL) and
+   `SUPABASE_SERVICE_KEY` (the service role key; never the publishable one, and never in this repo). Redeploy.
+3. On your machine, with the same two variables in the shell for that one session, run `python claims.py issue`.
+   It prints one code per member once and stores only their hashes. DM each member their code.
+4. `python claims.py list` shows who has claimed. `python claims.py reissue Laura` clears a claim and prints a new
+   code, for a lost device or a name locked by five wrong codes.
+
+`node test_api.js` runs the endpoint against a fake database.

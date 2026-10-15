@@ -448,6 +448,57 @@
       var m = (location.hash.match(/me=([^&]+)/) || [])[1];
       if (m) pick(dec(m));
     });
+
+    /* the one-time claim (api/claim.js): a name belongs to whoever entered its code first. The page asks its own
+       server; without one (a copy served elsewhere) the block says so and everything else works as before. */
+    var api = function (method, path, body, tok) {
+      var h = { 'Content-Type': 'application/json' };
+      if (tok) h.Authorization = 'Bearer ' + tok;
+      return fetch('/api/claim' + (path || ''), { method: method, headers: h, cache: 'no-store',
+                                                  body: body ? JSON.stringify(body) : undefined })
+        .then(function (r) { return r.json().then(function (b) { return { status: r.status, body: b }; },
+                                                  function () { return { status: r.status, body: {} }; }); });
+    };
+    var day = function (t) { return String(t || '').slice(0, 10); };
+    var boxOf = function (name) {
+      return [].filter.call(next.querySelectorAll('.claim'), function (b) { return b.dataset.name === name; })[0];
+    };
+    var state = function (box, text, open) {
+      box.querySelector('.claim-state').textContent = text;
+      box.querySelector('.claim-form').hidden = !open;
+    };
+    var OFF = 'Claims are not switched on here.', DOWN = 'The record did not answer. Nothing else on this page needs it.';
+    var showClaim = function (name) {
+      var box = boxOf(name);
+      if (!box) return;
+      var tok = store.get('token');
+      (tok ? api('GET', '', null, tok) : Promise.resolve({ status: 0, body: {} })).then(function (me) {
+        if (me.status === 200 && me.body.name === name) return state(box, 'Claimed ' + day(me.body.claimed_at) + ', on this device.', false);
+        return api('GET', '?name=' + encodeURIComponent(name)).then(function (r) {
+          if (r.status === 200 && r.body.claimed_at) state(box, 'Claimed by its holder on ' + day(r.body.claimed_at) + '. Not on this device: for a new code, ask Z.', false);
+          else if (r.status === 200) state(box, 'Not claimed yet. Enter the code you were sent.', true);
+          else if (r.status === 503 || r.status === 404 || r.status === 501) state(box, OFF, false);
+          else state(box, DOWN, false);
+        });
+      }).catch(function () { state(box, DOWN, false); });
+    };
+    next.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.claim-go');
+      if (!b) return;
+      var box = b.closest('.claim'), msg = box.querySelector('.claim-msg'), code = box.querySelector('.code').value.trim();
+      if (!code) { msg.textContent = 'Type the code first.'; return; }
+      b.disabled = true;
+      api('POST', '', { name: box.dataset.name, code: code }).then(function (r) {
+        b.disabled = false;
+        if (r.status === 200) { store.set('token', r.body.token); msg.textContent = ''; showClaim(box.dataset.name); return; }
+        msg.textContent = r.status === 401 ? 'Wrong code. ' + (r.body.left > 0 ? r.body.left + ' tr' + (r.body.left === 1 ? 'y' : 'ies') + ' left.' : 'The name is now locked: ask Z for a new code.')
+          : r.status === 423 ? 'This name is locked after five wrong codes. Ask Z for a new one.'
+          : r.status === 409 ? 'Someone claimed this name on ' + day(r.body.claimed_at) + '. If that was not you, tell the group.'
+          : r.status === 503 || r.status === 404 || r.status === 501 ? OFF : DOWN;
+      }, function () { b.disabled = false; msg.textContent = DOWN; });
+    });
+    next.addEventListener('change', function (e) { if (e.target.name === 'me' && me !== '*') showClaim(me); });
+    if (me && me !== '*') showClaim(me);
   }
 
   /* --- weekly.html ---------------------------------------------------------------------------------------------- */

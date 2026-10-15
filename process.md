@@ -146,7 +146,7 @@ edit visible, with a date nobody in the group set. Bitcoin is used for that stam
   with its hash first.
 - An objection says what would change the objector's mind. A habit for now, proposed as a rule in round two.
 - Anything only one person can do is a bug, listed under KNOWN BUGS with a fix-by date. Bugs 1 to 3 are due 2026-11-14;
-  4 is fixed on the site; 5 has a proposed close (section 6).
+  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z.
 - Anyone may copy the file and run it their own way.
 
 ## 5. Add-on A: scripts

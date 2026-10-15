@@ -326,6 +326,11 @@ KNOWN BUGS (rule 8)
      transactions on 2026-10-14 and holds over 3,000 SOL (Z's reading, not an entry). Proposed
      close, 2026-10-14: the group does not apply, and every post in the group's name that asks
      anyone to trade $FEBU says where the fee goes. Decided when this version is adopted.
+  6. A member claims their name on the site once, by a code sent to them in a DM. The codes and
+     the key to the record they are checked against are issued and held by Z, so only Z can
+     reissue one. Fix: a second member holds the key and can issue a code. Fix by: 2026-11-14.
+     The claim marks a device as the name's holder; the chat, checked by the weekly turn (rule
+     6), still decides who posted what.
 
 RISKS WE ACCEPT
   - Two members who agree in advance can close a false fact until someone else opens the link.
