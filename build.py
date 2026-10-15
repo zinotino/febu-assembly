@@ -883,9 +883,8 @@ def wrong_if(fields):
     return [c.strip() for c in CLAUSE.split(text) if c.strip()]
 
 
-def results(fields):
-    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers). A SEEN line
-    written another way is left to a person to read."""
+def seen_items(fields):
+    """The SEEN items as written, each joined into one line: an item starts with "- " at the first item's indent."""
     items, col = [], None
     for ln in (ln for lab, lines in fields if lab == "SEEN" for ln in lines if ln.txt):
         if ln.txt.startswith("- ") and (col is None or ln.ind <= col):
@@ -893,7 +892,13 @@ def results(fields):
             items.append(ln.txt)
         elif items:
             items[-1] += " " + ln.txt
-    found = (SEEN_ITEM.match(it.replace("’", "'")) for it in items)
+    return items
+
+
+def results(fields):
+    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers). A SEEN line
+    written another way is left to a person to read."""
+    found = (SEEN_ITEM.match(it.replace("’", "'")) for it in seen_items(fields))
     return [(m.group(1), m.group(2), m.group(3), tuple(sorted({int(n) for n in re.findall(r"\d+", m.group(4) or "")})))
             for m in found if m]
 

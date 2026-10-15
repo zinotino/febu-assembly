@@ -148,6 +148,7 @@ is not a Saw.
 | `python checks/resolve.py test9` | Fact 9 on the real transaction, then on one-change copies and four lazy versions it must catch | seconds |
 | `python checks/resolve.py claimsim` | Whether a stranger can send the fee claim: a dry run the node simulates, nothing sent | seconds |
 | `python checks/release.py --posted d3e17658` | The release: the served `ledger.txt` against this checkout and git, the hash a post names (and which archived version it is, if not the served file), the headers, the Internet Archive's captures, and whether each timestamp proof is pending or in a block. CAN'T TELL when a read is incomplete | seconds |
+| `python checks/lint.py` | The file against its own rules, run by the weekly turn before it commits (`--rev HEAD~1` after): every line of git HEAD's version still there unless CHANGES TO THE RULES archives it, entries numbered in order, no check by an entry's writer, no SEEN item from the dry run or the future, no checked entry changed, every SEEN item readable, results and WRONG IF lines that exist, every archive/ copy there with its hash. Nine lines, I1 to I9 | seconds |
 
 - The chain checks ask the public node https://api.mainnet-beta.solana.com. To ask another, your own for example,
   set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast
