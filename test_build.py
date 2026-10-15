@@ -100,6 +100,13 @@ class ProcessTables(unittest.TestCase):
         self.assertTrue(out.startswith('<div class="tbl stack"><table>'))
 
 
+class ArchiveOrder(unittest.TestCase):
+    def test_ties_break_on_path(self):
+        a, b = "archive/08_CLAIMS_LEDGER_v2.1.txt", "archive/08_CLAIMS_LEDGER_v2.1-final.txt"
+        order = lambda text: [p for p, _, _ in build.archived(text)]
+        self.assertEqual(order(a + " " + b), order(b + " " + a))   # the page must not depend on the hash seed
+        self.assertEqual(order(a + " " + b), [b, a])
+
 class Calendar(unittest.TestCase):
     def test_events(self):
         secs = build.sections(LEDGER + "\nKNOWN BUGS (rule 8)\n  1. One thing, no date yet.\n"
