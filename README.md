@@ -1,28 +1,26 @@
 # febu Assembly: the ledger
 
 The febu Assembly's ledger of promises and facts about febu, the texts that go with it, and the script that
-turns them into the Assembly's pages on https://febu-assembly.vercel.app (assembly, the ledger, four tests,
-findings).
+turns them into the Assembly's pages on https://febu-assembly.vercel.app (assembly, the ledger, four tests).
 
 | File | What it is |
 |---|---|
 | `ledger.txt` | The ledger. Edit this one. It is served byte for byte, and its SHA-256 is the hash in rule 6. |
 | `fact-6-steps.txt` | Fact 6 as four steps, each a link, with all 44 payments. |
 | `tests.txt` | The four tests. Reading, not the experiment: served at `/tests.html`, not linked from the front page. |
-| `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, built like `findings.html`: needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
+| `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
 | `claims.sql`, `api/claim.js`, `api/_claims.js`, `claims.py` | The one-time name claim: the table, the function, its pure part, the script that issues codes. Setup below. |
 | `live.sql`, `api/entries.js`, `api/_record.js`, `live/` | The live record: the two tables (seconds and checks), the function, its pure rules, and `live/server.py`, its local twin that runs on one machine with SQLite. `live/live.js` and `live.css` are the ledger page's forms. Setup under "The live record" below. |
 | `paid.md` | The shape for a member who wants to pay for scripts: their own promise, the cap, two tests of its own. Not linked from the site, not part of the vote. |
-| `findings.md` | Z's findings report. Reading, not the experiment: served at `/findings.html` (and `/z`), not linked from the front page. |
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
 | `papers/` | The Assembly's working papers: the design, the four reviews of 10-14, the audit of 10-15, and the chat-post drafts. Reading, not the experiment; they add no rule. Served as static files like everything in the root; no page links to them. Index: `papers/README.md`. |
-| `build.py`, `findings_html.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
+| `build.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
-| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
+| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `people.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
 
 
 ## One project
@@ -37,8 +35,8 @@ This repo is the whole of the Assembly: the pages, the ledger, the claim and rec
 
 | Path | What it is |
 |---|---|
-| `/` , `index.html`, `assets/index-*.js`, `assets/index-reconstructed.css`, `assets/shim.js`, `assets/community.json`, `assets/scripture.json`, `assets/pfp/` | The den: the 2026-08-14 imfebu front end, patched to talk to our Supabase. Its app routes (`/library/scripture` and the rest) fall back to `index.html`. See `DEN.md`. |
-| `scripture.html`, `members.html` | Plain-text scripture reader; the Assembly's members. |
+| `/` , `index.html`, `assets/index-*.js`, `assets/index-reconstructed.css`, `assets/shim.js`, `assets/community.json`, `assets/scripture.json` | The den: the 2026-08-14 imfebu front end, patched to talk to our Supabase. Its app routes (`/library/scripture` and the rest) fall back to `index.html`. See `DEN.md`. |
+| `scripture.html` | Plain-text scripture reader. |
 | `api/keepalive.js` | A daily read so the free Supabase project is not paused. |
 | `test_routes.py` | Checks `vercel.json`: the Assembly's security headers sit on the Assembly's files only (the den needs inline styles and Supabase), `/` is the den here and the front page on the old domain, unknown paths reach the den. |
 
@@ -88,8 +86,8 @@ written another way still shows, but is left to a person to count.
 
 ## Rebuild
 
-Python 3. The ledger, the front page and the tests page need nothing else; `findings.html` also needs the
-`markdown` package:
+Python 3. The ledger, the front page and the tests page need nothing else; `process.html` also needs the
+`markdown` package when `process.md` changes:
 
 ```bash
 pip install markdown
@@ -102,8 +100,8 @@ python build.py
 It prints `ledger.txt`'s SHA-256. It stops with a message, and writes nothing, if a page would show notation
 the ledger keeps off its pages, if a wallet address or transaction signature would appear anywhere but
 the ledger page, if a SHA-256 the ledger cites doesn't match its archive file, or if fact 6's rows aren't
-numbered 1 to n or don't add up to its total. Without `markdown`, it keeps `findings.html` as it is if that was
-built from the same `findings.md`, and stops if `findings.md` has changed since.
+numbered 1 to n or don't add up to its total. Without `markdown`, it keeps `process.html` as it is if that was
+built from the same `process.md`, and stops if `process.md` has changed since.
 
 Next to every solscan.io link on the ledger page, the build adds the same record on explorer.solana.com, so no
 check rests on one explorer (known bug 4). `ledger.txt` itself keeps only the links it has.

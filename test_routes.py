@@ -50,8 +50,8 @@ def csp(host, path):
 
 def test():
     # the den: root, its files and its app routes get no Assembly CSP, and unknown paths reach the app
-    for p in ["/", "/index.html", "/scripture.html", "/members.html", "/favicon.ico", "/assets/shim.js",
-              "/assets/index-C4UKkDq2.js", "/assets/community.json", "/assets/pfp/zurandol.jpg", "/library/scripture"]:
+    for p in ["/", "/index.html", "/scripture.html", "/favicon.ico", "/assets/shim.js",
+              "/assets/index-C4UKkDq2.js", "/assets/community.json", "/library/scripture"]:
         assert not csp(DEN, p), p
     assert serve(DEN, "/")[0] == ("file", "/index.html")
     assert serve(DEN, "/library/scripture")[0] == ("rewrite", "/index.html")
@@ -59,7 +59,7 @@ def test():
 
     # every page and text file the Assembly serves keeps its CSP on both domains
     pages = [f for f in FILES if re.fullmatch(r"[a-z0-9-]+\.(html|txt|ics)", f)
-             and f not in {"index.html", "scripture.html", "members.html"}]
+             and f not in {"index.html", "scripture.html"}]
     assert {"febu-assembly.html", "process.html", "tests.html", "ledger.txt", "how.txt", "assembly.ics"} <= set(pages), pages
     for host in (DEN, LEDGER):
         for p in pages:
@@ -76,8 +76,8 @@ def test():
     # the old domain keeps its behaviour
     assert serve(LEDGER, "/")[0] == ("rewrite", "/febu-assembly.html")
     assert serve(LEDGER, "/nope")[0] == ("404",)
-    assert serve(LEDGER, "/z")[0] == ("rewrite", "/findings.html")
-    assert serve(DEN, "/z")[0] == ("rewrite", "/findings.html")
+    assert serve(LEDGER, "/z")[0] == ("404",) and serve(DEN, "/z")[0] == ("rewrite", "/index.html")   # no findings page
+    assert serve(LEDGER, "/findings.html")[0] == ("404",) and serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")
     for h in (DEN, LEDGER):
         assert serve(h, "/start")[0] == ("redirect", 308, "/febu-assembly.html#check")
 

@@ -10,10 +10,9 @@
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
                 fact-6-steps.txt is about, its steps and every row with a link
   how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg and how-it-connects.svg
-  process.html  process.md: the whole process in one file, the clock and the tests (needs the markdown package, as
-                findings.html does; otherwise the committed page is kept while process.md is unchanged)
+  process.html  process.md: the whole process in one file, the clock and the tests (needs the markdown package;
+                otherwise the committed page is kept while process.md is unchanged)
   tests.html    tests.txt as a page       (background: no tab, and nothing on the front page links it)
-  findings.html findings.md (findings_html.py) in the den's look   (background: same; /z redirects to it)
   people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
                 (reached from the front page's "who" window, not a tab)
 
@@ -38,7 +37,6 @@ ROOT = Path(__file__).resolve().parent
 LEDGER = ROOT / "ledger.txt"
 TESTS = ROOT / "tests.txt"
 STEPS = ROOT / "fact-6-steps.txt"
-FINDINGS = ROOT / "findings.md"
 HOW = ROOT / "how.txt"
 PROCESS = ROOT / "process.md"
 
@@ -584,44 +582,6 @@ def page(name, title, h1, sub, body, mast="", foot=QUIET, connect="'none'", sour
         bar=BAR % "rules and entries by one author, not yet adopted or checked by anyone else"))
 
 
-FINDINGS_DESC = ("One member's study of febu, claim by claim, each with a verdict and how it was checked. "
-                 "Checked by nobody else yet.")
-
-
-def findings_page():
-    """findings.md as findings_html.py lays it out, with the den's stylesheet in place of its own, the archive bar,
-    and the tabs. Returns the page and its verdict counts.
-
-    findings_html.py needs the markdown package, which Vercel's build image lacks. Without it the page built from
-    this same findings.md is kept as it is (counts None), so the ledger's pages still build with Python alone; if
-    findings.md has changed since, the build stops rather than serve the old findings.
-    ponytail: the mark covers findings.md only. After changing TABS, BAR or findings_html.py, rebuild with markdown
-    and commit findings.html, or Vercel keeps serving the old one beside new pages."""
-    mark = "from findings.md (sha256 %s)" % hashlib.sha256(raw_text(FINDINGS)).hexdigest()[:16]   # 32+ would be an "address"
-    try:
-        import findings_html
-    except ModuleNotFoundError as err:
-        built = ROOT / "findings.html"
-        if err.name != "markdown":
-            raise
-        if built.exists() and mark in built.read_text(encoding="utf-8"):
-            return built.read_text(encoding="utf-8"), None
-        sys.exit("findings.md has changed since findings.html was built, and building it needs the markdown package "
-                 "(pip install markdown)")
-    out, counts = findings_html.build(FINDINGS.read_text(encoding="utf-8"))
-    for pattern, repl in (
-            (r"from findings\.md\.", mark + "."),
-            (r"<style>.*?</style>", '<link rel="icon" href="/favicon.ico">\n<link rel="stylesheet" href="/assets/findings.css">'),
-            (r"</title>", "</title>\n" + '<meta name="description" content="%s">\n' % FINDINGS_DESC + meta_tags(
-                "febu assembly: Z's findings", FINDINGS_DESC)),
-            (r"<body>\n", "<body>\n" + BAR % "one author's verdicts, not yet checked by anyone else" + "\n"),
-            (r'(<h1>.*?</h1>\n<p class="sub">.*?</p>)', r'<div class="mast-title">\1</div>' + "\n" + tabs_html("findings.html"))):
-        out, n = re.subn(pattern, repl, out, count=1, flags=re.S)
-        if n != 1:
-            sys.exit("findings_html.py's page no longer has %r; findings.html is made from it" % pattern)
-    return vetted("findings.html", out), counts
-
-
 PROCESS_DESC = ("The Assembly's whole process in one file: the ledger, the scripts that check it, money, the 30-day "
                 "clock and its stop rule, and the decisions waiting. Adds no rule.")
 PROCESS_CLOCK = "process.html#7-the-clock-from-now-to-a-decision"
@@ -645,7 +605,7 @@ def md_tables(out):
 def process_page():
     """process.md as a page: the title line becomes the heading, each ## section is a section with the heading's own
     anchor (markdown's toc ids: '7-the-clock-from-now-to-a-decision'). Needs the markdown package; without it the
-    committed page is kept while process.md is unchanged, as findings_page does."""
+    committed page is kept while process.md is unchanged."""
     text = raw_text(PROCESS).decode("utf-8")
     mark = "from process.md (sha256 %s)" % hashlib.sha256(raw_text(PROCESS)).hexdigest()[:16]
     try:
@@ -1172,8 +1132,8 @@ def assembly_page(title, secs, steps_num, how_secs):
     """The Assembly's front page, for someone who has just followed a link: the task now and the group's goal in the
     banner, what this is in a sentence, three entries to check, each with its check card, and the other open ones
     folded under them; then your week by name (check, vote, the weekly turn, write, with what is due, a reminder
-    post and the calendar file), every entry, how to check, who and the scripts. Z's findings and the four tests are
-    reading, not the experiment: served, not linked from here."""
+    post and the calendar file), every entry, how to check, who and the scripts. The four tests are reading, not
+    the experiment: served, not linked from here."""
     doc = Doc(secs, "ledger.html")
     by = {short(h): b for h, b in secs}
     names = member_names(secs)
@@ -1450,7 +1410,6 @@ def main():
     title, secs = sections(text)
     steps = raw_text(STEPS).decode("utf-8").rstrip("\n")
     ledger, archives = ledger_page(text, raw, steps)
-    findings, counts = findings_page()
     pages = {
         "ledger.html": ledger,
         "tests.html": tests_page(raw_text(TESTS).decode("utf-8").rstrip("\n"), secs),
@@ -1460,7 +1419,6 @@ def main():
         "people.html": people_page(secs),
         "weekly.html": weekly_page(title, secs),
         "write.html": write_page(secs),
-        "findings.html": findings,
         "process.html": process_page(),
     }
     if LEDGER.read_bytes() != raw:   # the page prints the hash of the LF text, so serve exactly that
@@ -1469,10 +1427,9 @@ def main():
         (ROOT / name).write_text(out, encoding="utf-8", newline="\n")
     (ROOT / "assembly.ics").write_bytes(calendar_ics(open_votes(title, secs), member_names(secs), turn_start(secs),
                                                      secs).encode("utf-8"))
-    print("ledger.txt sha256 %s (%d bytes); %s; wrote %s; findings: %s" % (
+    print("ledger.txt sha256 %s (%d bytes); %s; wrote %s" % (
         hashlib.sha256(raw).hexdigest(), len(raw), ", ".join("%s sha256 %s" % (p, d[:16]) for p, _, d in archives),
-        ", ".join(pages), "%d claims %s" % (sum(counts.values()), dict(counts)) if counts else
-        "kept as built from this findings.md (no markdown package here)"))
+        ", ".join(pages)))
 
 
 if __name__ == "__main__":
