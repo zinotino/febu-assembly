@@ -11,7 +11,7 @@ turns them into the Assembly's pages on https://febu-assembly.vercel.app (assemb
 | `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
 | `paid.md` | The shape for a member who wants to pay for scripts: their own promise, the cap, two tests of its own. Not linked from the site, not part of the vote. |
 | `archive/` | Empty at the clean start of 2026-10-15. Each later change to `ledger.txt` puts the text before it here, word for word. Add to it; never edit or delete. |
-| `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. None yet: stamp the clean-start text first (see "Records outside the group"). |
+| `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. One so far, for the current `ledger.txt`; the archive files have none (see "Records outside the group"). |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
 | `build.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
@@ -180,8 +180,11 @@ curl -s --compressed https://web.archive.org/web/<YYYYMMDDhhmmss>id_/https://feb
 
 **OpenTimestamps.** `timestamps/` holds proofs that a file existed by the time of a Bitcoin block. A proof holds
 the file's SHA-256 and nothing else, so it shows nothing about who made it. Each is named after what it proves: `timestamps/ledger-<first 8 characters of the SHA-256>.txt.ots` for a
-version of `ledger.txt`, and `timestamps/<name>.ots` for `archive/<name>`. There are none yet; the first to
-make is the clean-start `ledger.txt`.
+version of `ledger.txt`, and `timestamps/<name>.ots` for `archive/<name>`. There is one so far:
+`timestamps/ledger-d3e17658.txt.ots`, for the `ledger.txt` of 2026-10-15 (SHA-256 `d3e17658...`). It was made with the
+`opentimestamps` Python library, because the `ots` client would not start on that machine; it holds the same four
+calendar promises and verifies the same way. It is still pending: run `ots upgrade` on it after a few hours and commit
+the result. The archive files have no proof; stamp one the same way if the group wants it.
 
 Install the client (Python 3), then verify a proof against the file it names:
 
