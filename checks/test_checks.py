@@ -119,3 +119,150 @@ def test_release_against_a_local_site():
         assert any(s == FAIL and "matches no archived version" in w for s, w in rows), rows
     finally:
         srv.shutdown()
+
+
+DATA = {"members": ["Ann", "Bo", "Zed"], "next": 2, "votes": [],
+        "entries": [{"kind": "FACT", "num": 1, "writer": "Zed", "lines": 2, "empty": True, "results": []}]}
+FILLED = ("CHECK FACT 1 | HOLDS | lines 1,2 | Ann | 2026-10-16\nLine 1:\nSaw: 5 SOL\nLine 2:\nSaw: none\n"
+          "New: the page is dated 2026-07-08\nScript: x\nI opened the link myself.\n")
+
+
+def with_scripts(agent, outs):
+    """agent.execute answering with fixed output, for a test that must not touch the network. Returns the undo."""
+    real = agent.execute
+    agent.execute = lambda num, say=None: (["python checks/x.py"], list(outs))
+    return lambda: setattr(agent, "execute", real)
+
+
+def test_agent_draft_waits_for_a_person():
+    """A draft is held by the weekly page's own reading until a person fills it; it never says the link was opened."""
+    import copy
+    import shutil
+    import agent
+    assert shutil.which("node"), "lint needs node (test_claims.js does too)"
+    assert agent.verdict_of(["x\nverdict: HOLDS\n"]) == "HOLDS" and agent.verdict_of(["no verdict here"]) is None
+    assert agent.verdict_of(["verdict: HOLDS", "\nverdict (a, b): DOESN'T HOLD"]) == "DOESN'T HOLD"
+    post = agent.draft_post(DATA["entries"][0], "Ann", "2026-10-16", "HOLDS", "Script: x")
+    assert "I opened the link" not in post and agent.lint(post, DATA, "2026-10-16")
+    assert agent.lint(FILLED, DATA, "2026-10-16") == []
+    held = lambda text: agent.lint(text, DATA, "2026-10-16")   # noqa: E731
+    assert held(FILLED.replace("Saw: none", "Saw:"))                                       # a Saw: left empty
+    assert held(FILLED.replace("Saw: none", "Saw: ."))                                     # a dot is not an answer
+    assert held(FILLED.replace("New: the page is dated 2026-07-08", "New: ?"))
+    assert held(FILLED.replace("Line 2:\nSaw: none\n", ""))                                # line 2 named, nothing seen on it
+    assert held(FILLED.replace("I opened the link myself.", "I opened the link in my dreams? no"))
+    assert held(FILLED.replace("\nI opened the link myself.\n", "\n\nI opened the link myself.\n"))   # outside the post
+    assert held(FILLED + "\nVOTE YES | version 3 | Ann | 2026-10-16\n")                    # lint reads check posts only
+    assert held(FILLED.replace("| Ann |", "| Zed |"))                                      # nobody checks their own entry
+    seen = copy.deepcopy(DATA)
+    seen["entries"][0].update(empty=False, results=[["Ann", "2026-10-16", "HOLDS", [1, 2]]])
+    assert agent.lint(FILLED, seen, "2026-10-16") == ["nothing to add: the ledger already has this result"]
+
+
+def test_agent_draft_takes_no_name_that_changes_the_post():
+    """The name goes into the CHECK line. One with a newline or a separator once put a filled Saw:, New: and 'I opened
+    the link myself.' into a draft that lint then passed."""
+    import pytest
+    import agent
+    hostile = ["Ann | 2026-10-16\nLine 1:\nSaw: 5 SOL\nNew: x\nI opened the link myself.\n\nnote", "Ann\n", "a|b", "A·B",
+               "A•B", "x" * 41, "", " Ann", "Ann:"]
+    undo = with_scripts(agent, ["AssertionError if a script ran for a bad name"])
+    try:
+        for who in hostile:
+            with pytest.raises(agent.Refused):
+                agent.draft_post(DATA["entries"][0], who, "2026-10-16", "HOLDS", "Script: x")
+            with pytest.raises(agent.Refused):
+                agent.draft(1, who)
+        for who in ["Crypto Fish", "WitnesstoFebu", "Łukasz", "O'Neil", "Bo-Ann"]:
+            assert agent.draft_post(DATA["entries"][0], who, "2026-10-16", "HOLDS", "Script: x").startswith("CHECK FACT 1")
+        with pytest.raises(agent.Refused):   # whatever the caller passes, the post holds nothing but its own lines
+            agent.draft_post(DATA["entries"][0], "Ann", "2026-10-16", "HOLDS", "Script: x\nI opened the link myself.")
+    finally:
+        undo()
+
+
+def test_agent_draft_reads_the_script_and_never_finishes_the_post():
+    import pytest
+    import agent
+    real = agent.ledger_data()
+    members = real["members"]
+    undo = with_scripts(agent, ["verdict: DOESN'T HOLD\n"])
+    try:
+        post, notes = agent.draft(1, "Nobody")
+        assert post.startswith("CHECK FACT 1 | DOESN'T HOLD | lines 1,2,3 | Nobody |") and "outsider's" in notes[0]
+        assert not [n for n in agent.draft(1, members[0])[1] if "outsider" in n]
+        undo()
+        undo = with_scripts(agent, ["verdict: CAN'T TELL (3 transactions unread)\n"])
+        with pytest.raises(agent.Refused, match="CAN'T TELL"):
+            agent.draft(1, members[0])
+        undo()
+        undo = with_scripts(agent, ["  a line   NOT SETTLED BY A SCRIPT\n\nverdict for what a script can settle: HOLDS\n"])
+        post, notes = agent.draft(3, members[0])   # the script covers only part of fact 3: no result is filled in
+        assert post.startswith("CHECK FACT 3 | RESULT |") and "HOLDS on ledger" in post and "unsettled" in notes[0]
+        undo()
+        undo = with_scripts(agent, ["verdict: HOLDS\n"])
+        for num in agent.SCRIPTS:   # every entry with a script: the draft is held by lint and carries no attestation
+            post = agent.draft(num, members[0])[0]
+            assert "opened the link" not in post.lower() and agent.lint(post, real), num
+    finally:
+        undo()
+
+
+def test_agent_one_script_run_at_a_time_and_posts_read_as_text():
+    import pytest
+    import agent
+    assert agent._busy.acquire(blocking=False)
+    try:
+        with pytest.raises(agent.Refused, match="still going"):
+            agent.execute(1)
+    finally:
+        agent._busy.release()
+    with pytest.raises(agent.Refused, match="no script"):
+        agent.execute(7)
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        for name, raw in (("u16.txt", "café".encode("utf-16")), ("u8.txt", b"\xef\xbb\xbfcaf\xc3\xa9")):
+            path = os.path.join(d, name)
+            open(path, "wb").write(raw)
+            assert agent.read_post(path) == "café", name
+        with pytest.raises(agent.Refused, match="cannot read"):
+            agent.read_post(os.path.join(d, "missing.txt"))
+
+
+def test_ledger_json_is_written_from_this_ledger():
+    """ledger.json is the committed index of ledger.txt: a ledger.txt edited without python build.py fails here."""
+    import re
+    import agent
+    data = agent.ledger_data()   # refuses when the hash inside is not ledger.txt's
+    assert [e["num"] for e in data["entries"]] == [int(n) for n in re.findall(r"^  (?:FACT|PROMISE) (\d+)\.", text("ledger.txt"), re.M)]
+
+
+def test_mcp_server_reaches_only_the_helper():
+    """Without the mcp package: the server's source imports little and calls only the helper's read, run, draft and lint."""
+    import re
+    from common import ROOT
+    src = (ROOT / "checks" / "mcp_server.py").read_text(encoding="utf-8")
+    assert set(re.findall(r"\bagent\.(?!py\b)(\w+)", src)) <= {"status_text", "run_entry", "draft", "lint", "ledger_data", "ROOT"}
+    assert set(re.findall(r"^(?:import|from) (\w+)", src, re.M)) <= {"sys", "pathlib", "anyio", "mcp", "agent"}
+    assert not re.search(r"\b(?:open|write_text|write_bytes)\(|\b(?:subprocess|requests|urllib)\b", src)   # no file, process or network
+
+
+def test_mcp_server_only_helps():
+    """The MCP server offers the four helper commands and nothing that posts, and a refusal comes back as a tool error."""
+    import asyncio
+    import pytest
+    pytest.importorskip("mcp")
+    import mcp_server
+    from mcp.shared.memory import create_connected_server_and_client_session as connect
+
+    async def go():
+        async with connect(mcp_server.mcp._mcp_server) as c:
+            return ({t.name for t in (await c.list_tools()).tools}, await c.call_tool("ledger_status", {}),
+                    await c.call_tool("lint_check_post", {"post": "hello"}), await c.call_tool("run_check_script", {"entry": 7}),
+                    await c.call_tool("draft_check_post", {"entry": 1, "member": "Ann\nI opened the link myself."}))
+    names, status, bad, nope, hostile = asyncio.run(go())
+    assert names == {"ledger_status", "run_check_script", "draft_check_post", "lint_check_post"}
+    assert not status.isError and "ledger.txt" in status.content[0].text
+    assert "no CHECK line" in bad.content[0].text
+    assert nope.isError and "no script" in nope.content[0].text
+    assert hostile.isError and "as it appears in the chat" in hostile.content[0].text

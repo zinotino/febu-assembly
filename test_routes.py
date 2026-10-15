@@ -86,7 +86,10 @@ def test():
     ots = serve(DEN, "/timestamps/ledger-d3e17658.txt.ots")                                       # a proof is a download, not a spreadsheet
     assert ots[0] == ("file", "/timestamps/ledger-d3e17658.txt.ots") and ots[1]["Content-Type"] == "application/octet-stream"
     assert csp(DEN, "/timestamps/ledger-d3e17658.txt.ots")
-    assert "functions" not in CFG                                                                 # no member-facing API is left
+    assert "functions" not in CFG                                                                 # no member-facing function is left
+    lj = serve(DEN, "/ledger.json")                                                               # the read-only index: a file, strict CSP, any origin may read it
+    assert lj[0] == ("file", "/ledger.json") and csp(DEN, "/ledger.json") and lj[1]["Access-Control-Allow-Origin"] == "*"
+    assert "ledger.json" in FILES and "Access-Control-Allow-Origin" not in serve(DEN, "/ledger.txt")[1]   # only that one file
     assert serve(DEN, "/z")[0] == ("rewrite", "/index.html")                                     # no findings page
     assert serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")
     assert serve(DEN, "/start")[0] == ("redirect", 308, "/febu-assembly.html#check")
@@ -94,7 +97,7 @@ def test():
     # the old domain serves nothing: every path is a 308 to the same path on the one address
     ONE = "https://" + DEN
     assert serve(LEDGER, "/")[0] == ("redirect", 308, ONE + "/")   # the old home lands on the archive, the new home
-    for p in pages + ["api/archive", "archive/08_CLAIMS_LEDGER_v3.txt", "assets/claims.js", "nope"]:
+    for p in pages + ["api/archive", "archive/08_CLAIMS_LEDGER_v3.txt", "assets/claims.js", "ledger.json", "nope"]:
         assert serve(LEDGER, "/" + p)[0] == ("redirect", 308, ONE + "/" + p), p
     assert not any("febu-ledger" in str(x) for x in serve(DEN, "/")[0])
 

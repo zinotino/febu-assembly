@@ -92,6 +92,46 @@ class Votes(unittest.TestCase):
         self.assertEqual(build.open_votes("TEST LEDGER (version 0)", secs), [("version 0", None)])
 
 
+class LedgerJson(unittest.TestCase):
+    """ledger.json is an index of ledger.txt for an agent: the text's hash, the entries' state, no address in full."""
+
+    def test_index(self):
+        import hashlib, json
+        raw = LEDGER.encode("utf-8")
+        title, secs = build.sections(LEDGER)
+        out = json.loads(build.ledger_json(title, secs, raw))
+        self.assertEqual(out["ledger"], {"url": build.SITE + "/ledger.txt", "sha256": hashlib.sha256(raw).hexdigest(),
+                                         "bytes": len(raw)})
+        self.assertTrue(out["proposed"])
+        self.assertEqual(out["members"], ["Ann", "Bo Cat", "Zed"])
+        one, two = out["entries"]
+        self.assertEqual((one["kind"], one["num"], one["writer"], one["says"]), ("FACT", 1, "Zed", "One thing."))
+        self.assertEqual(one["url"], build.SITE + "/ledger.html#fact-1")
+        self.assertEqual((one["results"], one["empty"]), ([], False))   # a SEEN line in another form is a person's to read
+        self.assertEqual((two["writer"], two["empty"]), ("Outsider", True))
+
+    def test_an_address_is_cut(self):
+        wallet = "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG"
+        self.assertEqual(build.clip("signed by %s and by ApWpkd8" % wallet), "signed by ApWpkd8… and by ApWpkd8")
+
+    def test_a_hash_with_no_zero_is_not_an_address(self):
+        import hashlib, json
+        title, secs = build.sections(LEDGER)
+        for i in range(5000):   # about 1 hash in 60 has no 0 in it, and then reads as a 64-character base58 address
+            raw = (LEDGER + "x" * i).encode("utf-8")
+            if "0" not in hashlib.sha256(raw).hexdigest():
+                break
+        else:
+            self.fail("no zero-free hash in 5000 tries")
+        out = json.loads(build.ledger_json(title, secs, raw))   # exits if the hash is vetted as an address
+        self.assertEqual(out["ledger"]["sha256"], hashlib.sha256(raw).hexdigest())
+
+    def test_the_committed_file_is_what_build_writes(self):
+        raw = build.raw_text(build.LEDGER)
+        title, secs = build.sections(raw.decode("utf-8").rstrip("\n"))
+        self.assertEqual(build.ledger_json(title, secs, raw), (build.ROOT / "ledger.json").read_text(encoding="utf-8"))
+
+
 class ProcessTables(unittest.TestCase):
     def test_data_th(self):
         out = build.md_tables("<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr>"
