@@ -88,7 +88,8 @@ HOW AN ENTRY IS WRITTEN
     SEEN      results, as they come         IF BROKEN  the bond in $FEBU, or none
                                             SEEN       results, on or after the date
   Every part of SAYS needs a WRONG IF line that would catch it. If SAYS claims more, cut SAYS.
-  WRONG IF is written before anyone checks and never changed.
+  WRONG IF is written before anyone checks. Until the first SEEN line, the writer may change it
+  with a dated CHANGED line; after that, never.
   Anything the group, or a member speaking for it, tells people outside the group about what
   will happen goes here first, as a promise.
   A promise can be withdrawn up to 7 days before its date. WITHDRAWN stays here. Withdrawn
@@ -122,7 +123,8 @@ THE ENTRIES
 
   FACT 2. (Zurandol, 2026-10-12)
     SAYS      On 2026-09-22 the wallet that created $FEBU sold all of its $FEBU,
-              23,843,803.61 tokens, in one transaction, and it holds none now.
+              23,843,803.61 tokens, in one transaction, and received no $FEBU after
+              it through 2026-10-14.
     LINK      The sale, 2026-09-22 17:52 UTC:
                 https://solscan.io/tx/51ekPPgzrfeSv4SmhvVsMj9HVUJYb4UiZNPdHrt1bHHJwk1Z9c8jTPiLna6j2twbumNbxvYXryRoeLEDMthCkw2N
               Its summary reads: Swap 23,843,803.614015 febu for 18.893241316 WSOL on
@@ -132,10 +134,15 @@ THE ENTRIES
                 https://solscan.io/account/ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG
               Fact 1 links the transaction that shows this wallet created $FEBU.
     WRONG IF  the sale moves a different amount of $FEBU, or leaves the wallet holding any
-              $FEBU; or the wallet holds any $FEBU now.
+              $FEBU; or the wallet's transfers (fact 1's link, filtered to $FEBU) show $FEBU
+              coming in after the sale and before the end of 2026-10-14 (UTC).
     CHANGED   2026-10-14, before any check: the sale's link and amount are added, and the
               WRONG IF line now catches a sale that left some $FEBU behind (SAYS had "its
               whole stake").
+    CHANGED   2026-10-15, before any check: "holds none now" could be made false by anyone
+              sending the wallet a token, so SAYS and WRONG IF now stop at the end of
+              2026-10-14. (The wallet has no $FEBU account today; the one transaction on it
+              since the sale, 2026-10-07, moved nothing.)
     SEEN      nobody yet
 
   FACT 3. (Zurandol, 2026-10-12)
@@ -185,16 +192,17 @@ THE ENTRIES
 
   FACT 6. (Zurandol, 2026-10-14)
     SAYS      The wallet that created $FEBU received 2,939.10 SOL from its creator-fee account
-              in 44 payments between 2026-07-09 and 2026-09-14, and has received nothing from
-              it since. Trades on the main $FEBU pool pay into that account.
+              in 44 payments between 2026-07-09 and 2026-09-14, and had received nothing from
+              it by the end of 2026-10-14. Trades on the main $FEBU pool pay into that account.
     LINK      Four steps, each a link, with all 44 payments, in fact-6-steps.txt and
               under this fact on the group site. The fee account's outgoing payments, newest
               first:
                 https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
     WRONG IF  a $FEBU trade shows nothing paid into the fee account; or a payment you open
               goes somewhere other than ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG or a
-              token account it owns; or the fee account shows a payment out after 2026-09-14;
-              or the 44 amounts do not add up to 2,939.10.
+              token account it owns; or the fee account shows a payment out between
+              2026-09-15 and the end of 2026-10-14 (UTC); or the 44 amounts do not
+              add up to 2,939.10.
     NOTE      The fee account belongs to the creator wallet, not to the coin, so some of the
               total may come from that wallet's other coins. The split is not measured. One
               payment (2026-07-22, 66.44 SOL, row 20) was run by the exchange's own admin
@@ -204,6 +212,10 @@ THE ENTRIES
     CHANGED   2026-10-14, before any check: "collected" is now "received", because row 20 was
               run by the exchange, not by the creator wallet; the WRONG IF line now counts a
               token account the wallet owns, which is where row 20 arrived.
+    CHANGED   2026-10-15, before any check: anyone may send the fee claim (a dry run on
+              2026-10-14 ran it with nobody signing for the creator), which would make
+              "a payment out after 2026-09-14" true on a later day, so SAYS and WRONG IF
+              now stop at the end of 2026-10-14.
     SEEN      nobody yet
 
   PROMISE 7. (the group, proposed 2026-10-14)
@@ -218,19 +230,35 @@ THE ENTRIES
     SEEN      nobody yet
 
   FACT 8. (Zurandol, 2026-10-14)
-    SAYS      The $FEBU creator-fee account from fact 6 has paid nothing out since 2026-09-14,
-              and held 11.125 SOL on 2026-10-14, up from 3.873 SOL at the start of 2026-09-22
-              (00:00 UTC).
+    SAYS      The $FEBU creator-fee account from fact 6 paid nothing out from 2026-09-15 to
+              the end of 2026-10-14, held 11.125 SOL on 2026-10-14, and held about 3.87 SOL
+              at 00:00 UTC on 2026-09-22.
     LINK      The account's payments out, newest first:
                 https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
               Its balance, and its balance history, on the account page:
                 https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj
-    WRONG IF  a payment out after 2026-09-14 shows; or the balance on the day you look is below
-              11.12 SOL and no payment out explains it; or the balance at any time on 2026-09-22
-              was not between 3.8 and 4.1 SOL.
+    WRONG IF  a payment out between 2026-09-15 and the end of 2026-10-14 (UTC) shows; or
+              the balance on the day you look is below 11.12 SOL and no payment out
+              explains it; or the balance at 00:00 UTC on 2026-09-22 was not between 3.8
+              and 4.1 SOL.
     NOTE      The account holds wrapped SOL, so explorers show the amount as WSOL. Newer trades
               keep the fee in the pool until someone sweeps it, so this understates what has
               been earned. Reading the 09-22 balance takes a while; say what you looked at.
+    NOTE      To read a payment out without opening 5,226 transactions, open the wrapped-SOL
+              account the creator wallet receives into, and check its few transactions
+              since 2026-09-14. All 44 of fact 6's payments passed through it:
+                https://solscan.io/account/FAvzFneQDq9uWJZb6eMqNJupc7G7PTpeAqDUoy6AbryQ
+              checks/resolve.py fact8 does this in about a minute. A second call anyone may
+              send moves the fee to pump's creator vault without touching that account:
+                https://solscan.io/account/84BnhqbDiUxurSuXnSXYni1yC5NY2hFy6tymDGNQ6BoY
+              checks/resolve.py door2 reads every transaction on it since 2026-09-14 and
+              looks for that call. Run both.
+    CHANGED   2026-10-15, before any check: the third line said "at any time on
+              2026-09-22", but the balance rose through that day (3.8712 SOL at 00:00,
+              5.0294 SOL at the end) as trades paid in, so the line was false as written.
+              It now says 00:00 UTC. The first line had no end date and anyone may send the
+              fee claim, so it now stops at the end of 2026-10-14. SAYS gave 3.873; the
+              chain gives 3.8712, so SAYS now says "about 3.87".
     SEEN      nobody yet
 
   FACT 9. (Zurandol, 2026-10-14)
@@ -400,3 +428,16 @@ CHANGES TO THE RULES
   never ran out and nothing in the record showed it.
   Rule 6: a turn not done by the end of its week passes on. Why: one member skipping stopped
   the weekly check, and KNOWN BUGS 2's fix rests on it.
+
+  2026-10-15. Before any entry was checked. The text before this line is kept word for word
+  in archive/08_CLAIMS_LEDGER_v3-week2.txt
+    SHA-256 eb4f05ceaa241d9378907d32be971a31c390686512935254b2def4cd3a9e8be4
+  Facts 2, 6 and 8: SAYS and WRONG IF end at 2026-10-14 where they said "now" or "after
+  2026-09-14", and fact 8's third line says 00:00 UTC. Why: a script that applied fact 8's
+  third line as written found it false, and anyone may send the fee claim or a dust transfer,
+  which would have made the other lines true later without anything changing about the facts.
+  HOW AN ENTRY IS WRITTEN: the writer may change WRONG IF by a dated CHANGED line until the
+  first SEEN line, never after. Why: it said "never changed", while facts 1, 2 and 6 had
+  changed theirs before any check, as the rules meant to allow.
+  The rule text changed since version 3 was posted (this line and the one before it), so the
+  vote's 7 days count from the post that showed it: "yes" or "object" by 2026-10-22.

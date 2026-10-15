@@ -19,7 +19,9 @@ mine = [(a, b) for acct, owner, m, a, b in token_changes(r) if owner == wallet a
 held = rpc("getTokenAccountsByOwner", [wallet, {"mint": mint}, {"encoding": "jsonParsed"}])["value"]
 
 print("Fact 2, read %s from %s" % (now(), RPC))
-print("The ledger says: the wallet sold all %s $FEBU in one transaction, and holds none now." % says)
+print("The ledger says: the wallet sold all %s $FEBU in one transaction, and received none after it through 2026-10-14."
+      % says)
+print("Below: its $FEBU now. For $FEBU coming in after the sale, open its transfers (fact 1's link), filtered to $FEBU.")
 print()
 print("The sale, transaction %s" % short(sale))
 print("  time              %s" % when(r["blockTime"]))

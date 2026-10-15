@@ -9,11 +9,12 @@ findings).
 | `ledger.txt` | The ledger. Edit this one. It is served byte for byte, and its SHA-256 is the hash in rule 6. |
 | `fact-6-steps.txt` | Fact 6 as four steps, each a link, with all 44 payments. |
 | `tests.txt` | The four tests. |
+| `process.md` | The whole process in one file: the ledger, scripts and money as add-ons, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. |
 | `findings.md` | Z's findings report. |
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
-| `checks/` | Scripts that re-read facts 2, 5 and 6 from public sources, for anyone to run. |
+| `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
 | `build.py`, `findings_html.py` | Write the five pages from the texts. `test_build.py` tests the people page. |
 | `assets/` | The pages' stylesheets, and `claims.js` (tap to copy a hash or a result post, hash checks). Written by hand. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
@@ -78,14 +79,23 @@ them. The site does not lag, because Vercel builds its own.
 
 `checks/` re-reads the facts a machine can read, with Python 3 and nothing else: no packages, no account, no key.
 Each takes its addresses and transactions from `ledger.txt` and `fact-6-steps.txt`, so it tests what the ledger
-says, and prints what it saw. None of them posts anything or gives a verdict: a person reads the output, compares
-it with the entry's WRONG IF lines, and posts (HOW TO CHECK AN ENTRY). Say in your post that you ran a script.
+says, and prints what it saw. `resolve.py` also names which WRONG IF lines tripped. None of them posts anything:
+a person reads the output, compares it with the entry's WRONG IF lines, opens a link by hand, and posts (HOW TO
+CHECK AN ENTRY). Say in your post that you ran a script. Until the Saw line is adopted (rule 7), a script run alone
+is not a Saw.
 
 | Script | Reads | Takes |
 |---|---|---|
 | `python checks/fact2.py` | Fact 2: the creator wallet's $FEBU before and after the sale the ledger links, and whether it holds any $FEBU now | seconds |
 | `python checks/fact5.py` | Fact 5: on how many of pages 1-24 and 25-164 each of the eight words appears, in the scripture copy behind the fact's link | seconds |
 | `python checks/fact6.py` | Fact 6: adds up the 44 rows, then re-reads every row's transaction and step 1's trade | a minute or two |
+| `python checks/resolve.py fact1` | Fact 1: the creator wallet's $FEBU account in the window | about a minute |
+| `python checks/resolve.py fact3` | Fact 3: the phrase in the archived script, and the time the tweet id gives | seconds |
+| `python checks/resolve.py fact4` | Fact 4: every page's book against the rotation, on the scripture copy behind the link | seconds |
+| `python checks/resolve.py fact8` | Fact 8's three lines, reading the creator's wrapped-SOL account, the quiet end of every payment out | about a minute |
+| `python checks/resolve.py door2` | Fact 8's other way out: every transaction on pump's creator vault in the window | about 3 minutes |
+| `python checks/resolve.py test9` | Fact 9 on the real transaction, then on one-change copies and four lazy versions it must catch | seconds |
+| `python checks/resolve.py claimsim` | Whether a stranger can send the fee claim: a dry run the node simulates, nothing sent | seconds |
 
 - The chain checks ask the public node https://api.mainnet-beta.solana.com. To ask another, your own for example,
   set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast
@@ -93,8 +103,9 @@ it with the entry's WRONG IF lines, and posts (HOW TO CHECK AN ENTRY). Say in yo
 - `fact5.py` takes a copy of your own too, in the same form, which is how KNOWN BUGS 3 gets fixed:
   `python checks/fact5.py my-copy.json`. It prints the copy's SHA-256, so two people can tell whether they counted
   the same copy.
-- `fact6.py` does not test "has received nothing from it since". Thousands of trades have touched the fee account
-  since 2026-09-14, too many for a public node; step 2's link shows its payments out.
+- `fact6.py` does not test "had received nothing from it by the end of 2026-10-14". Thousands of trades touched the
+  fee account, too many for a public node; `resolve.py fact8` and `door2` read the two ways out instead.
+- Never send the fee claim to see what happens. It pays the creator wallet and makes a WRONG IF line true.
 - `python checks/test_checks.py` tests the scripts' own reading of the texts, offline.
 
 ## Records outside the group (rule 6)

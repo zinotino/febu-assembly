@@ -85,8 +85,8 @@ def main():
                       ("none", "nothing left the fee account")):
         print("  %-35s %s" % (said, ", ".join(map(str, pick(lambda d, sol, r, out, h: h == how)))))
     print()
-    print("Not read here: whether anything left the fee account after 2026-09-14. Thousands of trades have touched")
-    print("it since, too many for a public node; step 2's link lists its payments out, newest first.")
+    print("Not read here: whether anything left the fee account from 2026-09-15 to the end of 2026-10-14. Thousands")
+    print("of trades touched it; resolve.py fact8 and door2 read the two ways out instead (fact 8's NOTE).")
 
 
 if __name__ == "__main__":

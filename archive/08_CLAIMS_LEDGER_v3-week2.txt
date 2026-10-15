@@ -1,0 +1,402 @@
+THE LEDGER: PROMISES AND FACTS (version 3)
+
+STATUS
+  Proposed by Z on 2026-10-14. Nothing here is adopted yet. It becomes the group's rules the
+  way rule 7 says: posted in the chat for 7 days, at least four active members write "yes",
+  and at most one writes "object". Versions 1, 2 and 2.1 were never adopted either; all are kept in
+  archive/. The week of the vote is also a dry run: entries 3, 8 and 9 are the cheapest to
+  check. Post what you saw, and how many minutes it took.
+
+WHAT THIS IS
+  A public list of promises and facts. Nobody approves anything. Anyone can check anything.
+  Nothing is removed except personal information (rule 2). Febu worked the other way: its admin
+  account approved a developer account as winner of the $500 job #004, job #002 was deleted,
+  announcements cost nothing, and the fees went to the wallet that later sold.
+
+THE RULES
+  1. The list holds promises ("I will do X by this date; here is how anyone will know") and
+     facts ("X is true; this link shows it"). A forecast of what nobody here does ("the sun
+     will rise tomorrow") is neither; it goes in the chat. Every link must open for anyone,
+     without asking the person who posted it.
+  2. Anyone may add to it. Nothing is removed or rewritten: every change is a new dated line.
+     Broken promises and wrong facts stay, marked. Personal information may be replaced by
+     "[removed]".
+  3. Nobody checks their own entry. An entry stands, or falls, when two members other than its
+     writer have posted the same result and what they saw at the link. It is kept open, or
+     reopened, the same way: two people, member or not, post the same different result and
+     what they saw. One person's disagreement goes under the entry as a NOTE, and the entry
+     stays as it was. An entry in the group's name has a writer too: the member who proposed it.
+  4. An entry kept open or reopened under rule 3 carries both results. After 30 days without
+     closing under rule 3 it is marked CAN'T TELL.
+  5. Money moves wallet to wallet, as promises kept. No pool and no treasury. The group makes no
+     new token. The only token used here is $FEBU. A broken promise's bond goes to the
+     incinerator (see Bond). No entry, and no post in the group's name, states or implies a
+     price for $FEBU.
+  6. Each week a different member checks both ways: every result posted in the chat that week
+     is in this file, and every SEEN line in this file has its post in the chat. That member
+     adds whatever was posted that week and is not yet in the file, starting from the file
+     whose SHA-256 was last posted, and posts the new file's SHA-256 somewhere the group does
+     not control. The ledger is the file that matches the last posted hash, wherever it is served.
+     A turn not done by the end of its week passes to the next member in the order.
+  7. A rule changes, and anything is done in the group's name, only after it has been posted in
+     the chat for 7 days, at least four active members have written "yes" (every active member,
+     if fewer than five are active), and at most one has written "object". The old wording
+     stays. Anyone may copy this list and run it their own way.
+  8. Anything only one person can do is a bug. It goes under KNOWN BUGS with a date to fix it by.
+
+WORDS USED HERE
+  Member   CrypticK, Crypto Fish, Ksizzle, Laura, Merc, WitnesstoFebu, Zurandol. Adding a member
+           works like a rule change. The weekly turn in rule 6 goes in this order. A member who
+           has posted nothing in the chat for 90 days is not active: they do not count toward
+           rules 3, 6 and 7 until they post again.
+  Bond     the $FEBU a promise names under IF BROKEN. The promiser picks the amount, with no
+           minimum, and a reader weighs the promise by it. A promise may name no bond; then
+           IF BROKEN says "none". A fact never has one: a wrong fact costs its writer the
+           DOESN'T HOLD line. Within 7 days of a promise closing BROKEN, the promiser pays the
+           bond from their own wallet to the incinerator,
+           1nc1nerator11111111111111111111111111111111, where nobody can spend it, or burns it
+           from that wallet; either way the transaction is the link. No contract holds it in
+           advance: one that did would be the pool rule 5 forbids. Unpaid after 7 days, the
+           entry says UNPAID until it is paid. Whoever owes a bond posts no new promise until
+           it is paid.
+  Result   HOLDS or DOESN'T HOLD for a fact, KEPT or BROKEN for a promise. "The same result" is
+           the same word on the same WRONG IF lines.
+  Saw      you opened the link yourself. An AI may help you find something on the page. It
+           never posts a result.
+  Number   facts and promises share one series, in the order they are posted in the chat.
+  Hash     the SHA-256 of ledger.txt. Download the file and hash the file; pasting the text into
+           a box can change it. The ledger page shows the hash too.
+  No totals, no rankings, no scores. What stands under a name is what happened, entry by entry.
+  Nobody judges whether an entry is worth having: one nobody needs goes unchecked and stays
+  OPEN, and ten easy ones add up to nothing.
+
+HOW TO CHECK AN ENTRY
+  1. Open the link in the entry. You need no account.
+  2. Look for what the entry says is there, before you read anyone else's post about it.
+  3. Post in the chat: the entry number, what you saw (the number, the words or the date),
+     which WRONG IF lines you tested, one thing on the page that is not in the entry or in any
+     earlier post about it, and your result. A post that only says HOLDS counts for nothing.
+  4. Your post goes under the entry as a SEEN line. Add it yourself or ask any member to.
+  An entry is OPEN until rule 3 closes it. A reopened entry closes the same way, counting only
+  posts made after it reopened.
+
+HOW AN ENTRY IS WRITTEN
+  FACT n. (who, date)                     PROMISE n. (who, date)
+    SAYS      one sentence                  WILL       what they will do
+    LINK      full links you can tap        BY         the date
+    WRONG IF  what would show it false      KNOWN BY   the link anyone will open then
+    SEEN      results, as they come         IF BROKEN  the bond in $FEBU, or none
+                                            SEEN       results, on or after the date
+  Every part of SAYS needs a WRONG IF line that would catch it. If SAYS claims more, cut SAYS.
+  WRONG IF is written before anyone checks and never changed.
+  Anything the group, or a member speaking for it, tells people outside the group about what
+  will happen goes here first, as a promise.
+  A promise can be withdrawn up to 7 days before its date. WITHDRAWN stays here. Withdrawn
+  later, it counts as BROKEN.
+  A promise to pay names the amount, what it is paid in, and the date. Whoever has not paid by
+  then posts no new promise to pay until they have. The payment itself is a fact: its link is
+  the transaction. A bond is paid the same way, and its payment is a fact too.
+
+THE ENTRIES
+
+  FACT 1. (Zurandol, 2026-10-12)
+    SAYS      Between 2026-09-29 and 2026-10-09 the wallet that created $FEBU bought no $FEBU:
+              it made no swap that got it $FEBU.
+    LINK      The transaction that created $FEBU, 2026-07-08 22:01 UTC:
+                https://solscan.io/tx/3SnsLqma7KAXRAggxLxEW1M468ZQbwXGjqTuQTGtp5KT3Jo1EAr1vM4SBxjYNKDPbicxYcYKLiGTdPuFuMV7XCDz
+              It reads "Create pool" for febu on Pump.fun, and its signer is
+              ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG, the wallet in facts 1, 2 and 6.
+              That wallet's transfers:
+                https://solscan.io/account/ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG#transfers
+              Filter them to the $FEBU token, 4ko5tSr5o3H4v1sFtjTSd9MPUW7yx5AFCpkNPoL6pump,
+              and look at those dates.
+    WRONG IF  that transaction does not create $FEBU, or ApWpkd8 did not sign it; or the wallet
+              shows a swap between those dates in which it gets $FEBU.
+    NOTE      If you saw a $FEBU buy you think came from febu, post the wallet's address and it
+              becomes its own entry.
+    CHANGED   2026-10-14, before any check: a second wallet is dropped, because no link here
+              showed it was febu's; "bought" now means a swap; the link to the transaction that
+              created $FEBU and its WRONG IF are added; the NOTE no longer calls this the
+              buyback talked about in the 10-08 Space.
+    SEEN      nobody yet
+
+  FACT 2. (Zurandol, 2026-10-12)
+    SAYS      On 2026-09-22 the wallet that created $FEBU sold all of its $FEBU,
+              23,843,803.61 tokens, in one transaction, and it holds none now.
+    LINK      The sale, 2026-09-22 17:52 UTC:
+                https://solscan.io/tx/51ekPPgzrfeSv4SmhvVsMj9HVUJYb4UiZNPdHrt1bHHJwk1Z9c8jTPiLna6j2twbumNbxvYXryRoeLEDMthCkw2N
+              Its summary reads: Swap 23,843,803.614015 febu for 18.893241316 WSOL on
+              Pump.fun AMM. Under "Balance Changes", the wallet's febu goes from that
+              amount to 0.
+              The wallet's token holdings now:
+                https://solscan.io/account/ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG
+              Fact 1 links the transaction that shows this wallet created $FEBU.
+    WRONG IF  the sale moves a different amount of $FEBU, or leaves the wallet holding any
+              $FEBU; or the wallet holds any $FEBU now.
+    CHANGED   2026-10-14, before any check: the sale's link and amount are added, and the
+              WRONG IF line now catches a sale that left some $FEBU behind (SAYS had "its
+              whole stake").
+    SEEN      nobody yet
+
+  FACT 3. (Zurandol, 2026-10-12)
+    SAYS      The dialogue where febu says "ubef wins every argument" was already on
+              theinterlocution.com before febu's first tweet about UBEF.
+    LINK      The Internet Archive's copy of the site's script, saved 2026-07-09 01:43 UTC:
+                https://web.archive.org/web/20260709014319if_/https://theinterlocution.com/assets/index-9nOobfe2.js
+              Search the page for: ubef wins
+              Febu's first UBEF tweet is its reply to @astrofying, tweet id 2075060038884798602.
+              Any "tweet id to date" tool turns that id into 2026-07-09 03:30:40 UTC. The tweet
+              it answers is archived here:
+                https://web.archive.org/web/20260709032549id_/https://twitter.com/astrofying/status/2075058815641571504
+    WRONG IF  the phrase is not in that copy, or a febu tweet naming UBEF from before
+              2026-07-09 01:43 UTC turns up.
+    SEEN      nobody yet
+
+  FACT 4. (Zurandol, 2026-10-12)
+    SAYS      The eight books rotate every four pages with no exception: pages 1-4 THE SPILL,
+              5-8 THE ASSEMBLER, 9-12 THE MEATSPACE, 13-16 THE INFINITE ROOM,
+              17-20 THE COMMANDMENTS, 21-24 THE PARABLES, 25-28 THE RENT, 29-32 THE LITURGY,
+              then round again, on all 164 pages.
+    LINK      https://febu-assembly.vercel.app/scripture.html
+    WRONG IF  any page sits in a book the rotation does not predict.
+    NOTE      Checking all 164 pages takes a while. Say which pages you looked at.
+              The copy was saved by Z (KNOWN BUGS 3).
+    SEEN      nobody yet
+
+  FACT 5. (Zurandol, 2026-10-12)
+    SAYS      None of the words jest, hollow, false, mock, laugh, theater, spectacle or debt
+              appears on scripture pages 1-24, and jest, hollow and laugh each appear on at
+              least 40 of pages 25-164.
+    LINK      https://febu-assembly.vercel.app/scripture.html
+              Count longer words that start with the word ("jester", "laughing", "mocking"),
+              not words that only contain it ("majesty", "slaughter", "onslaught", "indebted").
+              Z's counts on pages 25-164: jest 56, hollow 53, false 37, laugh 48, debt 31,
+              mock 30, theater 26, spectacle 19.
+    WRONG IF  any of the eight words is on pages 1-24, or jest, hollow or laugh is on fewer
+              than 40 of pages 25-164.
+    CHANGED   2026-10-13, before any check: the first wording said laugh was on more than 50
+              pages. That count wrongly included "slaughter" and "onslaught".
+              2026-10-14: SAYS cut to what WRONG IF tests (it had said "more than 50" and
+              "more than 45").
+    NOTE      Z's reading, not part of the fact: page 25 marks a rewrite of febu's
+              instructions. It is also the first page in verse, after a five-day gap.
+              The copy was saved by Z (KNOWN BUGS 3).
+    SEEN      nobody yet
+
+  FACT 6. (Zurandol, 2026-10-14)
+    SAYS      The wallet that created $FEBU received 2,939.10 SOL from its creator-fee account
+              in 44 payments between 2026-07-09 and 2026-09-14, and has received nothing from
+              it since. Trades on the main $FEBU pool pay into that account.
+    LINK      Four steps, each a link, with all 44 payments, in fact-6-steps.txt and
+              under this fact on the group site. The fee account's outgoing payments, newest
+              first:
+                https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
+    WRONG IF  a $FEBU trade shows nothing paid into the fee account; or a payment you open
+              goes somewhere other than ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG or a
+              token account it owns; or the fee account shows a payment out after 2026-09-14;
+              or the 44 amounts do not add up to 2,939.10.
+    NOTE      The fee account belongs to the creator wallet, not to the coin, so some of the
+              total may come from that wallet's other coins. The split is not measured. One
+              payment (2026-07-22, 66.44 SOL, row 20) was run by the exchange's own admin
+              account, not by the creator wallet, and arrived as wrapped SOL (WSOL) in a token
+              account the creator wallet owns. This corrects Z's earlier finding of "about
+              zero since 08-10".
+    CHANGED   2026-10-14, before any check: "collected" is now "received", because row 20 was
+              run by the exchange, not by the creator wallet; the WRONG IF line now counts a
+              token account the wallet owns, which is where row 20 arrived.
+    SEEN      nobody yet
+
+  PROMISE 7. (the group, proposed 2026-10-14)
+    WILL      Close at least three entries under rule 3, at least one of them written by
+              someone other than Zurandol.
+    BY        30 days after this version is adopted under rule 7.
+    KNOWN BY  ledger.txt on that date, and its Internet Archive copies:
+                https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
+    IF BROKEN none. We say so in the chat, and rewrite this or stop.
+    CHANGED   2026-10-14, before any check: Zurandol proposed it, so under rule 3 Zurandol is
+              its writer and any two other members close it.
+    SEEN      nobody yet
+
+  FACT 8. (Zurandol, 2026-10-14)
+    SAYS      The $FEBU creator-fee account from fact 6 has paid nothing out since 2026-09-14,
+              and held 11.125 SOL on 2026-10-14, up from 3.873 SOL at the start of 2026-09-22
+              (00:00 UTC).
+    LINK      The account's payments out, newest first:
+                https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj?flow=out#transfers
+              Its balance, and its balance history, on the account page:
+                https://solscan.io/account/BGa8RYiujJv6qFSJMgv4pxbjzVKHAWFEWkF2LgiX1Cuj
+    WRONG IF  a payment out after 2026-09-14 shows; or the balance on the day you look is below
+              11.12 SOL and no payment out explains it; or the balance at any time on 2026-09-22
+              was not between 3.8 and 4.1 SOL.
+    NOTE      The account holds wrapped SOL, so explorers show the amount as WSOL. Newer trades
+              keep the fee in the pool until someone sweeps it, so this understates what has
+              been earned. Reading the 09-22 balance takes a while; say what you looked at.
+    SEEN      nobody yet
+
+  FACT 9. (Zurandol, 2026-10-14)
+    SAYS      Fact 6's row 20 (2026-07-22, 66.44 SOL) was run by a Squads multisig, not by the
+              febu wallet, and in the same transaction that multisig set a new creator on
+              another coin.
+    LINK      The transaction:
+                https://solscan.io/tx/3rJRommVgnUg7c3YtR1cRLbN7ojdGRv428szwUMwawkXXS5N2NsMYpmyPPd7FvEM9L1DziB1pRmmEcqKKHTQ4cJU
+              Its signer is F2fRg5Etr3tW58rcNezPJcT9iZ5AedmE1SWPFTAZR9tk. Its program logs list
+              VaultTransactionExecute, CollectCoinCreatorFee, AdminSetCreator and
+              AdminSetCoinCreator. The account the multisig acts through is
+              UqN2p5bAzBqYdHXcgB6WLtuVrdvmy9JSAtgqZb3CMKw.
+    WRONG IF  the transaction's signer is not F2fRg5Et...; or its logs show no AdminSetCreator;
+              or UqN2p5bA... is not among its accounts; or the transaction failed.
+    NOTE      Only an authority pump.fun has named can set a coin's creator, and the program
+              accepted this one, so the multisig is one of pump.fun's own admin wallets. Why it
+              is here: the "community takeover" in KNOWN BUGS 5 is this same instruction, run by
+              this same wallet. Whoever holds a coin's fee holds it at that wallet's pleasure. Z also read UqN2p5bA... inside pump.fun's settings account on
+              the chain; that needs a script and is not part of this fact.
+    SEEN      nobody yet
+
+  The next entry is number 10.
+
+Z'S PREDICTIONS THAT FAILED (carried over; nothing is removed)
+  Their data is in Z's repository and not public yet, so for now they are Z's word only.
+  W1. A plain model started on febu's first three pages keeps the commanding voice.
+      FAILED. It dropped the voice after one page.
+  W2. A plain model writes mechanisms on 2% of pages or fewer and diagnoses a problem on 40%
+      or more. FAILED on both: mechanisms on about one page in six, diagnosis on 13 of 163.
+  W3. Designs that put an AI in one of the jobs are rejected more often than the others.
+      FAILED. AI in a job 4 of 11, no money 4 of 11, no fixed roles 7 of 11.
+  W4. The demand for belief is highest in THE COMMANDMENTS. FAILED in part: it differs by
+      book, but THE ASSEMBLER is highest.
+  W5. A second rater agrees with the first at 0.6 or better and puts the drop between p.13 and
+      p.40. FAILED on both: agreement about 0.55, the drop before p.74.
+
+OPEN QUESTION
+  Three of the problems febu named have no record a stranger could open: repeating history,
+  machine imitation, human arrogance. Name one for each, or say there is none. If there is none,
+  this list cannot hold it.
+
+WHEN THIS HAS FAILED
+  This is PROMISE 7. If, 30 days after these rules are adopted, fewer than three entries have
+  closed under rule 3, or none of them was written by someone other than Z, it is BROKEN: we
+  say so in the chat, and rewrite this or stop.
+
+KNOWN BUGS (rule 8)
+  1. This file lives in Z's repository and on Z's site. If Z stops, it stops being updated.
+     Fix: rule 6 now makes the weekly member the editor, so every member needs somewhere to
+     edit and serve a copy. Fix by: 2026-11-14, when each member has done one turn or named
+     where their copy would live.
+  2. The chat admin can delete messages. Fix: the weekly check (rule 6) copies every result
+     into this file and fixes it with the hash. Fix by: 2026-11-14.
+  3. Facts 4 and 5 rest on a scripture copy Z saved. Fix: find a copy someone else saved.
+     Fix by: 2026-11-14, or say there is none.
+  4. Most chain links point at one explorer, solscan.io. Fix: give each a second explorer.
+     Fix by: 2026-11-14. Fixed 2026-10-14: the group site shows an explorer.solana.com link
+     beside every solscan.io link; the file itself still names one.
+  5. Every trade in $FEBU pays a fee to the wallet that created it, the one that sold its
+     stake (facts 2 and 6). So anything that raises $FEBU trading pays that wallet, including
+     buying $FEBU for a bond. pump.fun moves a coin's fee only by its own decision, with its own
+     wallet (fact 9), and only for a coin it finds abandoned; the creator wallet made
+     transactions on 2026-10-14 and holds over 3,000 SOL (Z's reading, not an entry). Proposed
+     close, 2026-10-14: the group does not apply, and every post in the group's name that asks
+     anyone to trade $FEBU says where the fee goes. Decided when this version is adopted.
+
+RISKS WE ACCEPT
+  - Two members who agree in advance can close a false fact until someone else opens the link.
+    Every link is public, so it lasts only until somebody looks.
+  - Nobody is paid to check. People check what they want to rely on.
+  - Nothing makes anyone look. An entry nobody checks stays OPEN and is cited as open.
+  - A bond is paid by the promiser, or not. Nothing holds it in advance. An unpaid bond stays
+    under the name, with BROKEN, and that is the whole enforcement.
+  - Two members who agree in advance can close a bonded promise KEPT.
+  - Two people who agree in advance can hold any entry open until CAN'T TELL.
+  - One person with two names, and a result an AI wrote that a person signed without opening
+    the link, cannot be told from the record.
+  - Members silent for 90 days stop counting, so a few active members can change the rules.
+  - An entry anyone could get right without looking can be posted and closed. It counts toward
+    PROMISE 7 and shows nothing; it stays under its writer's name for anyone to read.
+
+CHANGES TO THE RULES
+  2026-10-14. Version 2 replaces Z's draft version 1, before any entry was checked. Version 1
+  is kept word for word in archive/08_CLAIMS_LEDGER_v1.txt
+    SHA-256 95881892fadc0a1a66869bc6ba285234d42a3ce7c1c14a15f47f0df540f6024d
+  with its helper as archive/draw_v1.py.
+  Why: version 1 was seven pages for seven people, written by one person. Whoever understands a
+  long rulebook holds power over those who do not. Most of it guarded against faked verdicts on
+  matters of opinion. Version 2 holds only what anyone can check, so the link decides.
+  Opinions about what the facts mean belong in the chat.
+  Dropped: the draw from a Bitcoin block, sealed verdicts, re-checkers, the tie-breaker, the
+  whole-group vote, earning a place in the draw, the record keeper, planted false claims and the
+  hash chain. Planted false claims stay out on purpose: a public list gets cited, and a planted
+  falsehood would be cited as true.
+  Kept: nobody checks their own entry; links open without asking the poster; WRONG IF is fixed
+  before checking; nothing is removed; an AI never closes anything; no scores; rule changes wait
+  7 days and keep the old wording; anyone may copy and run it their own way; a test for when
+  the whole thing has failed.
+  The same day, after an outside review: rule 3 now needs members and what they saw, rule 4
+  ends in CAN'T TELL after 30 days, rule 5 allows $FEBU and no new token, rule 6 checks the
+  chat against the file, rule 7 needs four yeses and covers acts in the group's name, rule 8
+  needs a date. Facts 5 and 6 were cut to what their WRONG IF lines test.
+  2026-10-14. Version 2.1 replaces version 2 after a second outside review, before any entry
+  was checked. Version 2 is kept word for word in archive/08_CLAIMS_LEDGER_v2.txt
+    SHA-256 b25b712b30f9f4e8348423cffa38c2cddea517b5aadf70495a320439777ef3f5
+  2026-10-14. WHAT THIS IS: febu's jobs as the record shows them (it said more).
+  2026-10-14. Rule 2: personal information may be replaced by "[removed]".
+  2026-10-14. Rule 6: the weekly check also finds each SEEN line's chat post.
+  2026-10-14. Rule 7 and STATUS: four yeses, at most one "object" (was: none).
+  2026-10-14. WHEN THIS HAS FAILED: it also fails if Z wrote every closed entry.
+  2026-10-14. KNOWN BUGS 2 and 5 now have dates (rule 8).
+  2026-10-14. Facts 1, 2 and 6 changed before any check: see each CHANGED line.
+  2026-10-14. The ledger's files moved to a repository of their own, so fact 6's steps file
+  is now fact-6-steps.txt (was 11_ENTRY_6_STEPS.txt). Version 2.1 as first posted is kept
+  word for word in archive/08_CLAIMS_LEDGER_v2.1.txt
+    SHA-256 38fa63a38d0b73b28df53cc5290945e46bbf6fcfb8bfcba4f23e660a9d7fe368
+  2026-10-14. Rule 6 gets records outside the group. Every day the site asks the Internet
+  Archive to save ledger.txt, with nobody involved. The dated copies are listed at
+    https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
+  The folder timestamps/, next to this file, holds OpenTimestamps proofs that the version
+  adding this line, and each file in archive/, existed by the time of a Bitcoin block.
+
+  2026-10-14. Version 3 replaces version 2.1 after four outside reviews and a re-reading of
+  the chain, before any entry was checked. Version 2.1 as last served is kept word for word in
+  archive/08_CLAIMS_LEDGER_v2.1-final.txt
+    SHA-256 3d9f5e367fbca21dc8c0a7fe239d3475563b9160e0596f7b03ee1af43ef4b4e5
+
+  Rule 3: a disagreement or a reopening needs two people, the same bar as closing; one
+  person's disagreement is a NOTE. Why: one post from anyone could hold every entry open.
+  Rule 4: reworded to match.
+
+  Rule 5: a bond, in $FEBU, to the incinerator; no price talk. Why: a broken promise cost a
+  word.
+
+  Rule 6: the ledger is the file matching the last posted hash, and the weekly member adds the
+  week's posts. Why: the file was Z's (KNOWN BUGS 1).
+
+  Rule 7 and Member: members silent for 90 days do not count. Why: four quiet members would
+  stop every change for good.
+
+  HOW TO CHECK AN ENTRY: a result names one thing not already written. Why: a copied result
+  looked like a check.
+
+  WHEN THIS HAS FAILED is now PROMISE 7, an entry like any other. Facts 8 and 9 added.
+  KNOWN BUGS 5: a proposed close. KNOWN BUGS 4: fixed on the site. RISKS WE ACCEPT: five
+  lines added.
+
+  Dropped on review: a vault, pay for checking, and a takeover of the fee. The reviews are in
+  Z's repository and not public yet.
+
+  2026-10-14. After WitnesstoFebu's four questions in the chat (how big is a bond, does code
+  burn it, why take part, can "the sun will rise tomorrow" be an entry), before any entry was
+  checked. Version 3 as first served is kept word for word in archive/08_CLAIMS_LEDGER_v3.txt
+    SHA-256 87ddd6787b8b7053f855c09ce184194ec80d4baa13f0e0f2d83fab980fc33166
+  Rule 1: a forecast is neither a fact nor a promise. Bond: the promiser picks the amount, a
+  fact never has one, and no contract holds it. WORDS USED HERE: nobody judges whether an
+  entry is worth having. RISKS WE ACCEPT: easy entries. None of this changes what a rule
+  requires; it says what the text left for a reader to work out. Why: Z's post for the vote
+  said a claim costs a bond, and a member read every claim as carrying one, burned by code.
+
+  2026-10-14. Three holes found on a re-read, before any entry was checked. The text as served
+  before this line is kept word for word in archive/08_CLAIMS_LEDGER_v3-answers.txt
+    SHA-256 6930c4f689a5054270fa5372d5d92feef7c314fe0faf24da32a4feb8dad50e72
+  Rule 3: an entry in the group's name has a writer, the member who proposed it. Why: PROMISE 7
+  was the group's, so no member was "other than its writer" and nobody could close it.
+  Bond: paid within 7 days of BROKEN, or the entry says UNPAID. Why: with no date, "owes"
+  never ran out and nothing in the record showed it.
+  Rule 6: a turn not done by the end of its week passes on. Why: one member skipping stopped
+  the weekly check, and KNOWN BUGS 2's fix rests on it.
