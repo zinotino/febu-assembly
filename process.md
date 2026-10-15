@@ -233,6 +233,20 @@ Exists only as that member's own promise, with a bond, closed under rule 3 like 
 and nothing opens before the stop rule's dated line says keep. The shape, its cap and its own two tests are in `paid.md`,
 beside this file, for whoever offers. It is not part of the vote.
 
+### What it is worth
+
+The group does not decide. It makes checking cheap and leaves the price to whoever wants the answer, as Bitcoin's rules
+fix the cost of a check and not the coin's worth.
+
+- **A check:** its cost in minutes is measured in the unpaid weeks (E1). That is the floor for any pay: below it nobody
+  checks, and far above it people check what cannot be false.
+- **A task:** a member's own promise, with a bond, naming the pay for a script two others reproduce. Anyone may post a
+  competing one. If nobody takes the work, it was worth less than the offer to everyone else.
+- **Creative work:** no record settles whether it is good. The ledger shows that it was published, when, and that its
+  author kept their promise. The audience prices the rest.
+- **The self-sustaining loop is unproven.** It closes only if people other than the funder post bounties, which is E5.
+  Until day 30 nobody is paid; the only pay that can open after it is the funder's, for scripts.
+
 ## 7. The clock: from now to a decision
 
 | Step | Who decides | Done when | Stops if |
