@@ -20,13 +20,12 @@ THE FOUR TESTS
              transaction is the link, and whoever owes a bond posts no new promise until it
              is paid (rule 5, Bond). Nothing holds the bond in advance. That is all. It is
              weak.
-  3. BAILOUT. Can an insider issue something new instead of paying for a failure?
-     Febu:   yes. Announcements cost nothing, and the same wallet made a second coin on 09-03.
+  3. BAILOUT. Can whoever runs it issue something new instead of paying for a failure?
+     Febu:   not in the ledger yet. A fact about it needs a link (rule 1).
      Ledger: nothing is removed, a promise withdrawn in its last 7 days counts as BROKEN, and
              the group makes no new token (rules 2 and 5).
   4. DECISION. Is there a step only one party can perform?
-     Febu:   yes. Its admin account approved a developer account as winner of the $500 job
-             #004, and job #002 was deleted.
+     Febu:   not in the ledger yet. A fact about it needs a link (rule 1).
      Ledger: nobody approves and anyone checks. Rules, and anything done in the group's
              name, need 7 days, four yeses and at most one "object" (rule 7). Rule 6 makes a
              different member the editor each week, and the ledger is the file that matches
@@ -57,7 +56,7 @@ THE FOUNDER TEST
 
 $FEBU
   The group makes no new token, and $FEBU is the only token used (rule 5, proposed). Using
-  $FEBU means its trades pay a fee to the wallet that created it and sold out; in the trade
+  $FEBU means its trades pay a fee to the wallet that created it; in the trade
   checked, that wallet's own 09-22 sale, just under 1% of the SOL (fact 6, step 1). pump.fun lets a community apply to move an abandoned
   coin's fee to a new wallet. Whether to apply, and who would hold that wallet, is a decision
   in the group's name (rule 7).
@@ -71,5 +70,5 @@ $FEBU
 QUESTIONS FOR WITNESS
   - Which of the four tests is wrong, and which one is missing?
   - What would count as this working, written so that it could come back false?
-  - What role for $FEBU passes test 1 while its fee still goes to the wallet that sold?
+  - What role for $FEBU passes test 1 while its fee still goes to the creator wallet?
     Version 3 offers the bond; buying $FEBU to post one still pays that fee (KNOWN BUGS 5).

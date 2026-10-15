@@ -1,5 +1,5 @@
 SUPERSEDED 2026-10-15. Do not post this draft. It names the first version-3 hash (87ddd678...) and a vote by 2026-10-21;
-ledger.txt has since changed (hash 847a7347..., vote by 2026-10-22). The current draft is papers/posts/POST_REFRESH_20261015.txt,
+ledger.txt has since changed (hash e07c1e45..., vote by 2026-10-22). The current draft is papers/posts/POST_REFRESH_20261015.txt,
 with the findings behind it in papers/reviews/AUDIT_20261015.md. The text below is kept as it was.
 
 ------------------------------------------------------------------------------------------------------------

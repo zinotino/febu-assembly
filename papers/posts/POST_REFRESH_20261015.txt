@@ -2,7 +2,7 @@ DRAFT for Z to post in the Assembly chat on 2026-10-15. Edit freely. It replaces
 which names the first version-3 hash and a 10-21 deadline; both are out of date. ledger.txt says the 10-22 date
 holds only if the post that shows this text is made on 2026-10-15.
 
-Before posting: run  python checks/release.py --posted 847a7347  from a network that can reach the site. No line should say FAIL.
+Before posting: run  python checks/release.py --posted e07c1e45  from a network that can reach the site. No line should say FAIL.
 If ledger.txt changes after this draft, change the hash and section 3 too. Lines marked [Z] need your decision (see audit F2, F6).
 
 ------------------------------------------------------------------------------------------------------------
@@ -11,11 +11,11 @@ Ledger version 3, for a vote. And a one-week dry run.
 
 Vote by 2026-10-22: "yes" or "object" on version 3, on the Saw line, and on the stop rule (process.md, sections 5 and 7).
 The file: https://febu-ledger.vercel.app/ledger.txt
-SHA-256 847a73470d540d0dbd234e6626b6fe6c5b4757124f248f5987a36441c77e57f0
+SHA-256 e07c1e4572eb84a5302f735ed0eaa6b665c98fa4f5d4ce103da5ff68a1a7f01d
 The whole system on one page, with a picture: https://febu-ledger.vercel.app/how.html
 
 A yes counts for the text whose hash it names. Please write it as:
-  VOTE YES · version 3 · 847a7347 · <your name> · <date>
+  VOTE YES · version 3 · e07c1e45 · <your name> · <date>
 [Z: this adds the hash to the template and makes a yes written on the 10-14 text ask again. Drop this paragraph and the template
 change if you would rather keep the old rule.]
 
@@ -35,6 +35,7 @@ CHANGES.
   the old lines true later. The writer may change a WRONG IF line with a dated CHANGED line until the first SEEN line.
 - KNOWN BUGS 6 (only Z can reissue a name-claim code) and 7 (a non-member has nowhere to reopen an entry), each dated.
 - PROMISE 7 now counts three entries other than itself.
+- WHAT THIS IS and tests 3 and 4 drop their lines about febu's jobs and fees: none had a link (rule 1). No rule changed.
 The vote's 7 days count from this post because the rule text changed.
 
 2. What the four reviews found, in one breath.
@@ -60,7 +61,7 @@ its promiser to the incinerator, where nobody can spend it, or the entry says UN
 this does not solve: the multipolar trap, which Bitcoin did not solve either, and paying anyone to look. Thirty days will tell
 whether seven named people look unpaid. If they do not, a reward layer is back on the table with real numbers.
 No entry or post in the group's name says or implies a price, demand or supply for $FEBU. Every $FEBU trade pays a fee to the
-wallet that sold (KNOWN BUGS 5), so a post that asks anyone to trade it says so.
+creator wallet (KNOWN BUGS 5), so a post that asks anyone to trade it says so.
 
 5. What I am asking.
 "yes" or "object" by 2026-10-22, written as above. And one question for each of you: which of the rule changes in section 1 is

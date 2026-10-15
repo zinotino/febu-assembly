@@ -11,9 +11,7 @@ STATUS
 
 WHAT THIS IS
   A public list of promises and facts. Nobody approves anything. Anyone can check anything.
-  Nothing is removed except personal information (rule 2). Febu worked the other way: its admin
-  account approved a developer account as winner of the $500 job #004, job #002 was deleted,
-  announcements cost nothing, and the fees went to the wallet that later sold.
+  Nothing is removed except personal information (rule 2). An entry says what its link shows.
 
 THE RULES
   1. The list holds promises ("I will do X by this date; here is how anyone will know") and
@@ -333,8 +331,8 @@ KNOWN BUGS (rule 8)
   4. Most chain links point at one explorer, solscan.io. Fix: give each a second explorer.
      Fix by: 2026-11-14. Fixed 2026-10-14: the group site shows an explorer.solana.com link
      beside every solscan.io link; the file itself still names one.
-  5. Every trade in $FEBU pays a fee to the wallet that created it, the one that sold its
-     stake (facts 2 and 6). So anything that raises $FEBU trading pays that wallet, including
+  5. Every trade in $FEBU pays a fee to the wallet that created it (facts 2 and 6). So
+     anything that raises $FEBU trading pays that wallet, including
      buying $FEBU for a bond. pump.fun moves a coin's fee only by its own decision, with its own
      wallet (fact 9), and only for a coin it finds abandoned; the creator wallet made
      transactions on 2026-10-14 and holds over 3,000 SOL (Z's reading, not an entry). Proposed
@@ -482,3 +480,14 @@ CHANGES TO THE RULES
   their own CHANGED lines.
   The vote's 7 days count from the post that shows this text; the date above holds only if
   that post is made on 2026-10-15.
+
+  2026-10-15. Before any entry was checked. The text before this line is kept word for word
+  in archive/08_CLAIMS_LEDGER_v3-before-neutral-wording.txt
+    SHA-256 847a73470d540d0dbd234e6626b6fe6c5b4757124f248f5987a36441c77e57f0
+  WHAT THIS IS drops its lines about febu's jobs and fees. None had a link, so under rule 1
+  none was a fact. KNOWN BUGS 5 and tests.txt no longer describe the creator wallet by its
+  sale; fact 2 still gives the sale, with its link. tests.txt changes the same way (tests 3
+  and 4, and two phrases); its text before this change is kept word for word in
+  archive/10_FOUR_TESTS_v3-before-neutral-wording.txt
+    SHA-256 881234a3d796cddac35b4d847b0bddee2a20add5a4f636d2a375ce5c2fd8fbf0
+  No rule changed.
