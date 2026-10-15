@@ -33,7 +33,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SITE = "https://febu-ledger.vercel.app"
+SITE = "https://febu-assembly.vercel.app"
 OTS_MAGIC = b"\x00OpenTimestamps\x00\x00Proof\x00\xbf\x89\xe2\xe8\x84\xe8\x92\x94"
 OTS_BITCOIN = bytes.fromhex("0588960d73d71901")
 OTS_PENDING = bytes.fromhex("83dfe30d2ef90c8e")

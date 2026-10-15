@@ -2,6 +2,32 @@
   "buildCommand": "python3 build.py",
   "routes": [
     {
+      "src": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "febu-ledger\\.vercel\\.app"
+        }
+      ],
+      "status": 308,
+      "headers": {
+        "Location": "https://febu-assembly.vercel.app/febu-assembly.html"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "febu-ledger\\.vercel\\.app"
+        }
+      ],
+      "status": 308,
+      "headers": {
+        "Location": "https://febu-assembly.vercel.app/$1"
+      }
+    },
+    {
       "src": "/(.*)",
       "headers": {
         "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' https://tytebptpuiiemuxlaeab.supabase.co wss://tytebptpuiiemuxlaeab.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
@@ -31,26 +57,10 @@
       "dest": "/api/entries?num=$1&act=$2"
     },
     {
-      "src": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "febu-ledger\\.vercel\\.app"
-        }
-      ],
-      "dest": "/febu-assembly.html"
-    },
-    {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "missing": [
-        {
-          "type": "host",
-          "value": "febu-ledger\\.vercel\\.app"
-        }
-      ],
       "dest": "/index.html"
     }
   ],

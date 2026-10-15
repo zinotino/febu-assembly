@@ -1014,7 +1014,7 @@ def calendar_ics(votes, members, start, secs):
     def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
         return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
     out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
-    for a, b, what, uid in ev:
+    for a, b, what, uid in ev:                      # the UID's domain is only an id: changing it would double every event already imported
         out += ["BEGIN:VEVENT", "UID:%s@febu-ledger.vercel.app" % uid, "DTSTAMP:%sT000000Z" % day(start or a),
                 "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + text(what), "URL:" + FRONT,
                 "END:VEVENT"]
