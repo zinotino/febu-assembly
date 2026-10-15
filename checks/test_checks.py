@@ -62,3 +62,48 @@ if __name__ == "__main__":
         if name.startswith("test_"):
             f()
     print("ok")
+
+
+def test_release_hashes():
+    from release import sha256, wayback_digest
+    assert sha256(b"") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    assert wayback_digest(b"") == "3I42H3S6NNFQ2MSVX7XZKYAYSCX5QBYJ"   # the Internet Archive's digest of an empty body
+
+
+def test_ots_pending_and_anchored():
+    from release import OTS_BITCOIN, OTS_MAGIC, OTS_PENDING, parse_ots
+    d = bytes(range(32))
+    base = OTS_MAGIC + b"\x01\x08" + d
+    assert parse_ots(base + OTS_PENDING + b"xx") == (d.hex(), False, True)    # a calendar's promise only
+    assert parse_ots(base + OTS_BITCOIN + b"xx") == (d.hex(), True, False)    # in a block
+    assert parse_ots(b"junk") == (None, False, False)
+
+
+def test_release_printed_hash():
+    from release import printed_hash
+    h = "a" * 64
+    html = '<dd><code class="tok" data-sha-of="ledger.txt" data-name="ledger.txt" title="tap to copy">%s</code></dd>' % h
+    assert printed_hash(html, "ledger.txt") == h and printed_hash(html, "archive/x.txt") is None
+
+
+def test_release_against_a_local_site():
+    """The repo served as it is: no line fails; and a post that names an earlier version is told which one."""
+    import functools
+    import http.server
+    import threading
+    from release import FAIL, ROOT, archive_hashes, run, sha256
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a, **k):
+            pass
+    handler = functools.partial(Quiet, directory=str(ROOT))
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        site = "http://127.0.0.1:%d" % srv.server_address[1]
+        assert not [w for s, w in run(site, "", archive=False) if s == FAIL]
+        current = sha256((ROOT / "ledger.txt").read_bytes())
+        older = next((h, n) for h, n in archive_hashes().items() if h != current)
+        rows = run(site, older[0][:8], archive=False)
+        assert any(s == FAIL and older[1] in w and "earlier version" in w for s, w in rows), rows
+    finally:
+        srv.shutdown()

@@ -117,3 +117,21 @@ class Calendar(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ArchiveOrder(unittest.TestCase):
+    def test_same_order_whatever_the_hash_seed(self):
+        """archived() sorted ties (v3, v3-answers; v2.1, v2.1-final) in set order, so ledger.html, which prints the
+        hash rule 6 relies on, differed from one build to the next. The order must not depend on PYTHONHASHSEED."""
+        import os
+        import subprocess
+        import sys
+        code = ("import build; t = build.raw_text(build.LEDGER).decode('utf-8'); "
+                "print('\\n'.join(p for p, _, _ in build.archived(t)))")
+        seen = set()
+        for seed in range(8):
+            env = dict(os.environ, PYTHONHASHSEED=str(seed))
+            out = subprocess.run([sys.executable, "-c", code], cwd=str(build.ROOT), env=env, capture_output=True,
+                                 text=True, check=True).stdout
+            seen.add(out)
+        self.assertEqual(len(seen), 1, "archive order changed with the hash seed:\n" + "\n--\n".join(sorted(seen)))

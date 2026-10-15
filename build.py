@@ -704,7 +704,8 @@ def archived(text):
     """Each archive/... text the ledger names: (path, bytes, SHA-256), checked against any SHA-256 printed beside it."""
     out = []
     named = set(re.findall(r"\barchive/[\w.-]+\.txt\b", text))
-    for path in sorted(named, key=lambda p: [int(n) for n in re.findall(r"\d+", p)]):   # v1, v2, v2.1
+    # v1, v2, v2.1; ties (v3 and v3-answers share their digits) by length then name, never by set order
+    for path in sorted(named, key=lambda p: ([int(n) for n in re.findall(r"\d+", p)], len(p), p)):
         src = ROOT / path
         if not src.exists():
             sys.exit("the ledger names %s, which is not in archive/" % path)
