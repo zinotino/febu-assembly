@@ -183,8 +183,8 @@ the file's SHA-256 and nothing else, so it shows nothing about who made it. Each
 version of `ledger.txt`, and `timestamps/<name>.ots` for `archive/<name>`. There is one so far:
 `timestamps/ledger-d3e17658.txt.ots`, for the `ledger.txt` of 2026-10-15 (SHA-256 `d3e17658...`). It was made with the
 `opentimestamps` Python library, because the `ots` client would not start on that machine; it holds the same four
-calendar promises and verifies the same way. It is still pending: run `ots upgrade` on it after a few hours and commit
-the result. The archive files have no proof; stamp one the same way if the group wants it.
+calendar promises and verifies the same way. It was upgraded the same way on 2026-10-15: Bitcoin blocks 971607 and
+971608 (18:08 and 18:10 UTC) carry it, through two of the four calendars; the other two had not answered yet. The archive files have no proof; stamp one the same way if the group wants it.
 
 Install the client (Python 3), then verify a proof against the file it names:
 
