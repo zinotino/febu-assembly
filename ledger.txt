@@ -237,12 +237,15 @@ THE ENTRIES
               them written by someone other than Zurandol.
     BY        30 days after this version is adopted under rule 7.
     KNOWN BY  ledger.txt on that date, and its Internet Archive copies:
-                https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt
+                https://web.archive.org/web/*/https://febu-assembly.vercel.app/ledger.txt
     IF BROKEN none. We say so in the chat, and rewrite this or stop.
     CHANGED   2026-10-14, before any check: Zurandol proposed it, so under rule 3 Zurandol is
               its writer and any two other members close it.
     CHANGED   2026-10-15, before any check: "three entries" now means three other than this
               one, so closing this promise does not count toward itself.
+    CHANGED   2026-10-15, before any check: the Internet Archive listing named
+              febu-ledger.vercel.app, which now only redirects here. It names
+              febu-assembly.vercel.app, the one address the ledger is served from.
     SEEN      nobody yet
 
   FACT 8. (Zurandol, 2026-10-14)
@@ -373,3 +376,8 @@ CHANGES TO THE RULES
   cut: nothing has been checked or adopted yet. From here, every change is a new dated line
   under this one, with the text before it kept word for word in archive/ and its SHA-256
   beside it.
+  2026-10-15. One address, before any entry was checked. PROMISE 7's Internet Archive
+  listing now names febu-assembly.vercel.app: febu-ledger.vercel.app only redirects to it.
+  No rule changed. The text before this change is kept word for word in
+  archive/08_CLAIMS_LEDGER_v3-clean-start.txt SHA-256
+  90e674d37f1a1f26b66db28d556415202e6cef4adb3b97a7a35e36e9ef2635d5
