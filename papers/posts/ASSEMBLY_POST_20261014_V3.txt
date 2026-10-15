@@ -1,0 +1,84 @@
+SUPERSEDED 2026-10-15. Do not post this draft. It names the first version-3 hash (87ddd678...) and a vote by 2026-10-21;
+ledger.txt has since changed (hash 847a7347..., vote by 2026-10-22). The current draft is papers/posts/POST_REFRESH_20261015.txt,
+with the findings behind it in papers/reviews/AUDIT_20261015.md. The text below is kept as it was.
+
+------------------------------------------------------------------------------------------------------------
+
+DRAFT for Z to post in the Assembly chat, 2026-10-14 or 15. Edit freely. It replaces the reward-layer draft
+(ASSEMBLY_REWARD_POST_20261014.txt), which is now section 4 of this one. Version 3 is live at
+https://febu-ledger.vercel.app/ledger.txt (SHA-256 87ddd6787b8b7053f855c09ce184194ec80d4baa13f0e0f2d83fab980fc33166).
+
+------------------------------------------------------------------------------------------------------------
+
+Ledger version 3, for a vote. And a one-week dry run.
+
+Short version: the rules got four fixes, the group's failure test is now an entry, a broken promise costs
+$FEBU, and the money question is answered: no vault, no pay, no takeover. This week, before anything is
+adopted, check three entries and say how long each took.
+The whole system on one page, with a picture: https://febu-ledger.vercel.app/how.html
+
+1. What I did since yesterday.
+Four separate reviews of the ledger: one checked the chain and the platform's documents, one looked for what
+already exists (Wikipedia, Community Notes, Kleros, Debian, Long Bets, prediction registries), one tried to
+break it, one proposed fixes. Then I re-read three transactions myself. Every number below comes from the chain
+or from pump.fun's own pages; the reviews are in my repository and I will share them.
+
+2. What the reviews found.
+- Rule 3 as written let one post from anyone, member or not, hold every entry open. A throwaway account could
+  have pushed everything to CAN'T TELL and tripped our own failure test for nothing.
+- A takeover of the fee is not available. The creator wallet is not abandoned: it made transactions today and
+  holds over 3,000 SOL. And the takeover is executed by pump.fun's own multisig (fact 9), so whoever holds a
+  coin's fee holds it at that wallet's pleasure.
+- Every design that pays checkers needs money held somewhere, and every group in the survey that held money
+  spent itself governing it. Nothing new there; it is the same result the simulation gave.
+- What is new in the ledger, narrowly: fixing WRONG IF before checking for facts about the present, results
+  that must say what was seen, single-person steps listed as dated bugs, and a failure test written into the
+  rules. Everything else is borrowed from things that have lasted. Good.
+
+3. What version 3 changes.
+- Rule 3: a disagreement or a reopening needs two people, the same bar as closing. One person's disagreement
+  is kept as a NOTE.
+- Rule 6: the ledger is whichever file matches the last posted hash, and the weekly member makes the week's
+  changes. The file stops being mine.
+- Rule 7 and members: anyone silent for 90 days stops counting until they post again. Otherwise four quiet
+  members could freeze every change for good.
+- Checking: a result names one thing on the page that nobody has written yet. A copied result looked like a
+  check before.
+- Rule 5: a promise can name a bond in $FEBU. If the promise is BROKEN, the promiser sends the bond to the
+  incinerator, where nobody can spend it, and the transaction is the link. Nobody who owes a bond posts a new
+  promise. And no entry or post in the group's name says or implies a price for $FEBU.
+- PROMISE 7 is the group's own failure test: three entries closed within 30 days of adoption, at least one not
+  mine. If BROKEN, we say so and rewrite or stop.
+- KNOWN BUGS 5 gets a proposed close: we do not apply for the fee, and any post asking anyone to trade $FEBU
+  says where the fee goes.
+- Facts 8 and 9 added: the fee account since the sale, and who really ran the 07-22 collection.
+
+4. The money answer, for Witness.
+The Satoshi move was: make a thing cost real work, make checking it cost nothing, and let the rule pay
+instead of a person. Febu's eleven problems share one disease, speech that costs nothing, and febu is the
+purest case of it. So the Satoshi model applied to febu is proof of work for claims. A claim costs a WRONG IF
+line, a link and a bond. A check costs a click. A broken promise burns its bond by rule. $FEBU's role is the
+bond: a broken promise's bond goes to the incinerator by rule, and the group holds nothing and
+pays nobody. That passes your four tests more cleanly than any vault did.
+What it does not solve: the multipolar trap, which Bitcoin did not solve either, and paying anyone to look.
+Thirty days will tell whether seven named people look unpaid. If they do not, a reward layer is back on the
+table with real numbers (Ksizzle's shape, flat pay and a loss on a wrong vote, held in the simulation only
+when a wrong vote cost two and outside money came in).
+
+5. This week.
+The vote takes seven days. In the same seven days, with nothing adopted yet, please check these three. Each
+is one link.
+- FACT 3: search an archived file for "ubef wins".
+- FACT 8: open the fee account; look for any payment out since 09-14 and read the balance.
+- FACT 9: open one transaction; read its signer and its program logs.
+Post what you saw, which WRONG IF lines you tested, one thing on the page not already written, your result,
+and how many minutes it took. The minutes are the point. They are the number every later decision about pay
+depends on, and nobody has one yet.
+
+6. What I am asking.
+"yes" or "object" on version 3 by 2026-10-21. And one question for each of you: which of the four rule fixes is
+wrong, and what would change your mind.
+
+Witness: your marketing budget, if it stands, would be PROMISE 10. Amount, date, what the money is spent on,
+and the link anyone will open then. It would also be our first test of whether anyone outside the seven
+wants this. Zero strangers in 30 days is a result too.

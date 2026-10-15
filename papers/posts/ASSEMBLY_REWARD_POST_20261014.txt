@@ -1,0 +1,37 @@
+DRAFT for Z to post in the Assembly chat, 2026-10-14. Edit freely. Numbers: tools/exp_stance/results/ksizzle.md
+(P190) and satoshi.md (P187). Everything comes from a simulation built on my guesses, not from real people.
+
+----------------------------------------------------------------------------------------------------------------
+
+Reward layer, first proposal (Z). For everyone to review.
+
+Short version: pay for checking, not for posting. The unit is a person and an AI. Pay nobody yet. Run the ledger
+30 days with planted false claims and measure, because every number below is a guess.
+
+1. Ksizzle's shape: pay the same either way, extra for catching a planted claim.
+I ran it. Same pay either way is right, a checker paid more when a claim passes learns to pass things. But it only
+holds if a wrong vote on a planted claim costs the checker something. With a wrong vote costing 1 or less, none of
+480 settings I tried held: approve-everything collected the flat pay, reject-everything collected the bonus. At a
+cost of 2 (pay was 1 to 3 a check), 15 of 240 held, all with one planted claim for every two real ones. The extra
+for catching a plant helped a little (1 holding setting with no bonus, 4 or 5 with one) but it is not what holds it.
+
+2. Pairs. Yes, and the ledger already works this way: "An AI may help you find something on the page. It never
+posts a result." The person opens the link and answers for the verdict.
+- Cheaper checks need less outside money: about 20 units a round when a check costs 0.4, about 12 at 0.15, about 9
+  at 0.08. (Units are made up.)
+- Two pairs on one model: a shared blind spot (10%) took false claims accepted from 0.4% to 1.2%. Drawing the model
+  by lot did no better than everyone using the same one. The real rate is unknown; planted claims measure it free.
+- One person, ten AIs: if the draw counts what each account has at risk, 4, 40 or 400 accounts earned nothing. If it
+  counts accounts, a fleet of 40 earned about +4.75 a round. Count what is at risk, not pairs.
+
+3. The part rules cannot fix: money. Rule 5 says no pool, no treasury, $FEBU only. Every design that held needed
+money from outside the group and a loss that can actually be collected, which means a pool or promises. So any
+payment is a rule change (rule 7: 7 days, 4 yes). Open question I have not tested: who plants the false claims, since
+the planter cannot check that week.
+
+4. Step 1, no pay. For 30 days a person checks every entry (AI may help), and about one in three is a planted false
+claim. Measure three things: minutes per check with and without the AI, how often planted claims are caught, and how
+many entries have a record to check against. Then I rerun the simulation with those numbers and we look at pay.
+
+On Witness's point: the simulation only supports a narrow version of "proof of truth". Pay follows what a record can
+settle, and nothing else.
