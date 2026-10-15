@@ -538,10 +538,11 @@ SHELL = """<!doctype html>
 TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("process.html", "the process"),
         ("ledger.html", "the ledger"))
 QUIET = "Nothing on this page is stored or counted, and it loads nothing from other sites."
-BAR = '<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> ]</div>'
+BAR = '<div class="archive-bar">unverified: %s &middot; [ <a href="/febu-assembly.html">home</a> ]</div>'
 
 
-SITE = "https://febu-ledger.vercel.app"                 # the card image's address must be absolute for a chat to fetch it
+SITE = "https://febu-assembly.vercel.app"               # the card image's address must be absolute for a chat to fetch it
+FRONT = SITE + "/febu-assembly.html"                    # "/" is the den, so links to the Assembly name its page
 CARD = SITE + "/assets/card.png"                        # 1200x630, made by make_card.py
 CARD_ALT = "A claim costs a link and a line that would prove it wrong. A check costs a click."
 
@@ -1015,7 +1016,7 @@ def calendar_ics(votes, members, start, secs):
     out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
     for a, b, what, uid in ev:
         out += ["BEGIN:VEVENT", "UID:%s@febu-ledger.vercel.app" % uid, "DTSTAMP:%sT000000Z" % day(start or a),
-                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + text(what), "URL:" + SITE,
+                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + text(what), "URL:" + FRONT,
                 "END:VEVENT"]
     return "\r\n".join(out + ["END:VCALENDAR"]) + "\r\n"
 
@@ -1081,9 +1082,9 @@ def next_move(members, todo, votes, start, posted, remind):
         write = ('<p><a href="write.html">Write an entry</a>: a fact, a link anyone can open, and one line for each '
                  'part of it that would prove it wrong. The page lays it out for the ledger and the chat.</p>')
         link = "" if name == "*" else (
-            '<p class="mylink">Your link, for a bookmark or your DM thread: <a href="#me=%s">%s/#me=%s</a> '
-            '<button type="button" class="btn copy" data-copy="%s/#me=%s">Copy your link</button></p>'
-            % (quote(name), SITE.split("//")[1], quote(name), SITE, quote(name)))
+            '<p class="mylink">Your link, for a bookmark or your DM thread: <a href="#me=%s">%s#me=%s</a> '
+            '<button type="button" class="btn copy" data-copy="%s#me=%s">Copy your link</button></p>'
+            % (quote(name), FRONT.split("//")[1], quote(name), FRONT, quote(name)))
         claim = "" if name == "*" else (
             '<div class="claim" data-name="%s"><h3>Your name</h3><p class="claim-state">Checking whether this name is '
             'claimed&hellip;</p><div class="claim-form" hidden><label class="f">The claim code you were sent'
@@ -1115,7 +1116,7 @@ def next_move(members, todo, votes, start, posted, remind):
             'it. The first line of every post is what the weekly page reads: keep it as the buttons write it.</p>'
             '<p class="acts links-all"><button type="button" class="btn copy" data-copy="%s">Copy a link for each '
             'member</button></p>%s%s%s</div></section>'
-            % (chips, html.escape("\n".join("%s: %s/#me=%s" % (n, SITE, quote(n)) for n in members)),
+            % (chips, html.escape("\n".join("%s: %s#me=%s" % (n, FRONT, quote(n)) for n in members)),
                "".join(panel(n) for n in members + ["*"]), turn, remind_html))
 
 
@@ -1190,7 +1191,7 @@ def assembly_page(title, secs, steps_num, how_secs):
         remind.append("Weekly turn this week, to {turnend}: {turn}. Next: {next}.")
     if goal:
         remind.append("Goal (PROMISE %s): %d of %d entries closed." % (goal[2], shut, len(ents)))
-    remind = "\n".join(remind + [SITE])
+    remind = "\n".join(remind + [FRONT])
     if goal:
         task += ('<p><strong>The group&rsquo;s goal</strong> (<a href="ledger.html#%s">PROMISE %s</a>): %s %s '
                  'Closed so far: %d of %d.</p>' % (anchor("PROMISE", goal[2]), goal[2],

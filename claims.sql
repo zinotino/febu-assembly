@@ -1,6 +1,6 @@
 -- The one-time name claim (api/claim.js, claims.py). Paste into the febu-host Supabase project's SQL editor once.
 -- One row per member name. Row-level security is on with no policies, so the publishable key can neither read nor
--- write it: only the service key, which lives in the febu-ledger Vercel project's environment, reaches it.
+-- write it: only the service key, which lives in the febu-assembly Vercel project's environment, reaches it.
 create table if not exists public.assembly_claims (
   name        text primary key,                 -- as on the ledger's Member line
   code_hash   text not null,                    -- sha256 of the invite code, issued by claims.py

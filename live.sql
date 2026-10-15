@@ -2,7 +2,7 @@
 -- same Supabase project as claims.sql, once, after it. Two tables: who seconded which entry, and who checked it. The entries
 -- themselves stay in ledger.txt; a row here points at one by its number.
 -- Row-level security is on with no policies, so the publishable key can neither read nor write them: only the service
--- key, which lives in the febu-ledger Vercel project's environment, reaches them.
+-- key, which lives in the febu-assembly Vercel project's environment, reaches them.
 
 create table if not exists public.assembly_seconds (
   id    bigint generated always as identity primary key,
