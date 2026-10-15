@@ -50,8 +50,8 @@ THE FOUR PARTS
      both ways, adds what is missing, and posts the new file's SHA-256 in the chat and in one
      named public place outside it. The ledger is whichever copy matches the last posted hash.
      Three records sit outside the group: that posted hash, a daily request to the Internet
-     Archive to save ledger.txt, and a Bitcoin timestamp (OpenTimestamps), made for the current
-     version and waiting for its block. GitHub holds the history too, but the repository is Z's
+     Archive to save ledger.txt, and a Bitcoin timestamp (OpenTimestamps) of the current
+     version, in Bitcoin block 971607. GitHub holds the history too, but the repository is Z's
      (KNOWN BUGS 1) and its history was cut once, on 2026-10-15, when the ledger started clean.
      None of these stops an edit. Together they make an edit visible, with a date no member set.
 
