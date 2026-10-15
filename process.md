@@ -9,7 +9,8 @@ things are up for that vote now, all by 2026-10-22 (section 10).
 
 1. Anyone writes a claim as an entry: what it says, a link anyone can open, and what would prove it wrong.
 2. Two members who did not write it open the link and post what they saw. The same result twice closes it.
-3. Each week one member copies the week's results into the file and posts its hash somewhere the group does not control.
+3. Each week one member copies the week's results into the file and posts its hash in the chat and in one named public
+   place outside it.
 4. Nobody is paid to check and the group holds no money. A promise may name a $FEBU bond, burned by its writer if they
    break it.
 5. The whole thing runs as a 30-day test on the seven members, with the result that would end it written down first.
@@ -76,9 +77,9 @@ FACT n. (who, date)                     PROMISE n. (who, date)
 
 1. Open the link. You need no account.
 2. Look for what the entry says is there before reading anyone else's post about it.
-3. Post: the entry number, what you saw, which WRONG IF lines you tested, **one thing on the page nobody has written
-   yet**, and your result. A post that only says HOLDS counts for nothing. Add the minutes it took: not a rule, but E1
-   and any pay floor are measured from them.
+3. Post: the entry number, what you saw, which WRONG IF lines you tested (for a line over many items, how many items
+   you opened), **one thing on the page nobody has written yet**, and your result. A post that only says HOLDS counts
+   for nothing. Add the minutes it took: not a rule, but E1 and any pay floor are measured from them.
 4. Your post goes under the entry as a SEEN line.
 
 Nobody checks their own entry. An entry in the group's name has a writer: the member who proposed it. An AI may help
@@ -97,8 +98,11 @@ one person disagrees       ──▶  a NOTE under the entry; the entry stays as
 30 days without closing    ──▶  CAN'T TELL
 ```
 
-"The same result" means the same word on the same WRONG IF lines. Nothing is removed. A wrong fact stays, marked
-DOESN'T HOLD, under its writer's name: that is a fact's whole cost. A fact never carries a bond.
+"The same result" means the same word on the same WRONG IF lines. A line that covers many items (pages, payments,
+transactions) counts toward HOLDS only if tested over all of them: every page, every payment, or the explorer's whole
+filtered list. A sample stays a SEEN line; one that finds a wrong item counts toward DOESN'T HOLD. Nothing is
+removed. A wrong fact stays, marked DOESN'T HOLD, under its writer's name: that is a fact's whole cost. A fact never
+carries a bond.
 
 ### Promises
 
@@ -124,14 +128,17 @@ DOESN'T HOLD, under its writer's name: that is a fact's whole cost. A fact never
 A member silent in the chat for 90 days stops counting for rules 3, 6 and 7 until they post again. Witness is one of
 the seven, with one vote: not a gate, and nothing waits on Witness. A live record page, where results would be posted
 straight into the ledger, is a prototype and not public. Before anyone else reaches it, it needs sign-in limited to the
-seven, because a typed name lets one person act as seven.
+seven, because a typed name lets one person act as seven. Anyone may reopen an entry with a second person, but only
+members can post in the chat, so a non-member has nowhere to do it yet (KNOWN BUGS 7). The fix is an issue on the
+ledger's public repository, which the weekly turn adds to the file.
 
 ### The weekly turn (rule 6)
 
 Each week the next member in the list order starts from the file whose hash was last posted, checks both ways (every
 result posted in the chat that week is in the file; every SEEN line in the file has its chat post), adds what is
-missing, and posts the new file's SHA-256 somewhere the group does not control. A turn not done by the end of its week
-passes on. The ledger is whichever copy matches the last posted hash, wherever it is served.
+missing, and posts the new file's SHA-256 in the chat and in one named public place outside it; the chat post sets
+the order. A turn not done by the end of its week passes on. The ledger is whichever copy matches the last posted
+hash, wherever it is served.
 
 ### The outside record
 
@@ -145,8 +152,9 @@ edit visible, with a date nobody in the group set. Bitcoin is used for that stam
   members (every active member, if fewer than five are active) and at most one "object". The old wording is archived
   with its hash first.
 - An objection says what would change the objector's mind. A habit for now, proposed as a rule in round two.
-- Anything only one person can do is a bug, listed under KNOWN BUGS with a fix-by date. Bugs 1 to 3 are due 2026-11-14;
-  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z.
+- Anything only one person can do is a bug, listed under KNOWN BUGS with a fix-by date. Bugs 1 to 3 and 7 are due 2026-11-14;
+  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z; 7 is that
+  a non-member has nowhere to reopen an entry.
 - Anyone may copy the file and run it their own way.
 
 ## 5. Add-on A: scripts
@@ -155,7 +163,8 @@ A script does the reading for a claim a public record settles. Writing one is wo
 gap is the whole reason to have them.
 
 **Where they fit.** Five of the nine entries settle this way (1, 2, 6, 8, 9); fact 3 half; facts 4 and 5 run, but on
-Z's copy of the scripture (KNOWN BUGS 3); PROMISE 7 is people. The entries were picked because they could be checked,
+Z's copy of the scripture (KNOWN BUGS 3), and say so in their first words; they cover every page, so under rule 3
+they close only by reading all 164 pages by hand or, if the Saw line passes, by a script run; PROMISE 7 is people. The entries were picked because they could be checked,
 so five of nine is a ceiling, not an average.
 
 **What makes a script signable:**
@@ -184,9 +193,10 @@ Running catches loud failures; only a control catches a wrong assumption, which 
 > Saw: you opened the link yourself, or you ran the entry's script yourself and opened one link by hand. An AI may
 > help you find something on the page or write the script. It never posts a result.
 
-Without it, scripts still help people look, but a script run cannot close an entry. With it, two closers may run the
-same script, and then its mistakes are made twice. What keeps them two checks is the link each opens by hand and the
-one new thing each names; E3 (section 7) tests whether that is enough.
+Without it, scripts still help people look, but a script run cannot close an entry, and facts 4 and 5 (every page)
+close only by someone reading all 164 pages by hand. With it, two closers may run the same script, and then its
+mistakes are made twice. What keeps them two checks is the link each opens by hand and the one new thing each names;
+E3 (section 7) tests whether that is enough.
 
 Scripts live in `checks/` in the ledger's repository, https://github.com/zinotino/febu-assembly/tree/main/checks. They
 rest on one free node that keeps history (api.mainnet-beta.solana.com); until there is a second, the explorer link
@@ -229,8 +239,8 @@ beside this file, for whoever offers. It is not part of the vote.
 | Step | Who decides | Done when | Stops if |
 |---|---|---|---|
 | 1. Scripts run on every entry a script can settle | Z | Done: everything holds except fact 8's third line, false as worded. Runs, not checks | — |
-| 2. Z fixes facts 2, 6 and 8, fills the three holes, and posts | Z | Done: CHANGED lines and the three holes are in the ledger as served | — |
-| 3. The vote week, to 2026-10-22 | The members; the six who did not write the entries check | Facts 3, 8 and 9 checked, with minutes; version 3, the Saw line and the stop rule have had their 7 days | Version 3 does not pass: rewrite it |
+| 2. Z fixes facts 2, 6 and 8 (and 4, 5 and PROMISE 7), fills the three holes, edits rules 3 and 6, and posts | Z | Done: CHANGED lines, the three holes and the two rule edits are in the ledger as served | — |
+| 3. The vote week, to 2026-10-22 | The members; the six who did not write the entries check | Facts 1, 3 and 9 checked, with minutes; version 3, the Saw line and the stop rule have had their 7 days | Version 3 does not pass: rewrite it |
 | 4. Thirty days after adoption, unpaid | People, not the simulation | E0 to E3 each have a measured number | E1 or E2 fails: the script track stops |
 | 5. The stop rule decides | The members | A dated ledger line: keep, change or stop | This step is the stop |
 
@@ -238,7 +248,7 @@ beside this file, for whoever offers. It is not part of the vote.
 
 | Test | Question | Cost | Counts against it if | Then |
 |---|---|---|---|---|
-| E0 = **PROMISE 7** | Do seven people check, unpaid? | Nothing | Fewer than three entries closed in 30 days, or Z wrote every one | BROKEN: rewrite the ledger or stop |
+| E0 = **PROMISE 7** | Do seven people check, unpaid? | Nothing | Fewer than three entries other than PROMISE 7 closed in 30 days, or Z wrote every one | BROKEN: rewrite the ledger or stop |
 | E1 | Is writing a script much harder than reproducing one? | Nothing; volunteers are timed | Reproducing takes over a fifth of the writing time | Scripts stay helpers (the Saw line's script half lapses); paid scripts never open; E3 does not run |
 | E2 | Do one-change copies catch lazy scripts? | Nothing; for each script, make its lazy versions: one that always says HOLDS, and one per WRONG IF line with that line left out | Any lazy version gets every copy for its entry right | Same as E1 |
 | E3 | Do AI-drafted scripts share a blind spot? | Nothing; three models each draft a script for every entry that has one (five today), from the entry text alone. Runs only if the Saw line passed | On any entry, all three drafts say HOLDS on the same one-change copy | Two script runs no longer close an entry: one of the two closers opens every link by hand |
@@ -281,8 +291,8 @@ share the miss and leaves no record; opening every link by hand leaves the one n
 
 ## 10. Decisions waiting, in order
 
-Done before this was posted, by Z: the scripts re-run (section 7, step 1); facts 2, 6 and 8 fixed by CHANGED lines; the
-three holes filled (section 11).
+Done before this was posted, by Z: the scripts re-run (section 7, step 1); facts 2, 6 and 8 fixed by CHANGED lines, and facts 4 and 5
+and PROMISE 7 by theirs; the three holes filled and rules 3 and 6 edited (section 11).
 
 | # | Decision | Who | How |
 |---|---|---|---|
@@ -295,8 +305,8 @@ three holes filled (section 11).
 | 7 | KNOWN BUGS 1 to 3 | Each member | By 2026-11-14 |
 | 8 | A member's promise to pay for scripts, with its own stop rule (`paid.md`) | A member who wants to pay | Only if offered |
 
-The vote closes 2026-10-22, not 10-21: the three holes changed rule text, and rule 7 counts 7 days from the post that
-shows the text. A "yes" already written stands unless its writer takes it back.
+The vote closes 2026-10-22, not 10-21: the three holes, then a many-item line in rule 3 and a named place in rule 6,
+changed rule text, and rule 7 counts 7 days from the post that shows the text. A "yes" already written stands unless its writer takes it back.
 
 ## 11. What became of what you have seen
 
@@ -307,6 +317,7 @@ shows the text. A "yes" already written stands unless its writer takes it back.
 | Witness's four questions to the group (bond size, burning, why take part, the sun) | Answered in `how.txt`, and in the ledger's rule 1 and Bond |
 | Witness's offer to fund experiments, and the halving | `paid.md`. The halving is its cap. It pays for scripts others reproduced, never for a verdict, and nothing in the core waits on it. Its four questions are the funder's, not the group's |
 | Version 3 as first served | Three holes filled before any check: an entry in the group's name has a writer (without one, nobody could close PROMISE 7); an unpaid bond shows UNPAID after 7 days; a weekly turn not done passes on. Also, WRONG IF may change by a CHANGED line until the first check and never after: the text said "never changed", while facts 1, 2 and 6 had already changed theirs before any check |
+| Version 3 after the scripts were run | Rule 3: a line that covers many items counts toward HOLDS only if tested over all of them (two members who each opened an eighth of fact 4's pages could have closed it). Rule 6: the weekly hash goes in the chat and in one named place outside it, and the chat post sets the order. KNOWN BUGS 7: a non-member has nowhere to reopen an entry. Facts 4 and 5 say in their first words that the copy is Z's; PROMISE 7 no longer counts toward its own three. The old text is `archive/08_CLAIMS_LEDGER_v3-week2-final.txt` |
 | The vote on version 3 by 2026-10-21 | By 2026-10-22, together with the Saw line and the stop rule (section 10) |
 | Facts 2, 6 and 8 as first written | CHANGED before any check. Fact 8's third line was false as worded ("at any time on 09-22"); the others had lines a stranger could make true |
 | PROMISE 7 (WHEN THIS HAS FAILED) | E0 in the stop rule: one test, one row |

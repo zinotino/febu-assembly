@@ -11,6 +11,7 @@ findings).
 | `tests.txt` | The four tests. Reading, not the experiment: served at `/tests.html`, not linked from the front page. |
 | `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, built like `findings.html`: needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
 | `claims.sql`, `api/claim.js`, `api/_claims.js`, `claims.py` | The one-time name claim: the table, the function, its pure part, the script that issues codes. Setup below. |
+| `live.sql`, `api/entries.js`, `api/_record.js`, `live/` | The live record: the two tables (seconds and checks), the function, its pure rules, and `live/server.py`, its local twin that runs on one machine with SQLite. `live/live.js` and `live.css` are the ledger page's forms. Setup under "The live record" below. |
 | `paid.md` | The shape for a member who wants to pay for scripts: their own promise, the cap, two tests of its own. Not linked from the site, not part of the vote. |
 | `findings.md` | Z's findings report. Reading, not the experiment: served at `/findings.html` (and `/z`), not linked from the front page. |
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
@@ -259,18 +260,50 @@ What the claim protects and what it does not:
 
 `node test_api.js` runs the endpoint against a fake database.
 
-### The live record's sign-in
+### The live record
 
-`live/server.py` is the prototype of the live record (seconds and checks posted from the ledger page; `python
-live/test_live.py` tests it). With `ASSEMBLY_CLAIMS_URL` set to the site's `/api/claim`, every post must carry the
-token this claim left on the device (`Authorization: Bearer`), and the record takes the poster's name from the claim
-endpoint's answer, not from what was typed. Without it the name is typed, which is fine on one machine and for no one
-else. Not deployed: the record runs on this machine only.
+Members second an entry or post a check from the ledger page; a stranger may post a check. Seconds and checks go to two
+tables (`live.sql`) through `api/entries.js`; the entries, their writers, due dates and the Member line are read from
+`ledger.txt` as deployed, so nothing is copied and a new entry is there as soon as the site is. The rules (rules 3 and
+4, a second before any check, the limits below) are `api/_record.js`, a pure file with no database in it.
+`node test_entries.js` runs them and the function against a fake database; with python on the path it also checks that
+this reader and `build.py`'s read `ledger.txt` and the banned notation the same way.
 
-**The stranger lane.** With `ASSEMBLY_STRANGERS=1` as well, a device with no claim may post a check, never a second,
-under a name that is not a member's and holds none as a word (plain ASCII, however spaced or capitalised it is written). Rule 3 already says
-what that is worth: two people, member or not, posting the other result reopen a closed entry or split an open one, and
-only two members close one. The record keeps a salted hash of the poster's address (`live/salt`, not in git), never
-shows it, and takes one check per source per entry, five per source per day and six from outside the seven per entry.
-A bad or reissued token is refused, not treated as a stranger. A person with several addresses gets past all of
-this; the ledger lists that under RISKS WE ACCEPT.
+**Who is posting.** A member sends the token the name claim left on the device (`Authorization: Bearer`); the name
+comes from `assembly_claims`, not from what was typed. A token the table does not know is a 401. It is never treated as a
+stranger, and neither is a claim table that does not answer (502).
+
+**The stranger lane.** With `ASSEMBLY_STRANGERS=1` and `ASSEMBLY_SALT` both set, a post with no `Authorization` header
+may be a check, never a second, under a name that is not a member's and holds none as a word (plain ASCII, however spaced or capitalised it is
+written). Rule 3 already says what that is worth: two people, member or not, posting the other result reopen a closed
+entry or split an open one, and only two members close one. The row keeps a salted hash of the poster's address
+(`x-forwarded-for`), never shows it, and takes one check per source per entry, five per source per day and six from
+outside the seven per entry. Without the salt the lane stays off: an unsalted hash of an address can be undone by trying
+every address. A person with several addresses gets past all of this; the ledger lists that under RISKS WE ACCEPT.
+
+**Rule 2.** The two tables refuse UPDATE and DELETE with triggers (`live.sql`), so a result stays once written. That
+includes "[removed]" for personal information, until someone needs it. Two posts at the same moment cannot both land on
+one place: each check takes the next place number, the table takes each place once, and the second poster is told to
+post again.
+
+Setup, after the claim's own (same project, same two environment variables); every step is Z's:
+
+1. In the same Supabase project, run `live.sql` once in the SQL editor: two tables, row-level security on, no policies,
+   nothing granted to the public roles, and the two triggers.
+2. Nothing else switches the record on: with the table there and `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` set (the
+   claim's), `GET /api/entries` answers. Members can post as soon as they have claimed a name.
+3. To let strangers post checks too, set both `ASSEMBLY_STRANGERS` to `1` and `ASSEMBLY_SALT` to a long random string
+   (for example `python -c "import secrets; print(secrets.token_hex(24))"`; never in this repository) for Production
+   only, and redeploy. Change or unset either to close the lane. Changing the salt makes earlier sources unrelated to
+   later ones, which resets the per-day limit and nothing else.
+4. The ledger page does not load `live/live.js` and `live/live.css` yet. Add the two tags the local server adds (`LIVE_HEAD`
+   in `live/server.py`) to the page `build.py` writes, rebuild, and push. Until then the function is reachable and nothing
+   on the site calls it.
+
+Not done on the site: the export of the record's SECONDED and SEEN lines into `ledger.txt` (`python live/server.py
+export`) reads the local SQLite file, not these tables. Until it is ported, a check posted on the site shows on the ledger
+page and in `GET /api/entries`, and goes into `ledger.txt` by hand, the way the weekly turn adds a SEEN line.
+
+`live/server.py` is the same record on one machine, with SQLite and no sign-in unless `ASSEMBLY_CLAIMS_URL` is set to the
+site's `/api/claim` (then it also takes `ASSEMBLY_STRANGERS=1`, with a salt kept in `live/salt`, not in git); `python
+live/test_live.py` tests it. The two keep the same rules; change one and change the other.
