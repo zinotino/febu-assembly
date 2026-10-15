@@ -119,3 +119,21 @@ def test_release_against_a_local_site():
         assert any(s == FAIL and "matches no archived version" in w for s, w in rows), rows
     finally:
         srv.shutdown()
+
+
+def test_agent_draft_waits_for_a_person():
+    """A draft is held by the weekly page's own reading until a person fills it; it never says the link was opened."""
+    import shutil
+    import agent
+    assert shutil.which("node"), "lint needs node (test_claims.js does too)"
+    data = {"members": ["Ann", "Bo", "Zed"], "next": 2, "votes": [],
+            "entries": [{"kind": "FACT", "num": 1, "writer": "Zed", "lines": 2, "empty": True, "results": []}]}
+    assert agent.verdict_of(["x\nverdict: HOLDS\n"]) == "HOLDS" and agent.verdict_of(["no verdict here"]) is None
+    assert agent.verdict_of(["verdict: HOLDS", "\nverdict (a, b): DOESN'T HOLD"]) == "DOESN'T HOLD"
+    post = agent.draft_post(data["entries"][0], "Ann", "2026-10-16", "HOLDS", "Script: x")
+    assert "I opened the link" not in post and agent.lint(post, data, "2026-10-16")
+    done = (post.replace("Line 1:\nSaw:", "Line 1:\nSaw: 5 SOL").replace("Line 2:\nSaw:", "Line 2:\nSaw: none")
+            .replace("New:", "New: the page is dated 2026-07-08") + "I opened the link myself.\n")
+    assert agent.lint(done, data, "2026-10-16") == []
+    assert agent.lint(done.replace("Saw: none", "Saw:"), data, "2026-10-16")          # a Saw: left empty
+    assert agent.lint(done.replace("| Ann |", "| Zed |"), data, "2026-10-16")         # nobody checks their own entry
