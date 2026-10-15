@@ -1,7 +1,7 @@
 # The Assembly: the whole process in one place (2026-10-15)
 
 Start here. This file says how the parts fit: the ledger, the scripts that check it, money, and the 30 days that decide
-whether to keep it. It adds no rule. The rules are `ledger.txt` (https://febu-ledger.vercel.app/ledger.txt), and where
+whether to keep it. It adds no rule. The rules are `ledger.txt` (https://febu-assembly.vercel.app/ledger.txt), and where
 this file and the ledger differ, the ledger wins. Anything marked **proposed** counts only after a rule 7 vote. Three
 things are up for that vote now, all by 2026-10-22 (section 10).
 
@@ -36,7 +36,7 @@ pay would cost.
 
 | Part | What it is | State | What turns it on |
 |---|---|---|---|
-| **Core: the ledger** | Entries, checks, promises, bonds, the weekly turn, rule changes, known bugs (rules 1-8) | Version 3, proposed, live at febu-ledger.vercel.app. Nothing checked yet | Rule 7: 7 days, four yeses, at most one "object". Vote by 2026-10-22 |
+| **Core: the ledger** | Entries, checks, promises, bonds, the weekly turn, rule changes, known bugs (rules 1-8) | Version 3, proposed, live at febu-assembly.vercel.app. Nothing checked yet | Rule 7: 7 days, four yeses, at most one "object". Vote by 2026-10-22 |
 | **Add-on A: scripts** | A short program that reads a claim's record and says which WRONG IF lines tripped | Runs on facts 1-6, 8 and 9 (`checks/`, beside the ledger) | Helps anyone today. Counts as a check only after the Saw line (section 5) |
 | **The clock** | Five steps from now to a dated keep, change or stop | Steps 1 and 2 done | Section 7 |
 

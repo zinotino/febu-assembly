@@ -37,7 +37,8 @@ def serve(host, path):
         if "headers" in r:
             headers.update(r["headers"])
         if "status" in r:
-            return ("redirect", r["status"], r["headers"]["Location"]), headers
+            loc = re.sub(r"\$(\d)", lambda g: m.group(int(g.group(1))), r["headers"]["Location"])
+            return ("redirect", r["status"], loc), headers
         if "dest" in r:
             return ("rewrite", r["dest"]), headers
         # continue: true with only headers: keep matching
@@ -54,7 +55,9 @@ def den_csp(host, path):
     """The policy every other path gets: no inline or injected script, no javascript: links, connections to ourselves
     and the one Supabase project only. It is what keeps the den's scripts away from a member's token."""
     h = serve(host, path)[1].get("Content-Security-Policy", "")
-    return "script-src 'self';" in h and "unsafe-inline" in h.split("style-src")[1].split(";")[0]         and "script-src 'self' 'unsafe" not in h and "connect-src 'self' https://tytebptpuiiemuxlaeab.supabase.co" in h
+    return ("script-src 'self';" in h
+            and "unsafe-inline" in h.split("style-src")[1].split(";")[0]
+            and "connect-src 'self' https://tytebptpuiiemuxlaeab.supabase.co" in h)
 
 
 def test():
@@ -70,33 +73,33 @@ def test():
         src = open(os.path.join(ROOT, f), encoding="utf-8").read()
         assert not re.search(r"<script(?![^>]*src=)[^>]*>", src), f + " has an inline script"
 
-    # every page and text file the Assembly serves keeps its CSP on both domains
+    # every page and text file the Assembly serves keeps its CSP
     pages = [f for f in FILES if re.fullmatch(r"[a-z0-9-]+\.(html|txt|ics)", f)
              and f not in {"index.html", "scripture.html"}]
     assert {"febu-assembly.html", "process.html", "tests.html", "ledger.txt", "how.txt", "assembly.ics"} <= set(pages), pages
-    for host in (DEN, LEDGER):
-        for p in pages:
-            assert csp(host, "/" + p), (host, p)
-            assert serve(host, "/" + p)[0] == ("file", "/" + p), (host, p)
-        for p in ["/assets/claims.js", "/assets/how-it-connects.svg", "/archive/x.txt", "/api/claim"]:
-            assert csp(host, p), (host, p)
+    for p in pages:
+        assert csp(DEN, "/" + p), p
+        assert serve(DEN, "/" + p)[0] == ("file", "/" + p), p
+    for p in ["/assets/claims.js", "/assets/how-it-connects.svg", "/archive/x.txt", "/api/claim"]:
+        assert csp(DEN, p), p
     assert not csp(DEN, "/api/keepalive") and den_csp(DEN, "/api/keepalive")
-    for host in (DEN, LEDGER):                      # the live record: its pretty URLs reach the function, with the headers
-        assert serve(host, "/api/entries/3/check")[0] == ("rewrite", "/api/entries?num=$1&act=$2"), host
-        assert csp(host, "/api/entries/3/second"), host
+    assert serve(DEN, "/api/entries/3/check")[0] == ("rewrite", "/api/entries?num=$1&act=$2")   # the live record's pretty URLs
+    assert csp(DEN, "/api/entries/3/second")
     assert CFG["functions"]["api/entries.js"]["includeFiles"] == "ledger.txt"
+    assert serve(DEN, "/z")[0] == ("rewrite", "/index.html")                                     # no findings page
+    assert serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")
+    assert serve(DEN, "/start")[0] == ("redirect", 308, "/febu-assembly.html#check")
 
-    # the old domain keeps its behaviour
-    assert serve(LEDGER, "/")[0] == ("rewrite", "/febu-assembly.html")
-    assert serve(LEDGER, "/nope")[0] == ("404",)
-    assert serve(LEDGER, "/z")[0] == ("404",) and serve(DEN, "/z")[0] == ("rewrite", "/index.html")   # no findings page
-    assert serve(LEDGER, "/findings.html")[0] == ("404",) and serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")
-    for h in (DEN, LEDGER):
-        assert serve(h, "/start")[0] == ("redirect", 308, "/febu-assembly.html#check")
+    # the old domain serves nothing: every path is a 308 to the same path on the one address
+    ONE = "https://" + DEN
+    assert serve(LEDGER, "/")[0] == ("redirect", 308, ONE + "/febu-assembly.html")
+    for p in pages + ["api/claim", "api/entries", "archive/08_CLAIMS_LEDGER_v3.txt", "assets/claims.js", "nope"]:
+        assert serve(LEDGER, "/" + p)[0] == ("redirect", 308, ONE + "/" + p), p
+    assert not any("febu-ledger" in str(x) for x in serve(DEN, "/")[0])
 
     assert [c["path"] for c in CFG["crons"]] == ["/api/archive", "/api/claim?name=Zurandol", "/api/keepalive"]
     assert CFG["buildCommand"] == "python3 build.py" and CFG["outputDirectory"] == "."
-    print("routes ok:", len(pages), "assembly files x 2 hosts, den paths, old-domain behaviour")
+    print("routes ok:", len(pages), "assembly files, den paths, old domain redirects everything")
 
 
 if __name__ == "__main__":

@@ -30,7 +30,7 @@ This repo is the whole of the Assembly: the pages, the ledger, the claim and rec
 |---|---|---|
 | `febu-host` (private GitHub repo) | The den, the scripture reader, the members page, and a proxy to this repo | Folded in here on 2026-10-15; the repo is archived. Every current file is here byte for byte. Only superseded page renders, the dropped draw page and earlier den bundles exist solely in its history. |
 | Vercel project `febu-assembly` | Deployed from `febu-host` | Deploys from this repo. https://febu-assembly.vercel.app is the front door. |
-| Vercel project `febu-ledger` | This repo, under another project name | A second address for the same files, kept only until after the 2026-10-22 vote. `ledger.txt`'s own lines and the daily Internet Archive capture cite https://febu-ledger.vercel.app/ledger.txt, and changing the ledger's text restarts rule 7's seven days. After the vote: a dated CHANGED line moves the citation to https://febu-assembly.vercel.app/ledger.txt, `api/archive.js` captures that address too, the old project is deleted, and its routes in `vercel.json` and `test_routes.py` go with it. Nothing new points at it. |
+| Vercel project `febu-ledger` | This repo, under another project name | Only a redirect now: the first routes in `vercel.json` answer every path on https://febu-ledger.vercel.app with a 308 to the same path on https://febu-assembly.vercel.app (`/` goes to `/febu-assembly.html`), so nothing is served from it. The project is kept so that nobody else can register the name and serve a different `ledger.txt` at an address people were once given. Delete it only if you accept that. |
 
 | Path | What it is |
 |---|---|
@@ -45,7 +45,7 @@ This repo is the whole of the Assembly: the pages, the ledger, the claim and rec
 - The den's bundle puts raw HTML into the page in two places only, both react-tweet's rendering of a tweet's own text, and in one theme script the policy blocks. The count of 16 this file used to give was the string `dangerouslySetInnerHTML` appearing in React's own code. Posts and comments are drawn as text.
 - Not covered: a bug in the bundle's own code that a post can steer into running, which the policy does not stop; and the token is still stored in the browser and never expires (KNOWN BUGS 6). If either worries you, the den goes, and nothing else changes.
 
-`test_routes.py` checks both policies on every path. Environment variables (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (one value, kept), `ASSEMBLY_STRANGERS`, `CRON_SECRET`, all in the `febu-assembly` project, the first four for Production only. Until they are moved there from `febu-ledger`, `/api/claim` and `/api/entries` answer 503 on this address.
+`test_routes.py` checks both policies on every path. Environment variables (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (one value, kept), `ASSEMBLY_STRANGERS`, `CRON_SECRET`, all in the `febu-assembly` project, the first four for Production only. Until they are set there, `/api/claim` and `/api/entries` answer 503. The copies in the old `febu-ledger` project are not used any more and can be removed.
 
 ## Member flows
 
@@ -111,7 +111,7 @@ check rests on one explorer (known bug 4). `ledger.txt` itself keeps only the li
 
 ## Publishing
 
-Every push to `main` redeploys the Vercel projects built from this repo (`febu-assembly`, and `febu-ledger` until it is retired). Vercel first runs `python3 build.py` (the
+Every push to `main` redeploys the Vercel project built from this repo, `febu-assembly` (and `febu-ledger`, which only redirects). Vercel first runs `python3 build.py` (the
 `buildCommand` in `vercel.json`), then serves the folder, so `ledger.txt` arrives byte for byte. After a push, download https://febu-assembly.vercel.app/ledger.txt and check that its
 SHA-256 is the one the build printed (Vercel's build log prints it too).
 
@@ -172,13 +172,13 @@ pause. On the den's address the claim read answers 503 ("not set up"), as it sho
 
 **The Internet Archive, every day.** `api/archive.js` runs once a day (the `crons` entry in `vercel.json`; on
 Vercel's free plan it fires some time between 04:00 and 05:00 UTC) and asks the Archive to save
-https://febu-ledger.vercel.app/ledger.txt. Nobody has to do anything. Every copy, with its date and time:
-https://web.archive.org/web/*/https://febu-ledger.vercel.app/ledger.txt. To hash a copy, put `id_` after its date
+https://febu-assembly.vercel.app/ledger.txt. Nobody has to do anything. Every copy, with its date and time:
+https://web.archive.org/web/*/https://febu-assembly.vercel.app/ledger.txt. Until 2026-10-15 the save was of the old address, `febu-ledger.vercel.app`; those copies are listed under that address and are of the withdrawn drafts. To hash a copy, put `id_` after its date
 in the address, so you get the file as it was saved rather than the Archive's page around it. The Archive sends it
 compressed, so let your tool unpack it:
 
 ```bash
-curl -s --compressed https://web.archive.org/web/<YYYYMMDDhhmmss>id_/https://febu-ledger.vercel.app/ledger.txt | sha256sum
+curl -s --compressed https://web.archive.org/web/<YYYYMMDDhhmmss>id_/https://febu-assembly.vercel.app/ledger.txt | sha256sum
 ```
 
 **OpenTimestamps.** `timestamps/` holds proofs that a file existed by the time of a Bitcoin block. A proof holds
@@ -242,7 +242,7 @@ not switched on and everything else works as before.
 
 ### Switching it on
 
-Each step is Z's: they need the service key. Steps 1 to 3 were done on 2026-10-15 in the `febu-ledger` project; what is left is to set the same variables in `febu-assembly` (the one address). `python claims.py status` reads the live
+Each step is Z's: they need the service key. Steps 1 to 3 were done on 2026-10-15, with the variables in the old `febu-ledger` project; they are still to be set in `febu-assembly` (the one address), where the claim answers 503 until they are. `python claims.py status` reads the live
 endpoint, needs no key, and names the first step still missing.
 
 Use a Supabase project of the Assembly's own (the free plan allows two), not febu-host's. The service key sits in the
