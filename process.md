@@ -31,17 +31,17 @@ close it. A promiser gets believed: a date and a bond count for more than a chat
 rely on without taking anyone's word. If that is not enough for seven people, PROMISE 7 breaks and the minutes say what
 pay would cost.
 
-## 2. The shape: one core, two add-ons, one clock
+## 2. The shape: the core, the scripts, the clock
 
 | Part | What it is | State | What turns it on |
 |---|---|---|---|
 | **Core: the ledger** | Entries, checks, promises, bonds, the weekly turn, rule changes, known bugs (rules 1-8) | Version 3, proposed, live at febu-ledger.vercel.app. Nothing checked yet | Rule 7: 7 days, four yeses, at most one "object". Vote by 2026-10-22 |
 | **Add-on A: scripts** | A short program that reads a claim's record and says which WRONG IF lines tripped | Runs on facts 1-6, 8 and 9 (`checks/`, beside the ledger) | Helps anyone today. Counts as a check only after the Saw line (section 5) |
-| **Add-on B: a member's money** | A member who wants to pay for work does it by their own promise, with a bond | Witness has spoken of funding experiments; no promise posted. Shape drafted | Only if a member posts that promise. Changes nothing in the core |
 | **The clock** | Five steps from now to a dated keep, change or stop | Steps 1 and 2 done | Section 7 |
 
-The add-ons sit on the core. Neither can change a rule, and the core runs the same with both off. The site's pages are
-built from `ledger.txt` and add nothing.
+The scripts sit on the core: they cannot change a rule, and the core runs the same without them. A member who wants
+to pay for work does it by their own promise, which is an entry, not a part of this: `paid.md`, beside this file, holds
+the shape for whoever offers, and nothing here waits on it. The site's pages are built from `ledger.txt` and add nothing.
 
 ## 3. The core: an entry's life
 
@@ -218,36 +218,11 @@ The subject, never a purse.
 - **Not a counterparty.** Nothing pays out on what it does next, because whoever can move it would win. Anyone who can
   move it says so in one dated line.
 
-### Add-on B: a member pays for work
+### A member who pays for work
 
-Exists only if a member offers money. The group still pays nobody.
-
-- The offer is that member's own **PROMISE 10**, with a bond: WILL pay A $FEBU to the member whose script for a named
-  entry passes its controls, carries an ASSUMES list, and is reproduced by two other members who closed the entry under
-  rule 3; and a $FEBU to each of those two, 14 days after the close, if the entry is still closed. BY a date. Terms met
-  and not paid is BROKEN, and the bond burns. Each payment is a FACT.
-- **Both roles are paid, the author more.** The split follows the minutes each role took in the rehearsal (section 7).
-  This reverses "checking stays unpaid" for paid scripts only; unpaid checks go on as before.
-- **The loss for a wrong check.** Every simulated design that held charged one, and a fact carries no bond. The nearest
-  thing: a checker is paid only after 14 days with the entry still closed, so a reopening costs them the pay. Weaker
-  than a stake: nothing is taken, only not given. E4 tests whether it is enough.
-- **Pay goes to a script others reproduced, never to a verdict.** A checker is paid for the SEEN line whichever way the
-  result came out. The funder picks what is looked at, never what is found, and neither writes nor reproduces for their
-  own promise.
-- **No approval.** Before the promise is posted, the entry's writer applies three tests, the way WRONG IF is written: a
-  record settles it; one-change copies of the record exist, so it can come out false; no WRONG IF line can be made true
-  by a stranger for less than the pay. Anyone may post a NOTE saying which test fails. A failed test is the funder's loss.
-- **Capped.** The funder names a total F and a round size K. Round 1 pays F/(2K) a script, split between the roles; each
-  later round is a new promise at half the pay, posted after the one before closes KEPT; so the total never passes F.
-  It stops when either role's pay would fall under 2.5 times its measured minutes, or at F.
-- **Guardrails.** The promise's WILL says scripts posted in its first 7 days do not count, so anyone can post a NOTE or
-  a competing promise first. One copy in every script's controls changes something the entry does not mention and must
-  still come out HOLDS, so a script that only recognises the claimed record is not payable.
-- **Not before day 30.** Paid closes inside the 30 days would make PROMISE 7 unreadable, so the lane opens only after
-  the stop rule's dated line says keep.
-- **Not covered:** creative work (a book, a video). No record settles whether it is good, so it would need its own track.
-- **The funder answers four questions first:** scope; money (PROMISE 10, with a bond); subjects (up to three things a
-  record settles); and the stop rule, written before anything runs. E4 and E5 (section 7) are a starting point for it.
+Exists only as that member's own promise, with a bond, closed under rule 3 like any other. The group still pays nobody,
+and nothing opens before the stop rule's dated line says keep. The shape, its cap and its own two tests are in `paid.md`,
+beside this file, for whoever offers. It is not part of the vote.
 
 ## 7. The clock: from now to a decision
 
@@ -264,16 +239,14 @@ Exists only if a member offers money. The group still pays nobody.
 | Test | Question | Cost | Counts against it if | Then |
 |---|---|---|---|---|
 | E0 = **PROMISE 7** | Do seven people check, unpaid? | Nothing | Fewer than three entries closed in 30 days, or Z wrote every one | BROKEN: rewrite the ledger or stop |
-| E1 | Is writing a script much harder than reproducing one? | Nothing; volunteers are timed | Reproducing takes over a fifth of the writing time | Scripts stay helpers (the Saw line's script half lapses); add-on B never opens; E3 to E5 do not run |
+| E1 | Is writing a script much harder than reproducing one? | Nothing; volunteers are timed | Reproducing takes over a fifth of the writing time | Scripts stay helpers (the Saw line's script half lapses); paid scripts never open; E3 does not run |
 | E2 | Do one-change copies catch lazy scripts? | Nothing; for each script, make its lazy versions: one that always says HOLDS, and one per WRONG IF line with that line left out | Any lazy version gets every copy for its entry right | Same as E1 |
 | E3 | Do AI-drafted scripts share a blind spot? | Nothing; three models each draft a script for every entry that has one (five today), from the entry text alone. Runs only if the Saw line passed | On any entry, all three drafts say HOLDS on the same one-change copy | Two script runs no longer close an entry: one of the two closers opens every link by hand |
-| E4 | Does pay move writing and reproducing? | Add-on B only; two entries posted the same day in round 1, one at the round's pay and one at a third of it, for both roles | The two are written and reproduced at the same rate | Stop paying that role; if neither moves, stop paying |
-| E5 | Once pay stops, does anyone else post a promise to pay for a script? | Add-on B only | None in 30 days | No market. Zero strangers is a result too |
 
 The members vote on E0 to E3 with version 3, so the table is in force when the 30 days start. Adopting it adopts its
 last column: when a test fails, that line applies with no second vote, so a failed test cannot be argued away
-afterwards. E4 and E5 belong to add-on B; a funder writes them into their own promise. Every threshold comes from a
-simulation built on guesses, which is why they are tests.
+afterwards. A member who pays for scripts writes two tests of their own into their promise (`paid.md`). Every
+threshold comes from a simulation built on guesses, which is why they are tests.
 
 E3's remedy is the old way of checking. A miss all three drafts share is caught here by a copy, but it predicts the
 misses no copy covers, and two closers whose scripts share one would close a false fact. A person reading ASSUMES might
@@ -320,7 +293,7 @@ three holes filled (section 11).
 | 5 | Whether a stranger can ever close an entry (today: can reopen with a second person, cannot close) | Members | Open |
 | 6 | The OPEN QUESTION: a record for each of the three problems, or "none" | Anyone | Chat, then entries |
 | 7 | KNOWN BUGS 1 to 3 | Each member | By 2026-11-14 |
-| 8 | Add-on B, with its own stop rule | A member who wants to pay | Only if offered |
+| 8 | A member's promise to pay for scripts, with its own stop rule (`paid.md`) | A member who wants to pay | Only if offered |
 
 The vote closes 2026-10-22, not 10-21: the three holes changed rule text, and rule 7 counts 7 days from the post that
 shows the text. A "yes" already written stands unless its writer takes it back.
@@ -330,9 +303,9 @@ shows the text. A "yes" already written stands unless its writer takes it back.
 | What you have seen | What became of it |
 |---|---|
 | The reward-layer proposal in the V3 post: pay for checking, a person and an AI as one unit, planted false claims (Ksizzle's shape) | Pay for checking is dropped: every paying design in the simulation needed money held somewhere, and rule 5 forbids that. The pair stays as the Saw definition: an AI helps, a person posts. Planted claims became one-change copies, which test a script without putting a lie on a list people cite |
-| V3's "no vault, no pay, no takeover" | Unchanged. The only money in the core is bonds, burned. A member who wants to pay does it by their own promise (add-on B) |
+| V3's "no vault, no pay, no takeover" | Unchanged. The only money in the core is bonds, burned. A member who wants to pay does it by their own promise (`paid.md`) |
 | Witness's four questions to the group (bond size, burning, why take part, the sun) | Answered in `how.txt`, and in the ledger's rule 1 and Bond |
-| Witness's offer to fund experiments, and the halving | Add-on B. The halving is its cap. It pays for scripts others reproduced, never for a verdict, and nothing in the core waits on it. Its four questions are the funder's, not the group's |
+| Witness's offer to fund experiments, and the halving | `paid.md`. The halving is its cap. It pays for scripts others reproduced, never for a verdict, and nothing in the core waits on it. Its four questions are the funder's, not the group's |
 | Version 3 as first served | Three holes filled before any check: an entry in the group's name has a writer (without one, nobody could close PROMISE 7); an unpaid bond shows UNPAID after 7 days; a weekly turn not done passes on. Also, WRONG IF may change by a CHANGED line until the first check and never after: the text said "never changed", while facts 1, 2 and 6 had already changed theirs before any check |
 | The vote on version 3 by 2026-10-21 | By 2026-10-22, together with the Saw line and the stop rule (section 10) |
 | Facts 2, 6 and 8 as first written | CHANGED before any check. Fact 8's third line was false as worded ("at any time on 09-22"); the others had lines a stranger could make true |

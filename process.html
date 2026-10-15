@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Built by build.py from process.md (sha256 030a4011dec53bcd). Edit the text, not this file. -->
+<!-- Built by build.py from process.md (sha256 fb603c9f6a3216f7). Edit the text, not this file. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -59,7 +59,7 @@ the process exists to put a claim in front of a public record and keep the check
 close it. A promiser gets believed: a date and a bond count for more than a chat message. A checker gets something to
 rely on without taking anyone's word. If that is not enough for seven people, PROMISE 7 breaks and the minutes say what
 pay would cost.</p>
-</details></section><section id="2-the-shape-one-core-two-add-ons-one-clock"><h2>2. The shape: one core, two add-ons, one clock</h2>
+</details></section><section id="2-the-shape-the-core-the-scripts-the-clock"><h2>2. The shape: the core, the scripts, the clock</h2>
 <div class="tbl stack"><table>
 <thead>
 <tr>
@@ -83,12 +83,6 @@ pay would cost.</p>
 <td data-th="What turns it on">Helps anyone today. Counts as a check only after the Saw line (section 5)</td>
 </tr>
 <tr>
-<td data-th="Part"><strong>Add-on B: a member's money</strong></td>
-<td data-th="What it is">A member who wants to pay for work does it by their own promise, with a bond</td>
-<td data-th="State">Witness has spoken of funding experiments; no promise posted. Shape drafted</td>
-<td data-th="What turns it on">Only if a member posts that promise. Changes nothing in the core</td>
-</tr>
-<tr>
 <td data-th="Part"><strong>The clock</strong></td>
 <td data-th="What it is">Five steps from now to a dated keep, change or stop</td>
 <td data-th="State">Steps 1 and 2 done</td>
@@ -96,8 +90,9 @@ pay would cost.</p>
 </tr>
 </tbody>
 </table></div>
-<p>The add-ons sit on the core. Neither can change a rule, and the core runs the same with both off. The site's pages are
-built from <code>ledger.txt</code> and add nothing.</p>
+<p>The scripts sit on the core: they cannot change a rule, and the core runs the same without them. A member who wants
+to pay for work does it by their own promise, which is an entry, not a part of this: <code>paid.md</code>, beside this file, holds
+the shape for whoever offers, and nothing here waits on it. The site's pages are built from <code>ledger.txt</code> and add nothing.</p>
 </section><section id="3-the-core-an-entrys-life"><h2>3. The core: an entry's life</h2>
 <h3 id="writing-it">Writing it</h3>
 <pre><code>FACT n. (who, date)                     PROMISE n. (who, date)
@@ -274,36 +269,10 @@ opened by hand is the second source.</p>
 <li><strong>Not a counterparty.</strong> Nothing pays out on what it does next, because whoever can move it would win. Anyone who can
   move it says so in one dated line.</li>
 </ul>
-<h3 id="add-on-b-a-member-pays-for-work">Add-on B: a member pays for work</h3>
-<p>Exists only if a member offers money. The group still pays nobody.</p>
-<ul>
-<li>The offer is that member's own <strong>PROMISE 10</strong>, with a bond: WILL pay A $FEBU to the member whose script for a named
-  entry passes its controls, carries an ASSUMES list, and is reproduced by two other members who closed the entry under
-  rule 3; and a $FEBU to each of those two, 14 days after the close, if the entry is still closed. BY a date. Terms met
-  and not paid is BROKEN, and the bond burns. Each payment is a FACT.</li>
-<li><strong>Both roles are paid, the author more.</strong> The split follows the minutes each role took in the rehearsal (section 7).
-  This reverses "checking stays unpaid" for paid scripts only; unpaid checks go on as before.</li>
-<li><strong>The loss for a wrong check.</strong> Every simulated design that held charged one, and a fact carries no bond. The nearest
-  thing: a checker is paid only after 14 days with the entry still closed, so a reopening costs them the pay. Weaker
-  than a stake: nothing is taken, only not given. E4 tests whether it is enough.</li>
-<li><strong>Pay goes to a script others reproduced, never to a verdict.</strong> A checker is paid for the SEEN line whichever way the
-  result came out. The funder picks what is looked at, never what is found, and neither writes nor reproduces for their
-  own promise.</li>
-<li><strong>No approval.</strong> Before the promise is posted, the entry's writer applies three tests, the way WRONG IF is written: a
-  record settles it; one-change copies of the record exist, so it can come out false; no WRONG IF line can be made true
-  by a stranger for less than the pay. Anyone may post a NOTE saying which test fails. A failed test is the funder's loss.</li>
-<li><strong>Capped.</strong> The funder names a total F and a round size K. Round 1 pays F/(2K) a script, split between the roles; each
-  later round is a new promise at half the pay, posted after the one before closes KEPT; so the total never passes F.
-  It stops when either role's pay would fall under 2.5 times its measured minutes, or at F.</li>
-<li><strong>Guardrails.</strong> The promise's WILL says scripts posted in its first 7 days do not count, so anyone can post a NOTE or
-  a competing promise first. One copy in every script's controls changes something the entry does not mention and must
-  still come out HOLDS, so a script that only recognises the claimed record is not payable.</li>
-<li><strong>Not before day 30.</strong> Paid closes inside the 30 days would make PROMISE 7 unreadable, so the lane opens only after
-  the stop rule's dated line says keep.</li>
-<li><strong>Not covered:</strong> creative work (a book, a video). No record settles whether it is good, so it would need its own track.</li>
-<li><strong>The funder answers four questions first:</strong> scope; money (PROMISE 10, with a bond); subjects (up to three things a
-  record settles); and the stop rule, written before anything runs. E4 and E5 (section 7) are a starting point for it.</li>
-</ul>
+<h3 id="a-member-who-pays-for-work">A member who pays for work</h3>
+<p>Exists only as that member's own promise, with a bond, closed under rule 3 like any other. The group still pays nobody,
+and nothing opens before the stop rule's dated line says keep. The shape, its cap and its own two tests are in <code>paid.md</code>,
+beside this file, for whoever offers. It is not part of the vote.</p>
 </section><section id="7-the-clock-from-now-to-a-decision"><h2>7. The clock: from now to a decision</h2>
 <div class="tbl stack"><table>
 <thead>
@@ -371,7 +340,7 @@ opened by hand is the second source.</p>
 <td data-th="Question">Is writing a script much harder than reproducing one?</td>
 <td data-th="Cost">Nothing; volunteers are timed</td>
 <td data-th="Counts against it if">Reproducing takes over a fifth of the writing time</td>
-<td data-th="Then">Scripts stay helpers (the Saw line's script half lapses); add-on B never opens; E3 to E5 do not run</td>
+<td data-th="Then">Scripts stay helpers (the Saw line's script half lapses); paid scripts never open; E3 does not run</td>
 </tr>
 <tr>
 <td data-th="Test">E2</td>
@@ -387,26 +356,12 @@ opened by hand is the second source.</p>
 <td data-th="Counts against it if">On any entry, all three drafts say HOLDS on the same one-change copy</td>
 <td data-th="Then">Two script runs no longer close an entry: one of the two closers opens every link by hand</td>
 </tr>
-<tr>
-<td data-th="Test">E4</td>
-<td data-th="Question">Does pay move writing and reproducing?</td>
-<td data-th="Cost">Add-on B only; two entries posted the same day in round 1, one at the round's pay and one at a third of it, for both roles</td>
-<td data-th="Counts against it if">The two are written and reproduced at the same rate</td>
-<td data-th="Then">Stop paying that role; if neither moves, stop paying</td>
-</tr>
-<tr>
-<td data-th="Test">E5</td>
-<td data-th="Question">Once pay stops, does anyone else post a promise to pay for a script?</td>
-<td data-th="Cost">Add-on B only</td>
-<td data-th="Counts against it if">None in 30 days</td>
-<td data-th="Then">No market. Zero strangers is a result too</td>
-</tr>
 </tbody>
 </table></div>
 <p>The members vote on E0 to E3 with version 3, so the table is in force when the 30 days start. Adopting it adopts its
 last column: when a test fails, that line applies with no second vote, so a failed test cannot be argued away
-afterwards. E4 and E5 belong to add-on B; a funder writes them into their own promise. Every threshold comes from a
-simulation built on guesses, which is why they are tests.</p>
+afterwards. A member who pays for scripts writes two tests of their own into their promise (<code>paid.md</code>). Every
+threshold comes from a simulation built on guesses, which is why they are tests.</p>
 <p>E3's remedy is the old way of checking. A miss all three drafts share is caught here by a copy, but it predicts the
 misses no copy covers, and two closers whose scripts share one would close a false fact. A person reading ASSUMES might
 share the miss and leaves no record; opening every link by hand leaves the one new thing on the page.</p>
@@ -494,7 +449,7 @@ three holes filled (section 11).</p>
 </tr>
 <tr>
 <td data-th="#">8</td>
-<td data-th="Decision">Add-on B, with its own stop rule</td>
+<td data-th="Decision">A member's promise to pay for scripts, with its own stop rule (<code>paid.md</code>)</td>
 <td data-th="Who">A member who wants to pay</td>
 <td data-th="How">Only if offered</td>
 </tr>
@@ -517,7 +472,7 @@ shows the text. A "yes" already written stands unless its writer takes it back.<
 </tr>
 <tr>
 <td data-th="What you have seen">V3's "no vault, no pay, no takeover"</td>
-<td data-th="What became of it">Unchanged. The only money in the core is bonds, burned. A member who wants to pay does it by their own promise (add-on B)</td>
+<td data-th="What became of it">Unchanged. The only money in the core is bonds, burned. A member who wants to pay does it by their own promise (<code>paid.md</code>)</td>
 </tr>
 <tr>
 <td data-th="What you have seen">Witness's four questions to the group (bond size, burning, why take part, the sun)</td>
@@ -525,7 +480,7 @@ shows the text. A "yes" already written stands unless its writer takes it back.<
 </tr>
 <tr>
 <td data-th="What you have seen">Witness's offer to fund experiments, and the halving</td>
-<td data-th="What became of it">Add-on B. The halving is its cap. It pays for scripts others reproduced, never for a verdict, and nothing in the core waits on it. Its four questions are the funder's, not the group's</td>
+<td data-th="What became of it"><code>paid.md</code>. The halving is its cap. It pays for scripts others reproduced, never for a verdict, and nothing in the core waits on it. Its four questions are the funder's, not the group's</td>
 </tr>
 <tr>
 <td data-th="What you have seen">Version 3 as first served</td>
