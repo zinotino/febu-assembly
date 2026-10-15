@@ -1050,10 +1050,12 @@ def calendar_ics(votes, members, start, secs):
     bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
     for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z]).*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
         ev.append((d, plus(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
+    def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
+        return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
     out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
     for a, b, what, uid in ev:
         out += ["BEGIN:VEVENT", "UID:%s@febu-ledger.vercel.app" % uid, "DTSTAMP:%sT000000Z" % day(start or a),
-                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + what, "URL:" + SITE,
+                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + text(what), "URL:" + SITE,
                 "END:VEVENT"]
     return "\r\n".join(out + ["END:VCALENDAR"]) + "\r\n"
 

@@ -2,6 +2,14 @@
   "buildCommand": "python3 build.py",
   "routes": [
     {
+      "src": "/(.*)",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY"
+      },
+      "continue": true
+    },
+    {
       "src": "/start(\\.html)?",
       "status": 308,
       "headers": {

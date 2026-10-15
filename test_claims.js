@@ -111,3 +111,8 @@ assert.strictEqual(seenText({ who: 'Ann', date: '2026-10-20', word: 'HOLDS', lin
   '- Ann, 2026-10-20: HOLDS on lines 1, 2. Saw: line 1, it; line 2, that. New: a date. 1 minute.');
 
 console.log('ok');
+
+// A pasted line with a long run of spaces must not take quadratic time (the weekly page parses on every keystroke).
+const t0 = Date.now();
+parse('CHECK FACT 1 · HOLDS · lines 1' + ' '.repeat(200000) + 'x');
+assert(Date.now() - t0 < 300, "parse took " + (Date.now() - t0) + " ms on a 200k-space line");

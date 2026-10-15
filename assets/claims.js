@@ -15,6 +15,7 @@
   var DAY = 864e5;
 
   function today() { return new Date().toISOString().slice(0, 10); }   // the ledger's dates are UTC
+  function dec(s) { try { return decodeURIComponent(s); } catch (e) { return ''; } }   // a bad %-escape is no link
   var store = {   // this device's own memory: the name picked, unfinished check cards. Nothing leaves the page.
     get: function (k) { try { return localStorage.getItem('assembly:' + k); } catch (e) { return null; } },
     set: function (k, v) {
@@ -60,7 +61,7 @@
   function parse(text) {
     var out = { checks: [], votes: [], entries: [], unread: [] }, cur = null;
     String(text).replace(/\r\n?/g, '\n').split('\n').forEach(function (raw, i) {
-      var s = raw.replace(/[‘’]/g, "'").replace(/ /g, ' ').trim(), m;
+      var s = raw.replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim(), m;   // one space: the patterns stay linear
       if (!s) { cur = null; return; }
       if ((m = s.match(CHECK))) {
         out.checks.push(cur = { type: 'check', at: i + 1, kind: m[1].toUpperCase(), num: +m[2], lines: numbers(m[4]),
@@ -231,7 +232,7 @@
 
   // A link to something inside a folded window opens the window; a link to a check card opens the card.
   function reveal() {
-    var t = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    var id = location.hash.length > 1 && dec(location.hash.slice(1)), t = id && document.getElementById(id);
     if (!t) return;
     if (t.classList.contains('cc')) openCard(t, true);
     for (var d = t; d; d = d.parentElement) if (d.tagName === 'DETAILS') d.open = true;
@@ -434,18 +435,18 @@
     });
     showTurn();
     var pick = function (name) {   // #me=Name in the address, else the name this device remembers
-      var r = next.querySelector('input[name=me][value="' + name.replace(/"/g, '') + '"]');
+      var r = [].filter.call(next.querySelectorAll('input[name=me]'), function (i) { return i.value === name; })[0];
       if (!r) return false;
       r.checked = true;
       r.dispatchEvent(new Event('change', { bubbles: true }));
       return true;
     };
     var fromUrl = (location.hash.match(/me=([^&]+)/) || [])[1];
-    if (fromUrl && pick(decodeURIComponent(fromUrl))) next.scrollIntoView();
+    if (fromUrl && pick(dec(fromUrl))) next.scrollIntoView();
     else if (store.get('me')) pick(store.get('me'));
     window.addEventListener('hashchange', function () {
       var m = (location.hash.match(/me=([^&]+)/) || [])[1];
-      if (m) pick(decodeURIComponent(m));
+      if (m) pick(dec(m));
     });
   }
 

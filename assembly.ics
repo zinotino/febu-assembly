@@ -6,7 +6,7 @@ UID:vote-2026-10-22@febu-ledger.vercel.app
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261022
 DTEND;VALUE=DATE:20261023
-SUMMARY:Assembly vote closes: version 3; the Saw line; the stop rule
+SUMMARY:Assembly vote closes: version 3\; the Saw line\; the stop rule
 URL:https://febu-ledger.vercel.app
 END:VEVENT
 BEGIN:VEVENT
@@ -110,7 +110,7 @@ UID:bug-1@febu-ledger.vercel.app
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261114
 DTEND;VALUE=DATE:20261115
-SUMMARY:Assembly: known bug 1, fix by
+SUMMARY:Assembly: known bug 1\, fix by
 URL:https://febu-ledger.vercel.app
 END:VEVENT
 BEGIN:VEVENT
@@ -118,7 +118,7 @@ UID:bug-2@febu-ledger.vercel.app
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261114
 DTEND;VALUE=DATE:20261115
-SUMMARY:Assembly: known bug 2, fix by
+SUMMARY:Assembly: known bug 2\, fix by
 URL:https://febu-ledger.vercel.app
 END:VEVENT
 BEGIN:VEVENT
@@ -126,7 +126,7 @@ UID:bug-3@febu-ledger.vercel.app
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261114
 DTEND;VALUE=DATE:20261115
-SUMMARY:Assembly: known bug 3, fix by
+SUMMARY:Assembly: known bug 3\, fix by
 URL:https://febu-ledger.vercel.app
 END:VEVENT
 BEGIN:VEVENT
@@ -134,7 +134,7 @@ UID:bug-4@febu-ledger.vercel.app
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261114
 DTEND;VALUE=DATE:20261115
-SUMMARY:Assembly: known bug 4, fix by
+SUMMARY:Assembly: known bug 4\, fix by
 URL:https://febu-ledger.vercel.app
 END:VEVENT
 END:VCALENDAR
