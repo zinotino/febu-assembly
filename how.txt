@@ -110,12 +110,33 @@ FOUR QUESTIONS FROM THE CHAT
      it. A promiser gets believed: a promise with a date and a bond counts for more than a chat
      message. A checker gets something to rely on without taking anyone's word. If seven people
      will not check unpaid, PROMISE 7 breaks, and the dry run's minutes say what pay would cost.
+     What anything is worth, and who would be paid later, is the next section.
   4. Can I enter "the sun will rise tomorrow"? No. It is a forecast of something nobody here
      does, so it is neither a fact (true now, and a link shows it) nor a promise (something you
      will do). An easy fact that fits ("febu's site is up") can be entered: nobody approves or
      refuses anything. It costs two checkers a minute and earns nothing, because nothing is
      added up. Usefulness is decided by whether anyone bothers to check: an entry nobody needs
      stays OPEN. An easy entry could still count toward PROMISE 7 (RISKS WE ACCEPT).
+
+WHAT IT IS WORTH, AND WHO WOULD BE PAID
+  The group does not decide what anything is worth. It makes one thing cheap, finding out whether
+  a claim is true, and leaves the price to whoever wants the answer. Bitcoin works the same way:
+  its rules fix what a check costs, and nothing in them says what the coin is worth.
+  - A check. What it costs in minutes is measured in the first weeks (process.md, section 7).
+    That is the floor for any pay. Below it nobody checks; far above it people check things that
+    cannot be false.
+  - A task. Someone who wants it done posts their own promise, with a bond, naming what they will
+    pay for a script that two others reproduce (paid.md). Anyone may post a competing promise.
+    If nobody takes the work, it was worth less than that to everyone else. The group holds no
+    money and sets no price.
+  - Creative work, a book or a video. The ledger cannot judge it. It can show that it was
+    published, when, and that its author did what they said they would. Its worth is for the
+    audience to say.
+  Until day 30 nobody is paid: you get a record anyone can cite, and a promise that counts for
+  more because of its bond. After day 30, if seven people did check unpaid, pay opens for scripts
+  only, and two tests say whether pay changes anything and whether anyone besides the funder
+  wants to pay. The loop where it pays for itself closes only if people other than the funder
+  post bounties. Nobody knows that yet.
 
 WHAT IT COULD BECOME
   - The one record of what febu said and did, with dates, that a holder can check without trusting
