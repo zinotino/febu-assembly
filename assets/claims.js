@@ -15,6 +15,12 @@
   var DAY = 864e5;
 
   function today() { return new Date().toISOString().slice(0, 10); }   // the ledger's dates are UTC
+  var store = {   // this device's own memory: the name picked, unfinished check cards. Nothing leaves the page.
+    get: function (k) { try { return localStorage.getItem('assembly:' + k); } catch (e) { return null; } },
+    set: function (k, v) {
+      try { if (v === null) localStorage.removeItem('assembly:' + k); else localStorage.setItem('assembly:' + k, v); } catch (e) {}
+    }
+  };
 
   function wrap(first, text, rest) {
     var lines = [], cur = first, empty = true;
@@ -345,8 +351,30 @@
       copy.dataset.copy = post.join('\n');
       needs(card.querySelector('.need'), [copy], missing, 'Ready. Copy it and paste it in the chat.');
     }
+    var key = 'draft:' + kind + card.dataset.num, fields = card.querySelectorAll('input, select');
+    var isTick = function (f) { return f.type === 'checkbox' || f.type === 'radio'; };
+    var keep = function (e) {   // an unfinished card survives a reload, until its post is copied
+      if (e && !e.isTrusted) return;   // the name picked under "your week" arrives by a made event: not a draft
+      store.set(key, JSON.stringify([].map.call(fields, function (f) { return isTick(f) ? f.checked : f.value; })));
+    };
+    var draft = store.get(key);
+    if (draft) {
+      try {
+        var filled = false;
+        JSON.parse(draft).forEach(function (v, i) {
+          var f = fields[i];
+          if (!f) return;
+          if (isTick(f)) f.checked = !!v; else f.value = v;
+          if (!f.classList.contains('who') && (v === true || (typeof v === 'string' && v.trim()))) filled = true;
+        });
+        if (filled) openCard(card, true);
+      } catch (err) { store.set(key, null); }
+    }
     card.addEventListener('input', write);
     card.addEventListener('change', write);
+    card.addEventListener('input', keep);
+    card.addEventListener('change', keep);
+    copy.addEventListener('click', function () { store.set(key, null); });
     write();
   });
 
@@ -394,6 +422,7 @@
     next.addEventListener('change', function (e) {
       if (e.target.name !== 'me') return;
       me = e.target.value;
+      store.set('me', me);
       each('.moves', function (p) { p.hidden = p.dataset.who !== me; }, next);
       next.querySelector('.moves-none').hidden = true;
       each('.cc .who', function (s) {   // the check cards start from the name picked here
@@ -404,6 +433,20 @@
       showTurn();
     });
     showTurn();
+    var pick = function (name) {   // #me=Name in the address, else the name this device remembers
+      var r = next.querySelector('input[name=me][value="' + name.replace(/"/g, '') + '"]');
+      if (!r) return false;
+      r.checked = true;
+      r.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    };
+    var fromUrl = (location.hash.match(/me=([^&]+)/) || [])[1];
+    if (fromUrl && pick(decodeURIComponent(fromUrl))) next.scrollIntoView();
+    else if (store.get('me')) pick(store.get('me'));
+    window.addEventListener('hashchange', function () {
+      var m = (location.hash.match(/me=([^&]+)/) || [])[1];
+      if (m) pick(decodeURIComponent(m));
+    });
   }
 
   /* --- weekly.html ---------------------------------------------------------------------------------------------- */

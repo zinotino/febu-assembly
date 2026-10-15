@@ -376,3 +376,6 @@ pre.unread{max-height:22rem;overflow:auto;white-space:pre}
 .fold>summary::after{content:"\00a0+";font-weight:700}
 .fold[open]>summary::after{content:"\00a0\2212"}
 .fold>summary:hover h2{text-decoration:underline}
+.mylink{margin:1rem 0 0;padding-top:.7rem;border-top:2px groove #fff;font-size:.86rem;overflow-wrap:anywhere}
+.mylink .btn{margin-left:.5rem;vertical-align:middle}
+.links-all{margin:.6rem 0 0}

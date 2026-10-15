@@ -34,7 +34,9 @@ Each turns one job into one page and one message for the chat. None of them post
   from one STATUS line `Also up for the vote by 2026-10-22: the Saw line; the stop rule.`). Weekly turn: when yours comes,
   counted from the first date in STATUS in Member order, on the reader's own clock. Write. Under the steps, a reminder
   post of what is due for anyone to paste into the chat, and `assembly.ics`: the vote's closing day, twelve weekly turns
-  and each known bug's fix-by day as all-day calendar events. The banner's Due line shows the same dates.
+  and each known bug's fix-by day as all-day calendar events. The banner's Due line shows the same dates. The
+  device remembers the name picked and any unfinished check card (localStorage, cleared when the post is copied);
+  `#me=Name` in the address picks a name, so each member has a link of their own. Nothing leaves the page.
 - **The weekly turn** (`weekly.html`, rule 6): paste the week's chat. It reads the CHECK, VOTE and ENTRY posts and lists
   the SEEN lines to add in the ledger's layout, the SEEN lines with no post, the entries rule 3 would close, the votes
   against rule 7, and every line it could not read. You paste its blocks into `ledger.txt` (Editing in the browser).

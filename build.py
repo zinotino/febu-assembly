@@ -25,6 +25,7 @@ assets/claims.js (tap to copy, and the hash checks).
 """
 import datetime
 import hashlib
+from urllib.parse import quote
 import html
 import json
 import re
@@ -1066,7 +1067,8 @@ def next_move(members, todo, votes, start, posted, remind):
     """Pick your name, see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
     of yours yet), vote (what is open, with its closing date), the weekly turn (yours when the order reaches you) and
     write. One panel per name, written here; claims.js shows the one picked, counts the days to each date and works
-    out the turns from the device's date. Under the steps: a post that reminds the group what is due, for anyone to
+    out the turns from the device's date. The device remembers the name (claims.js), and #me=Name in the address
+    picks it, so each member has a link. Under the steps: a post that reminds the group what is due, for anyone to
     send, and the dates as a calendar file (assembly.ics)."""
     def chip(text, cls="", **attrs):
         return '<span class="chip%s"%s>%s</span>' % (" " + cls if cls else "", "".join(
@@ -1092,9 +1094,10 @@ def next_move(members, todo, votes, start, posted, remind):
             vote, v = "<p>Only members vote (rule 7).</p>", chip("members only")
             turn, t = "<p>Only members take the turn (rule 6).</p>", chip("members only")
         else:
-            if posted.get(name):
-                check = '<p class="hint">You have posted %d check%s so far.</p>' % (
-                    posted[name], "" if posted[name] == 1 else "s") + check
+            w, p = posted.get(name, (0, 0))
+            if w or p:
+                check = '<p class="hint">You have written %d entr%s and posted %d check%s so far.</p>' % (
+                    w, "y" if w == 1 else "ies", p, "" if p == 1 else "s") + check
             if votes:
                 vote = "".join(
                     '<p>Ledger %s: &ldquo;yes&rdquo; or &ldquo;object&rdquo; %s (rule 7).</p><p class="acts">'
@@ -1115,9 +1118,13 @@ def next_move(members, todo, votes, start, posted, remind):
             t = chip("in Member order", "turn-chip", name=name)
         write = ('<p><a href="write.html">Write an entry</a>: a fact, a link anyone can open, and one line for each '
                  'part of it that would prove it wrong. The page lays it out for the ledger and the chat.</p>')
-        return ('<ol class="steps moves" data-who="%s" hidden>%s%s%s%s</ol>'
+        link = "" if name == "*" else (
+            '<p class="mylink">Your link, for a bookmark or your DM thread: <a href="#me=%s">%s/#me=%s</a> '
+            '<button type="button" class="btn copy" data-copy="%s/#me=%s">Copy your link</button></p>'
+            % (quote(name), SITE.split("//")[1], quote(name), SITE, quote(name)))
+        return ('<div class="moves" data-who="%s" hidden><ol class="steps">%s%s%s%s</ol>%s</div>'
                 % (html.escape(name), step(1, "Check", c, check), step(2, "Vote", v, vote),
-                   step(3, "Weekly turn", t, turn), step(4, "Write", chip("any time"), write)))
+                   step(3, "Weekly turn", t, turn), step(4, "Write", chip("any time"), write), link))
 
     chips = "".join('<label class="name"><input type="radio" name="me" value="%s"><span>%s</span></label>'
                     % (html.escape(n), html.escape(n if n != "*" else "someone else")) for n in members + ["*"])
@@ -1133,9 +1140,13 @@ def next_move(members, todo, votes, start, posted, remind):
     return ('<section class="win next" id="next" aria-labelledby="next-h"><h2 class="bar" id="next-h">your week'
             '<span class="q">pick your name, then the four steps</span></h2><div class="win-body"><fieldset class="names">'
             '<legend>Pick your name</legend>%s</fieldset><p class="hint moves-none">Pick a name to see what you can '
-            'check, what is up for a vote, and when your weekly turn comes. The first line of every post is what the '
-            'weekly page reads: keep it as the buttons write it.</p>%s%s%s</div></section>'
-            % (chips, "".join(panel(n) for n in members + ["*"]), turn, remind_html))
+            'check, what is up for a vote, and when your weekly turn comes. The name is a claim, like a post in the '
+            'chat: the site vouches for nobody. This device keeps it, with any unfinished post, so you come back to '
+            'it. The first line of every post is what the weekly page reads: keep it as the buttons write it.</p>'
+            '<p class="acts links-all"><button type="button" class="btn copy" data-copy="%s">Copy a link for each '
+            'member</button></p>%s%s%s</div></section>'
+            % (chips, html.escape("\n".join("%s: %s/#me=%s" % (n, SITE, quote(n)) for n in members)),
+               "".join(panel(n) for n in members + ["*"]), turn, remind_html))
 
 
 def one_sentence(how_secs):
@@ -1185,7 +1196,8 @@ def assembly_page(title, secs, steps_num, how_secs):
                     ", ".join(html.escape(v) for v, _ in votes[:-1]) + (" and " if len(votes) > 1 else "")
                     + html.escape(votes[-1][0])))
     task += "</p>"
-    posted = {n: sum(1 for it in ents if re.search(r"(?<!\w)%s(?!\w)" % re.escape(n), seen(it[4]))) for n in names}
+    posted = {n: (sum(1 for it in ents if author[it[2]] == n),
+                  sum(1 for it in ents if re.search(r"(?<!\w)%s(?!\w)" % re.escape(n), seen(it[4])))) for n in names}
     start = turn_start(secs)
     by = votes[0][1] if votes and votes[0][1] else ""
     due = []
@@ -1251,7 +1263,8 @@ def assembly_page(title, secs, steps_num, how_secs):
                 "and check it.%s" % (len(rows), "%d checked so far." % done if done else "None checked yet.",
                                      " Proposed, not yet adopted." if proposed else ""),
                 foot='This site and the ledger file are run by Z for now (<a href="ledger.html#bug-1">known bug 1</a>). '
-                + QUIET)
+                'This page keeps your name and unfinished posts on your device only, and loads nothing from other '
+                'sites. Nothing is counted.')
 
 
 def people_page(secs):
