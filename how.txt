@@ -7,10 +7,12 @@ ONE SENTENCE
 WHERE IT STANDS
   Version 3 of the ledger is proposed, not adopted, and nobody but its writer has checked anything
   in it. Until 2026-10-22 the seven members post "yes" or "object" in the chat on three things:
-  the ledger as served, the Saw line (running an entry's script, then opening one link by hand,
-  may count as looking), and the stop rule (the 30-day test, E0 to E3). The same week is a dry
-  run: facts 1, 3 and 9 are the cheapest to check, and a post says how many minutes it took.
-  Posts made before adoption do not count toward PROMISE 7. The 30 days start at adoption.
+  the ledger as served, the Saw line (running a script the entry's writer did not write, then
+  opening one link by hand, may count as looking), and the stop rule (the 30-day test, E0 to
+  E3). The same week is a dry run: facts 1, 3 and 9 are the cheapest to check, and a post says
+  how many minutes it took. Posts made before adoption close nothing and do not count toward
+  PROMISE 7. Until the vote closes, ledger.txt and process.md do not change. The 30 days start
+  at adoption.
 
 THE PICTURE
   One entry, four steps, on top: written, checked, a result, a record. Febu's pages below, in the
@@ -22,12 +24,12 @@ HOW IT CONNECTS
   Five places, left to right. The record outside the group is what a claim is about: a
   transaction, an archived page, a dated file. A writer turns it into an entry and posts it in the
   chat. Two members who did not write it open its link and post what they saw; if the Saw line
-  passes, they may instead run its script and open one link by hand. Members vote on a rule
-  change. Once a week one member makes sure every result posted in the chat is in the file and
-  every SEEN line has its chat post, then posts the file's hash in the chat and in one named
-  public place. Two matching results close an entry. For PROMISE 7 a close counts on the day of
-  its second post; the file catches up at the next weekly turn. Anyone may add a SEEN line to the
-  file. The site is built from the texts and adds no rule: where it and ledger.txt differ,
+  passes, they may instead run a script its writer did not write and open one link by hand. Members
+  vote on a rule change. Once a week one member makes sure every result posted in the chat is in
+  the file and every SEEN line has its chat post, then posts the file's hash in the chat and in one
+  named public place. Two matching results close an entry. For PROMISE 7 a close counts on the
+  day of its second post; the file catches up at the next weekly turn. Anyone may add a SEEN line
+  to the file. The site is built from the texts and adds no rule: where it and ledger.txt differ,
   ledger.txt wins.
 
 THE FOUR PARTS
@@ -48,17 +50,17 @@ THE FOUR PARTS
      both ways, adds what is missing, and posts the new file's SHA-256 in the chat and in one
      named public place outside it. The ledger is whichever copy matches the last posted hash.
      Three records sit outside the group: that posted hash, a daily request to the Internet
-     Archive to save ledger.txt, and a Bitcoin timestamp (OpenTimestamps), which is not made yet.
-     GitHub holds the history too, but the repository is Z's (KNOWN BUGS 1) and its history was
-     cut once, on 2026-10-15, when the ledger started clean. None of these stops an edit.
-     Together they make an edit visible, with a date no member set.
+     Archive to save ledger.txt, and a Bitcoin timestamp (OpenTimestamps), made for the current
+     version and waiting for its block. GitHub holds the history too, but the repository is Z's
+     (KNOWN BUGS 1) and its history was cut once, on 2026-10-15, when the ledger started clean.
+     None of these stops an edit. Together they make an edit visible, with a date no member set.
 
   3. The changing (rules 7 and 8). A rule changes, and anything is done in the group's name,
      only after 7 days in the chat, four yeses from active members (every active member, if fewer
      than five are active) and at most one "object". The old wording stays. Anything only one
      person can do is a bug, listed under KNOWN BUGS with a date to fix it by. Today that
-     includes: Z holds the file, the site and the name-claim codes. A member silent for 90 days
-     stops counting until they post again.
+     includes: Z holds the file and the site. A member silent for 90 days stops counting until
+     they post again.
 
   4. The test (PROMISE 7 and the stop rule). Thirty days after adoption, unpaid, on the seven. The
      group's goal, PROMISE 7: close three entries besides itself, at least one not written by Z.
@@ -133,8 +135,8 @@ HOW IT ANSWERS FEBU
                                          PROMISE 7
   corrupt leaders                        nobody approves; nobody checks their own entry; the file
                                          is whichever copy matches the last posted hash. Not
-                                         solved yet: Z holds the file, the site and the name-
-                                         claim codes, KNOWN BUGS 1 and 6
+                                         solved yet: Z holds the file and the site, KNOWN
+                                         BUGS 1
   financial illusion                     no pool, no treasury, no new token, no price talk, and
                                          the group pays nobody; $FEBU is only a bond that burns
                                          on a broken promise. Buying it still pays its fee to the
@@ -189,7 +191,7 @@ WHAT IT IS WORTH, AND WHO WOULD BE PAID
     published, when, and that its author did what they said they would. Its worth is for the
     audience to say.
   Until day 30 nobody is paid: you get a record anyone can cite, and a promise that counts for
-  more because of its bond. After day 30, if seven people did check unpaid, pay opens for scripts
+  more because of its bond. After day 30, if the 30-day test says keep, pay opens for scripts
   only, and two tests say whether pay changes anything and whether anyone besides the funder
   wants to pay. The loop where it pays for itself closes only if people other than the funder
   post bounties. Nobody knows that yet.

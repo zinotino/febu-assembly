@@ -152,7 +152,7 @@ edit visible, with a date nobody in the group set. Bitcoin is used for that stam
   with its hash first.
 - An objection says what would change the objector's mind. A habit for now, proposed as a rule in round two.
 - Anything only one person can do is a bug, listed under KNOWN BUGS with a fix-by date. Bugs 1 to 3 and 7 are due 2026-11-14;
-  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z (the claim is gone from the site; the ledger's line is closed after the version 3 vote); 7 is that
+  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z (the claim is gone from the site; the ledger's line gets a dated Fixed line at the first weekly turn after adoption); 7 is that
   a non-member has nowhere to reopen an entry.
 - Anyone may copy the file and run it their own way.
 
@@ -163,7 +163,7 @@ gap is the whole reason to have them.
 
 **Where they fit.** Five of the nine entries settle this way (1, 2, 6, 8, 9); fact 3 half; facts 4 and 5 run, but on
 Z's copy of the scripture (KNOWN BUGS 3), and say so in their first words; they cover every page, so under rule 3
-they close only by reading all 164 pages by hand or, if the Saw line passes, by a script run; PROMISE 7 is people. The entries were picked because they could be checked,
+they close only by reading all 164 pages by hand or, if the Saw line passes, by running a script Z did not write; PROMISE 7 is people. The entries were picked because they could be checked,
 so five of nine is a ceiling, not an average.
 
 **What makes a script signable:**
@@ -189,13 +189,18 @@ Running catches loud failures; only a control catches a wrong assumption, which 
 
 **What it needs from the rules:** one line, **proposed** under rule 7, in WORDS USED HERE:
 
-> Saw: you opened the link yourself, or you ran the entry's script yourself and opened one link by hand. An AI may
-> help you find something on the page or write the script. It never posts a result.
+> Saw: you opened the link yourself; or you ran a script for the entry yourself, a script its writer did not write,
+> and opened one link by hand. An AI may help you find something on the page or write the script. It never posts a
+> result.
 
 Without it, scripts still help people look, but a script run cannot close an entry, and facts 4 and 5 (every page)
 close only by someone reading all 164 pages by hand. With it, two closers may run the same script, and then its
 mistakes are made twice. What keeps them two checks is the link each opens by hand and the one new thing each names;
 E3 (section 7) tests whether that is enough.
+
+The script may not be the writer's. A writer's script run by two others is the writer checking their own entry
+(rule 3), twice. Today Z wrote every script in `checks/` and every fact, so the script half closes nothing until
+someone else writes a script for an entry: the reproduction E1 times.
 
 Scripts live in `checks/` in the ledger's repository, https://github.com/zinotino/febu-assembly/tree/main/checks. They
 rest on one free node that keeps history (api.mainnet-beta.solana.com); until there is a second, the explorer link
@@ -268,7 +273,8 @@ fix the cost of a check and not the coin's worth.
 
 The members vote on E0 to E3 with version 3, so the table is in force when the 30 days start. Adopting it adopts its
 last column: when a test fails, that line applies with no second vote, so a failed test cannot be argued away
-afterwards. A member who pays for scripts writes two tests of their own into their promise (`paid.md`). Every
+afterwards. A test that has no measured number by day 30 counts as failed: a test nobody ran cannot keep what it was
+meant to test. A member who pays for scripts writes two tests of their own into their promise (`paid.md`). Every
 threshold comes from a simulation built on guesses, which is why they are tests.
 
 E3's remedy is the old way of checking. A miss all three drafts share is caught here by a copy, but it predicts the
@@ -320,6 +326,17 @@ and PROMISE 7 by theirs; the three holes filled and rules 3 and 6 edited (sectio
 
 The vote closes 2026-10-22, not 10-21: the three holes, then a many-item line in rule 3 and a named place in rule 6,
 changed rule text, and rule 7 counts 7 days from the post that shows the text. A "yes" already written stands unless its writer takes it back.
+
+How the vote is read:
+
+- One VOTE line per decision 1 to 3: version 3, the Saw line, the stop rule. A line names the one it is for.
+- Counted at the end of 2026-10-22 (UTC). A decision with four yeses and at most one "object" is adopted that day. One
+  short of four yeses stays posted and is adopted the day its fourth yes comes, unless a second "object" comes first.
+- From the post that showed this text until the vote closes, neither `ledger.txt` nor this file changes. Results
+  posted in the chat that week wait there and are copied in after the vote. A weekly turn that week is a dry run too:
+  it says what it would add and edits nothing.
+- Posts made before adoption close nothing. After adoption an entry closes only on posts made after adoption, the
+  same way a reopened entry counts only posts made after it reopened.
 
 ## 11. What became of what you have seen
 
