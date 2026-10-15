@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" role="img" aria-labelledby="t2 d2">
   <title id="t2">How the parts connect: the record outside, the people, the chat, the file, the copies outside</title>
-  <desc id="d2">Left to right. The record outside the group (a transaction, an archived page, a dated file) is what a claim is about; a script reads it for one entry. A writer turns it into an entry and posts it in the chat; two members other than the writer open the link, or run the script and open one link, and post what they saw as CHECK posts; members post VOTE on a rule change. The weekly turn, one member a week in Member order, pastes the week's chat into the weekly page and copies what it gives into ledger.txt: SEEN lines, new entries, vote counts; then posts the file's hash outside the chat. Two members with the same result close an entry. GitHub, the Internet Archive and a Bitcoin stamp keep dated copies; the site is built from the file and shows the closed count, which is PROMISE 7.</desc>
+  <desc id="d2">Left to right. The record outside the group (a transaction, an archived page, a dated file) is what a claim is about; a script reads it for one entry. A writer turns it into an entry and posts it in the chat; two members other than the writer open the link and post what they saw as CHECK posts (if the Saw line passes, they may run the script and open one link instead); members post VOTE on a rule change. The weekly turn, one member a week in Member order, pastes the week's chat into the weekly page and copies what it gives into ledger.txt: SEEN lines, new entries, vote counts; then posts the file's hash outside the chat. Two members with the same result close an entry. The posted hash, the Internet Archive and, once made, a Bitcoin stamp keep dated copies; the site is built from the texts and adds no rule.</desc>
   <style>
     text{font-family:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;fill:#111}
     .h{font-size:14px;font-weight:700;fill:#1f1a8c}
@@ -54,7 +54,7 @@
   <text x="30" y="378" class="n">which WRONG IF lines</text>
   <text x="30" y="394" class="n">tripped</text>
   <text x="30" y="416" class="s">a helper now; a Saw</text>
-  <text x="30" y="430" class="s">after the vote (rule 7)</text>
+  <text x="30" y="430" class="s">if the vote passes</text>
 
   <!-- B: people -->
   <rect x="215" y="84" width="200" height="90" class="box"/>
@@ -68,10 +68,10 @@
   <rect x="215" y="196" width="200" height="24" class="silver"/>
   <text x="225" y="213" class="k">two checkers (members)</text>
   <text x="225" y="240" class="n">not the writer. Each</text>
-  <text x="225" y="256" class="n">opens the link, or runs</text>
-  <text x="225" y="272" class="n">the script and opens one</text>
-  <text x="225" y="288" class="n">link by hand, and says</text>
-  <text x="225" y="304" class="n">what they saw</text>
+  <text x="225" y="256" class="n">opens the link and says</text>
+  <text x="225" y="272" class="n">what they saw. Only if</text>
+  <text x="225" y="288" class="n">the Saw line passes may</text>
+  <text x="225" y="304" class="n">a script run count too</text>
   <text x="225" y="320" class="s">the check card writes it</text>
 
   <rect x="215" y="348" width="200" height="88" class="box"/>
@@ -92,6 +92,7 @@
   <text x="450" y="266" class="s">FACT 8 · HOLDS</text>
   <text x="450" y="281" class="s">· lines 1,3 · Merc</text>
   <text x="450" y="296" class="s">· 2026-10-17</text>
+  <text x="450" y="311" class="s">New: a new thing</text>
   <text x="450" y="388" class="k">VOTE</text>
   <text x="450" y="404" class="s">YES · the Saw line</text>
   <text x="450" y="419" class="s">· Ksizzle · date</text>
@@ -112,10 +113,10 @@
   <text x="610" y="293" class="s">old wording archived</text>
   <text x="610" y="323" class="k">PROMISE 7</text>
   <text x="610" y="339" class="s">the group's goal: three</text>
-  <text x="610" y="354" class="s">entries closed, 30 days.</text>
-  <text x="610" y="369" class="s">Counted from this file,</text>
-  <text x="610" y="384" class="s">nowhere else</text>
-  <text x="610" y="412" class="s">nothing is removed;</text>
+  <text x="610" y="354" class="s">other entries closed in</text>
+  <text x="610" y="369" class="s">30 days after adoption.</text>
+  <text x="610" y="384" class="s">Counted from this file.</text>
+  <text x="610" y="412" class="s">no removals since 10-15;</text>
   <text x="610" y="427" class="s">changes are dated lines</text>
 
   <!-- E: copies outside -->
@@ -124,17 +125,17 @@
   <text x="810" y="101" class="k">dated, not ours</text>
   <text x="810" y="128" class="n">the hash, posted</text>
   <text x="810" y="144" class="n">outside the chat</text>
-  <text x="810" y="166" class="n">GitHub history</text>
-  <text x="810" y="188" class="n">Internet Archive,</text>
-  <text x="810" y="204" class="n">every day</text>
-  <text x="810" y="226" class="n">a Bitcoin stamp</text>
+  <text x="810" y="166" class="n">Internet Archive,</text>
+  <text x="810" y="182" class="n">every day</text>
+  <text x="810" y="204" class="n">a Bitcoin stamp</text>
+  <text x="810" y="220" class="s">(not made yet)</text>
 
   <rect x="800" y="276" width="140" height="160" class="box"/>
   <rect x="800" y="276" width="140" height="24" class="silver"/>
   <text x="810" y="293" class="k">the site</text>
   <text x="810" y="320" class="n">built from the</text>
-  <text x="810" y="336" class="n">file alone</text>
-  <text x="810" y="360" class="s">adds nothing. Shows</text>
+  <text x="810" y="336" class="n">texts beside it</text>
+  <text x="810" y="360" class="s">adds no rule. Shows</text>
   <text x="810" y="375" class="s">every entry, the</text>
   <text x="810" y="390" class="s">check card, the</text>
   <text x="810" y="405" class="s">vote buttons and</text>
@@ -165,8 +166,8 @@
   <path d="M780,350 L800,350" class="arrow"/>
 
   <!-- the one rule of flow -->
-  <text x="20" y="618" class="k">The only way into the file is the weekly turn. The only way an entry closes is two SEEN lines.</text>
-  <text x="20" y="636" class="k">The only thing that counts is what the file shows.</text>
+  <text x="20" y="618" class="k">Every chat result gets into the file by the weekly turn. An entry closes only on two SEEN lines.</text>
+  <text x="20" y="636" class="k">The file is the record. The day a close counts is the day of its second post.</text>
   <text x="20" y="662" class="s">entry: one claim with its link and WRONG IF, OPEN until two checks agree  ·  check: a member opened the link and said what they saw</text>
   <text x="20" y="678" class="s">script: a program that reads the record for one entry  ·  weekly turn: the member who copies this week's chat into the file</text>
 </svg>
