@@ -83,6 +83,9 @@ def test():
     for p in ["/assets/claims.js", "/assets/how-it-connects.svg", "/archive/x.txt"]:
         assert csp(DEN, p), p
     assert not csp(DEN, "/api/keepalive") and den_csp(DEN, "/api/keepalive")
+    ots = serve(DEN, "/timestamps/ledger-d3e17658.txt.ots")                                       # a proof is a download, not a spreadsheet
+    assert ots[0] == ("file", "/timestamps/ledger-d3e17658.txt.ots") and ots[1]["Content-Type"] == "application/octet-stream"
+    assert csp(DEN, "/timestamps/ledger-d3e17658.txt.ots")
     assert "functions" not in CFG                                                                 # no member-facing API is left
     assert serve(DEN, "/z")[0] == ("rewrite", "/index.html")                                     # no findings page
     assert serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")

@@ -65,9 +65,18 @@ if __name__ == "__main__":
 
 
 def test_release_hashes():
-    from release import sha256, wayback_digest
+    from release import capture_with, sha256
+    import gzip
     assert sha256(b"") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    assert wayback_digest(b"") == "3I42H3S6NNFQ2MSVX7XZKYAYSCX5QBYJ"   # the Internet Archive's digest of an empty body
+    # an Archive capture is judged by its content, not by the index's SHA-1 over the stored (gzip) bytes
+    ledger = b"THE LEDGER\n" * 50
+    saved = {"20261015": gzip.compress(ledger), "20261014": b"an older draft", "20261013": ledger}
+    caps = [["20261013", "x", "200"], ["20261014", "y", "200"], ["20261015", "z", "200"]]
+    get = lambda url, gz=False: (200, {}, saved[url.split("/web/")[1][:8]])
+    assert capture_with(caps, "https://s.example", sha256(ledger), get) == "20261015"            # newest first, packed copy unpacked
+    assert capture_with(caps[:2], "https://s.example", sha256(ledger), get) == "20261013"        # skips the older draft
+    assert capture_with(caps[1:2], "https://s.example", sha256(ledger), get) is None
+    assert capture_with(caps, "https://s.example", sha256(ledger), lambda u, gz=False: (404, {}, b"")) is None
 
 
 def test_ots_pending_and_anchored():

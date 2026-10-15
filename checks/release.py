@@ -19,7 +19,6 @@ What it compares, and what each answer means:
 An incomplete read is never OK: it says CAN'T TELL, and the line says what to open by hand.
 """
 import argparse
-import base64
 import gzip
 import hashlib
 import http.client
@@ -44,9 +43,21 @@ def sha256(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
-def wayback_digest(raw):
-    """The Internet Archive's CDX 'digest' field: SHA-1 of the body, base32."""
-    return base64.b32encode(hashlib.sha1(raw).digest()).decode()
+def capture_with(caps, site, served, get=None):
+    """The timestamp of the newest Internet Archive capture whose content is the served file, or None. The index's own
+    'digest' is a SHA-1 over the bytes the Archive stored, which is the gzip copy the site sent, so it never equals the
+    plain file's: compare content instead, from each capture's id_ copy (the file as saved), unpacked."""
+    get = get or fetch
+    for ts, _digest, _status in reversed(caps):
+        status, _, copy = get("https://web.archive.org/web/%sid_/%s/ledger.txt" % (ts, site), gz=True)
+        if status == 200 and copy[:2] == b"\x1f\x8b":     # still packed: the header did not say so
+            try:
+                copy = gzip.decompress(copy)
+            except OSError:
+                continue
+        if status == 200 and sha256(copy) == served:
+            return ts
+    return None
 
 
 def parse_ots(raw):
@@ -162,9 +173,9 @@ def run(site, posted, archive=True):
         elif not caps:
             add(WARN, "the Internet Archive has no capture of %s/ledger.txt" % site)
         else:
-            have = wayback_digest(body) in {c[1] for c in caps}
-            add(OK if have else WARN, "the Internet Archive's last %d captures %s the served file (newest %s)" % (
-                len(caps), "include" if have else "do not include", caps[-1][0]))
+            have = capture_with(caps, site, served)
+            add(OK if have else WARN, "the Internet Archive's last %d captures %s the served file (newest %s%s)" % (
+                len(caps), "include" if have else "do not include", caps[-1][0], "; %s has it" % have if have else ""))
     else:
         add(CANT, "the Internet Archive's index not read; open https://web.archive.org/web/*/%s/ledger.txt" % site.split("://", 1)[-1])
 
