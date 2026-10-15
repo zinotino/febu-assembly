@@ -52,5 +52,32 @@ class PeoplePage(unittest.TestCase):
         self.assertIn("Nothing stands under these names yet: Bo Cat.", out)
 
 
+CHECKED = """  FACT 3. (Zed, 2026-10-12)
+    SAYS      One thing.
+    WRONG IF  it is not there, or it moved; or it is gone.
+    SEEN      - Ann, 2026-10-20: HOLDS on lines 1, 2. Saw: line 1, it; line 2, that. New: a date. 1 minute.
+              - Zed, 2026-10-20: HOLDS on lines 1, 2. Saw: x. New: y.
+              - Bo Cat, 2026-10-21: HOLDS on lines 1, 2, 3. Saw: all of
+                it, on two lines. New: z.
+"""
+
+
+class CheckedEntry(unittest.TestCase):
+    """The SEEN line the weekly page writes (test_claims.js checks this same line) is read back, and rule 3 closes an
+    entry only on two members other than the writer with the same result on the same WRONG IF lines."""
+
+    def test_rule_3(self):
+        _, kind, num, who, fields = build.entries(CHECKED.split("\n"))[0]
+        members = ["Ann", "Bo Cat", "Zed"]
+        found = build.results(fields)
+        self.assertEqual(build.wrong_if(fields), ["it is not there", "it moved", "it is gone"])
+        self.assertEqual([f[0] for f in found], ["Ann", "Zed", "Bo Cat"])
+        self.assertEqual(found[0], ("Ann", "2026-10-20", "HOLDS", (1, 2)))
+        self.assertTrue(build.checked(fields))
+        self.assertIsNone(build.closed(found, "Zed", members))   # Zed is the writer; Bo Cat tested other lines
+        found.append(("Bo Cat", "2026-10-22", "HOLDS", (1, 2)))
+        self.assertEqual(build.closed(found, "Zed", members), ("HOLDS", (1, 2)))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,11 @@
 """Build the Assembly's pages, next to this file, from the texts beside them. All share one set of tabs.
 
-  febu-assembly.html  the front page: status, every entry and whether anyone has checked it, and the ledger's
+  febu-assembly.html  the front page: status, a check card under each open entry (it writes the result post),
+                      "your next move" by name, every entry and whether anyone has checked it, and the ledger's
                       HOW TO CHECK AN ENTRY (#check; /start.html redirects there)
+  weekly.html   the weekly turn (rule 6): paste the week's chat, get the SEEN lines to add, the entries that would
+                close, the vote counts and the lines left to read; it never edits ledger.txt
+  write.html    the entry form: a fact laid out for ledger.txt and for the chat
   ledger.html   ledger.txt as a page, in the text's own order: STATUS as a banner, each entry as a card
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
                 fact-6-steps.txt is about, its steps and every row with a link
@@ -19,6 +23,7 @@ assets/claims.js (tap to copy, and the hash checks).
 """
 import hashlib
 import html
+import json
 import re
 import sys
 from collections import namedtuple
@@ -348,15 +353,19 @@ def single(html_text):
     return html_text
 
 
+def text_of(fields, label):
+    """Every line of the entry's fields with this label, as one line of text."""
+    return " ".join(ln.txt for lab, lines in fields if lab == label for ln in lines if ln.txt)
+
+
 def seen(fields):
     """The entry's SEEN lines as one line of text."""
-    return " ".join(ln.txt for ln in dict(fields).get("SEEN", []) if ln.txt)
+    return text_of(fields, "SEEN")
 
 
 def checked(fields):
-    """Whether anyone has posted what they saw on this entry (its SEEN line says someone other than "nobody")."""
-    text = seen(fields)
-    return bool(text) and not text.lower().startswith("nobody")
+    """Whether anyone has posted what they saw on this entry (its SEEN lines say more than "nobody yet")."""
+    return bool(re.sub(r"(?i)\bnobody yet\b", "", seen(fields)).strip())
 
 
 def entry_li(kind, num, fields, state):
@@ -801,20 +810,199 @@ def cheapest(secs, items):
         it for it in items if it[0] == "entry" and it[1] == "FACT" and not checked(it[4])][:3]
 
 
-def pick_li(kind, num, fields):
-    """One entry as a card on the front page: what it says, whether anyone has checked it, a way in, and the post to
-    fill in once you have (what rule 3 asks a result to say, and the minutes the dry run asks for)."""
-    says = " ".join(ln.txt for ln in dict(fields)[HEADLINE[kind]] if ln.txt)
-    done = checked(fields)
-    post = "\n".join(("Entry %s %s" % (kind.lower(), num), "What I saw:", "WRONG IF lines I tested:",
-                      "One thing on the page nobody has written yet:",
-                      "My result (%s):" % ("HOLDS or DOESN'T HOLD" if kind == "FACT" else "KEPT or BROKEN"),
-                      "Minutes it took:"))
-    return ('<li class="pick"><div class="top"><span class="num">%s %s</span><span class="chip%s">%s</span></div>'
-            '<p class="says">%s</p><p class="acts"><a class="btn primary" href="ledger.html#%s">Open the entry</a>'
-            '<button type="button" class="btn copy" data-copy="%s">Copy result post</button></p></li>'
-            % (kind.lower(), num, " done" if done else "", "checks posted" if done else "not yet checked",
-               html.escape(says), anchor(kind, num), html.escape(post)))
+# ---------------------------------------------------------------------------------------------------------------
+# Member flows: the check card, your next move, the weekly page and the entry form. Each one writes text for a member
+# to paste into the chat or into ledger.txt; none of them posts, stores or sends anything (claims.js does the typing).
+
+RESULTS = {"FACT": ("HOLDS", "DOESN'T HOLD"), "PROMISE": ("KEPT", "BROKEN")}
+# A SEEN item as the weekly page writes it: "- Laura, 2026-10-16: HOLDS on lines 1, 2. Saw: ... New: ... 9 minutes."
+SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\.")
+CLAUSE = re.compile(r"[;,] or ")                            # "a, or b; or c": one WRONG IF line per clause
+DATE = re.compile(r"\b\d{4}-\d\d-\d\d\b")
+CHAT = "  ·  "                                         # between the parts of a post's first line
+
+
+def wrong_if(fields):
+    """The entry's WRONG IF lines, one per clause, in the order written. A check names them by number, from 1."""
+    text = text_of(fields, "WRONG IF").rstrip(".")
+    return [c.strip() for c in CLAUSE.split(text) if c.strip()]
+
+
+def results(fields):
+    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers). A SEEN line
+    written another way is left to a person to read."""
+    items, col = [], None
+    for ln in (ln for lab, lines in fields if lab == "SEEN" for ln in lines if ln.txt):
+        if ln.txt.startswith("- ") and (col is None or ln.ind <= col):
+            col = ln.ind if col is None else col
+            items.append(ln.txt)
+        elif items:
+            items[-1] += " " + ln.txt
+    found = (SEEN_ITEM.match(it.replace("’", "'")) for it in items)
+    return [(m.group(1), m.group(2), m.group(3), tuple(sorted({int(n) for n in re.findall(r"\d+", m.group(4) or "")})))
+            for m in found if m]
+
+
+def writer(who, fields, members):
+    """Who wrote the entry, for rule 3: the name before its date, or for an entry in the group's name the member its
+    text says proposed it."""
+    name = who.split(",")[0].strip()
+    if name in members:
+        return name
+    said = " ".join(ln.txt for _, lines in fields for ln in lines)
+    return next((m for m in members if re.search(r"(?<!\w)%s proposed it" % re.escape(m), said)), name)
+
+
+def closed(found, author, members):
+    """(result, lines) once two members other than the writer have posted the same result on the same WRONG IF lines
+    (rule 3), else None.
+    ponytail: ignores reopening and the 90-day silence; the weekly page says so beside its own count."""
+    agree = {}
+    for name, _, word, lines in found:
+        if name in members and name != author:
+            agree.setdefault((word, lines), set()).add(name)
+    return next((k for k, names in agree.items() if len(names) >= 2), None)
+
+
+def checkable(kind, fields):
+    """A fact can be checked any time; a promise once its BY line names a date (its results come on or after it)."""
+    return kind == "FACT" or bool(DATE.search(text_of(fields, "BY")))
+
+
+def short_addr(text):
+    """Off the ledger page an address shows as its first eight letters, the way the ledger writes UqN2p5bA..."""
+    return ADDRESS.sub(lambda m: m.group()[:8] + "...", text)
+
+
+def name_options(members):
+    return ('<option value="">choose</option>%s<option value="*">someone else</option>'
+            % "".join('<option>%s</option>' % html.escape(m) for m in members))
+
+
+def check_card(kind, num, author, fields, members):
+    """The check card: tick the WRONG IF lines you tested, say what you saw on each, one new thing on the page, the
+    minutes, your name and your result. claims.js writes the chat post from it; Copy waits for the new thing."""
+    aid = anchor(kind, num)
+    if kind == "FACT":
+        tests = ('<fieldset class="cc-set"><legend>Which WRONG IF lines did you test? Say what you saw on each.</legend>'
+                 '<ol class="lns">%s</ol></fieldset>' % "".join(
+                     '<li><label class="ln"><input type="checkbox" class="ln-on" value="%d"><span class="n">%d</span>'
+                     '<span class="t">%s</span></label><input type="text" class="saw" data-line="%d" autocomplete="off" '
+                     'aria-label="What you saw on line %d" placeholder="What you saw: the number, the words or the date" '
+                     'hidden></li>' % (i, i, html.escape(short_addr(t)), i, i) for i, t in enumerate(wrong_if(fields), 1)))
+    else:
+        tests = ('<label class="f">What you saw at the KNOWN BY link, on or after %s<input type="text" class="saw" '
+                 'autocomplete="off" placeholder="The number, the words or the date"></label>'
+                 % html.escape(text_of(fields, "BY")))
+    yes, no = RESULTS[kind]
+    who = ('<span class="by">%s wrote it, so %s cannot check it (rule 3).</span>' % ((html.escape(author),) * 2)
+           if author in members else "")
+    return (
+        '<div class="cc" id="check-%s" data-kind="%s" data-num="%s" data-writer="%s" hidden>'
+        '<p class="cc-lead">Open the entry\'s link and look before you read anyone\'s post about it. Fill this in and '
+        'the post writes itself below. %s</p>%s'
+        '<label class="f">One thing on the page that is not in the entry or in any earlier post <b>needed</b>'
+        '<input type="text" class="new" autocomplete="off" placeholder="A number, a name, a date, a word"></label>'
+        '<div class="cc-pair"><label class="f">Minutes it took<input type="number" class="min" min="1" step="1" '
+        'inputmode="numeric" placeholder="12"></label><label class="f">Your name<select class="who">%s</select>'
+        '<input type="text" class="other" autocomplete="off" placeholder="Your name in the chat" '
+        'aria-label="Your name in the chat" hidden></label></div>'
+        '<fieldset class="res"><legend>Your result</legend>'
+        '<label class="pill yes"><input type="radio" name="res-%s" value="%s"><span>%s</span></label>'
+        '<label class="pill no"><input type="radio" name="res-%s" value="%s"><span>%s</span></label></fieldset>'
+        '<label class="tick"><input type="checkbox" class="opened">I opened the link myself. No AI wrote this result.'
+        '</label><div class="post-box"><p class="post-h">Your post, as the chat will show it</p>'
+        '<pre class="post" aria-live="polite"></pre></div><p class="need" id="need-%s"></p>'
+        '<p class="acts"><button type="button" class="btn primary cc-copy" disabled aria-describedby="need-%s">'
+        'Copy the post</button></p><p class="hint">Paste it in the chat yourself: this page sends nothing. That '
+        'week\'s member copies it into the ledger as a SEEN line (rule 6).</p></div>'
+        % (aid, kind, num, html.escape(author), who, tests, name_options(members), aid, yes, yes, aid, no, no, aid, aid))
+
+
+def pick_li(kind, num, fields, author, members):
+    """One entry as a card on the front page: what it says, where it stands, a way in, and while rule 3 has not closed
+    it, the check card that writes the result post."""
+    says = text_of(fields, HEADLINE[kind])
+    found = results(fields)
+    done = closed(found, author, members)
+    state = ("closed: %s" % done[0] if done else "%d result%s posted" % (len(found), "" if len(found) == 1 else "s")
+             if found else "checks posted" if checked(fields) else "not yet checked")
+    card = check_card(kind, num, author, fields, members) if checkable(kind, fields) and not done else ""
+    toggle = ('<button type="button" class="btn primary cc-open" aria-expanded="false" aria-controls="check-%s">'
+              'Check it here</button>' % anchor(kind, num) if card else "")
+    return ('<li class="pick" id="pick-%s"><div class="top"><span class="num">%s %s</span><span class="chip%s">%s</span>'
+            '</div><p class="says">%s</p><p class="acts"><a class="btn%s" href="ledger.html#%s">Open the entry</a>%s</p>'
+            '%s</li>' % (anchor(kind, num), kind.lower(), num, " done" if done else "", html.escape(state),
+                         html.escape(says), "" if card else " primary", anchor(kind, num), toggle, card))
+
+
+def open_votes(title, secs):
+    """What waits on a rule 7 vote, from ledger.txt: while STATUS says proposed, the version in the title, closing on
+    the last date the ledger gives for "yes" or "object". Proposals that live only in the chat are not listed; the
+    weekly page counts any VOTE post."""
+    if not status(secs)[1]:
+        return []
+    dates = re.findall(r'"yes" or "object" by (\d{4}-\d\d-\d\d)', re.sub(r"\s+", " ", " ".join(r for _, b in secs for r in b)))
+    return [(titled(title)[1] or "this version", dates[-1] if dates else None)]
+
+
+def turn_start(secs):
+    """The first date in STATUS: the weekly turns (rule 6) are counted in weeks from it, in Member order."""
+    m = DATE.search(" ".join(status(secs)[0]))
+    return m.group() if m else None
+
+
+def next_number(items):
+    m = re.search(r"next entry is number (\d+)", " ".join(" ".join(it[1]) for it in items if it[0] == "text"))
+    return int(m.group(1)) if m else 1 + max([int(it[2]) for it in items if it[0] == "entry"] or [0])
+
+
+def next_move(members, todo, votes, start):
+    """Pick your name, see your next move: the entries you can check (not yours, no SEEN line of yours yet), the open
+    votes with their closing dates, and whose weekly turn it is. One panel per name, written here; claims.js shows the
+    one picked and works out this week's turn from the device's date."""
+    def panel(name):
+        mine = [t for t in todo if name == "*" or (t[3] != name and not re.search(r"(?<!\w)%s(?!\w)" % re.escape(name), t[4]))]
+        rows = "".join('<li><a href="#check-%s"><span class="num">%s %s</span><span class="says">%s</span></a></li>'
+                       % (anchor(k, n), k.lower(), n, html.escape(s)) for k, n, s, _, _ in mine)
+        if rows:
+            check = '<ul class="todo">%s</ul>' % rows
+        elif name != "*" and todo and all(t[3] == name for t in todo):
+            check = "<p>None: you wrote every open entry, and nobody checks their own (rule 3). Write one for the others.</p>"
+        else:
+            check = "<p>None open to you right now.</p>"
+        if name == "*":
+            check = ('<p class="hint">Your result counts toward keeping an entry open or reopening it, not toward '
+                     'closing it (rule 3).</p>') + check
+            vote = "<p>Only members vote (rule 7).</p>"
+        elif votes:
+            vote = "".join(
+                '<p>Ledger %s: &ldquo;yes&rdquo; or &ldquo;object&rdquo; %s (rule 7).</p><p class="acts">'
+                '<button type="button" class="btn copy" data-copy="%s">Copy a yes</button>'
+                '<button type="button" class="btn copy" data-copy="%s">Copy an objection</button></p>'
+                % (html.escape(v), "by %s" % by if by else "within 7 days of the post that showed it",
+                   html.escape(CHAT.join(("VOTE YES", v, name, "{today}"))),
+                   html.escape(CHAT.join(("VOTE OBJECT", v, name, "{today}")) + "\nWhich line is wrong: \n"
+                               "What would change my mind: ")) for v, by in votes)
+        else:
+            vote = "<p>Nothing is up for a vote in the ledger.</p>"
+        return ('<div class="moves" data-who="%s" hidden><h3>Check</h3>%s<h3>Vote</h3>%s<h3>Write</h3>'
+                '<p><a href="write.html">Write an entry</a>: a fact, a link anyone can open, and what would prove it '
+                'wrong.</p></div>' % (html.escape(name), check, vote))
+
+    chips = "".join('<label class="name"><input type="radio" name="me" value="%s"><span>%s</span></label>'
+                    % (html.escape(n), html.escape(n if n != "*" else "someone else")) for n in members + ["*"])
+    turn = ('<div class="turn" data-from="%s" data-order="%s"><h3>Weekly turn (rule 6)</h3><p class="turn-now">One '
+            'member a week, in this order%s: %s. A turn not done by the end of its week passes to the next.</p>'
+            '<p class="turn-you" hidden><b>That is you this week.</b><a class="btn primary" href="weekly.html">Do the weekly '
+            'turn</a></p></div>'
+            % (start or "", html.escape("|".join(members)), ", counted from %s" % start if start else "",
+               html.escape(", ".join(members))))
+    return ('<section class="win next" id="next" aria-labelledby="next-h"><h2 class="bar" id="next-h">your next move'
+            '</h2><div class="win-body"><fieldset class="names"><legend>Pick your name</legend>%s</fieldset>'
+            '<p class="hint moves-none">Pick a name to see what you can check, what is up for a vote, and when your '
+            'weekly turn comes.</p>%s%s</div></section>'
+            % (chips, "".join(panel(n) for n in members + ["*"]), turn))
 
 
 def one_sentence(how_secs):
@@ -826,13 +1014,26 @@ def one_sentence(how_secs):
     return "".join("<span>%s.</span>" % html.escape(c[0].upper() + c[1:]) for c in clauses if c)
 
 
-def assembly_page(secs, steps_num, how_secs):
+def assembly_page(title, secs, steps_num, how_secs):
     """The Assembly's front page, for someone who has just followed a link: what this is in a sentence, three entries
-    to check with the post to fill in afterwards, then the rest (every entry, how to check, who, the background)."""
+    to check, each with its check card, and the other open ones folded under them; then your next move by name, and
+    the rest (every entry, how to check, who, the weekly turn, writing an entry, the background)."""
     doc = Doc(secs, "ledger.html")
     by = {short(h): b for h, b in secs}
-    members = len(member_names(secs))
+    names = member_names(secs)
+    members = len(names)
     items = entries(entries_section(secs)[1])
+    ents = [it for it in items if it[0] == "entry"]
+    author = {it[2]: writer(it[3], it[4], names) for it in ents}
+    first = cheapest(secs, items)
+    open_ = [it for it in ents if checkable(it[1], it[4]) and not closed(results(it[4]), author[it[2]], names)]
+    rest = [it for it in open_ if it not in first]
+    picks = '<ul class="picks">%s</ul>' % "".join(pick_li(k, n, f, author[n], names) for _, k, n, _, f in first)
+    if rest:
+        picks += ('<details class="others"><summary>%d more open entr%s to check</summary><ul class="picks">%s</ul>'
+                  '</details>' % (len(rest), "y" if len(rest) == 1 else "ies",
+                                  "".join(pick_li(k, n, f, author[n], names) for _, k, n, _, f in rest)))
+    todo = [(k, n, text_of(f, HEADLINE[k]), author[n], seen(f)) for _, k, n, _, f in open_]
     rows, done = [], 0
     for _, kind, num, _, fields in (it for it in items if it[0] == "entry"):
         done += checked(fields)
@@ -847,20 +1048,26 @@ def assembly_page(secs, steps_num, how_secs):
 
     start = ('<section class="win start" id="start" aria-labelledby="start-h"><h2 class="bar" id="start-h">'
              'start here: check one claim<span class="q">%d of %d checked by someone else</span>'
-             '</h2><div class="win-body"><p class="sentence">%s</p><ul class="picks">%s</ul>%s'
+             '</h2><div class="win-body"><p class="sentence">%s</p>%s%s'
              '<p class="go"><a href="how.html">How it works, in one picture</a> <a href="#every">Every entry</a></p>'
-             '</div></section>' % (done, len(rows), one_sentence(how_secs),
-                                   "".join(pick_li(k, n, f) for _, k, n, _, f in cheapest(secs, items)),
+             '</div></section>' % (done, len(rows), one_sentence(how_secs), picks,
                                    '<p class="hint">The vote week is also a dry run. Post what you saw, and how many '
                                    'minutes it took.</p>' if proposed else ""))
     every = ('<details class="win lead" id="every" data-open-wide><summary><span class="t">every entry</span>'
              '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></summary>'
              '<div class="win-body"><ul class="entries">%s</ul>%s<p class="go"><a href="ledger.html">Read the whole '
              'ledger</a></p></div></details>' % (len(rows), done, "".join(rows), after))
-    body = (start + intro + every + check_section(secs, doc, steps_num) +
+    body = (start + next_move(names, todo, open_votes(title, secs), turn_start(secs)) + intro + every +
+            check_section(secs, doc, steps_num) +
             '<div class="more">%s</div>' % "".join([
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
                       "(rule 3). Anyone at all can reopen one.", "people.html", "See what each one wrote and checked"),
+                small("weekly", "the weekly turn", "Paste the week's chat. The page lists the SEEN lines to add, the "
+                      "entries that would close and the votes, for you to copy into the ledger (rule 6).",
+                      "weekly.html", "Do the weekly turn"),
+                small("write", "write an entry", "A fact, a link anyone can open, and one line for each part of it that "
+                      "would prove it wrong. The page lays it out for the ledger and the chat.", "write.html",
+                      "Write an entry"),
                 '<section class="win" id="background" aria-labelledby="background-h"><h2 class="bar" id="background-h">'
                 'background: not part of the experiment</h2><div class="win-body"><p>Reading, for anyone who wants it. Z\'s '
                 'findings are one member\'s study of febu, checked by nobody else; the four tests answer Witness\'s '
@@ -935,10 +1142,120 @@ def people_page(secs):
                 "posted, entry by entry." + (" Proposed, not yet adopted." if status(secs)[1] else ""))
 
 
+GITHUB_EDIT = "https://github.com/zinotino/febu-assembly/edit/main/ledger.txt"
+
+
+def ledger_data(title, secs):
+    """What the weekly page needs from ledger.txt, as JSON in the page: the members in order, each entry's writer,
+    WRONG IF line count and SEEN items, the open votes and the next entry number. No addresses."""
+    names = member_names(secs)
+    items = entries(entries_section(secs)[1])
+    ents = [{"kind": k, "num": int(n), "writer": writer(w, f, names), "lines": len(wrong_if(f)), "empty": not checked(f),
+             "results": [[a, d, r, list(ls)] for a, d, r, ls in results(f)]}
+            for _, k, n, w, f in (it for it in items if it[0] == "entry")]
+    data = {"members": names, "entries": ents, "next": next_number(items),
+            "votes": [{"subject": v, "by": by} for v, by in open_votes(title, secs)]}
+    return '<script type="application/json" id="ledger-data">%s</script>' % json.dumps(data).replace("</", "<\\/")
+
+
+def step(n, key, head, inner, hidden=False):
+    return ('<section class="win step" id="%s" aria-labelledby="%s-h"%s><h2 class="bar" id="%s-h"><span class="n">%d</span>'
+            '%s</h2><div class="win-body">%s</div></section>' % (key, key, " hidden" if hidden else "", key, n, head, inner))
+
+
+def weekly_page(title, secs):
+    """The weekly turn (rule 6) as one page: paste the week's chat, and claims.js reads every CHECK and VOTE post in it
+    and lists the SEEN lines to add in the ledger's layout, the entries rule 3 would close, the votes against rule 7,
+    and every line it could not read. It never edits the file: the member pastes into ledger.txt on GitHub."""
+    doc = Doc(secs, "ledger.html")
+    out = lambda key: '<div id="%s"></div>' % key
+    body = ('<div class="intro"><p>%s</p></div>' % doc.fmt(
+                "Each week one member, in Member order, checks both ways: every result posted in the chat that week is "
+                "in the file, and every SEEN line in the file has its post in the chat (rule 6). Paste the week's chat "
+                "below. This page reads the posts whose first line starts CHECK or VOTE, and shows you everything else "
+                "to read yourself. It changes nothing: you copy what it writes into ledger.txt.")
+            + step(1, "w-paste", "paste the week's chat",
+                   '<label class="f" for="chat">Everything posted in the chat this week, copied out of it</label>'
+                   '<textarea id="chat" rows="10" spellcheck="false" autocomplete="off" placeholder="CHECK FACT 8'
+                   + html.escape(CHAT) + 'HOLDS' + html.escape(CHAT) + 'lines 1,2,3' + html.escape(CHAT) + 'Laura'
+                   + html.escape(CHAT) + '2026-10-16&#10;Line 1: ...&#10;Saw: ..."></textarea>'
+                   '<p class="hint">Read on your device. Nothing is sent or kept: reload the page and it is gone.</p>'
+                   '<p class="msg" id="w-sum" role="status"></p>')
+            + step(2, "w-seen", "SEEN lines to add", out("w-seen-out"), hidden=True)
+            + step(3, "w-back", "SEEN lines with no post in what you pasted", out("w-back-out"), hidden=True)
+            + step(4, "w-close", "entries that would close (rule 3)", out("w-close-out"), hidden=True)
+            + step(5, "w-votes", "votes (rule 7)", out("w-votes-out"), hidden=True)
+            + step(6, "w-unread", "lines it could not read", out("w-unread-out"), hidden=True)
+            + step(7, "w-file", "put it in the file, then post the hash",
+                   '<ol class="plain"><li><a href="%s" rel="noopener noreferrer">Open ledger.txt on GitHub</a> and press '
+                   'the pencil (README, &ldquo;Editing in the browser&rdquo;).</li><li>Paste each block where step 2 '
+                   'says, lined up like the lines around it. Add nothing else.</li><li>Commit to main. The site '
+                   'rebuilds in a minute or two; if the build stops, GitHub shows a red cross and the site keeps the '
+                   'version before.</li><li>Open <a href="ledger.html#the-text">the ledger page</a> and copy the new '
+                   'SHA-256. Post it somewhere the group does not control, then in the chat.</li></ol>' % GITHUB_EDIT)
+            + ledger_data(title, secs))
+    return page("weekly.html", "The weekly turn", "the weekly turn", "paste the week's chat, copy what goes in the file",
+                body, mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
+                description="The febu Assembly's weekly turn: paste the week's chat and get the SEEN lines, the entries "
+                "that would close and the vote counts, ready to copy into the ledger.")
+
+
+def write_page(secs):
+    """The entry form: SAYS, LINK and one WRONG IF line per part of SAYS. claims.js lays it out as the ledger writes
+    entries and as a chat post. Facts only for now; a promise is written by hand from HOW AN ENTRY IS WRITTEN."""
+    doc = Doc(secs, "ledger.html")
+    names = member_names(secs)
+    n = next_number(entries(entries_section(secs)[1]))
+    how = next((b for h, b in secs if short(h) == "HOW AN ENTRY IS WRITTEN"), None)
+    if how is None:
+        sys.exit("the ledger has no HOW AN ENTRY IS WRITTEN section; the entry form shows it")
+    wi = ('<li class="wi"><span class="n">1</span><input type="text" class="wi-t" autocomplete="off" aria-label="WRONG IF '
+          'line 1" placeholder="the balance on 2026-10-14 was below 11.12 SOL"><button type="button" class="btn wi-x" '
+          'aria-label="Remove WRONG IF line 1">Remove</button><p class="warn" hidden>No date in this line. If someone '
+          'outside the group could make it true later, with a transfer or a new post, end it: &ldquo;by the end of '
+          '2026-10-14&rdquo;.</p></li>')
+    form = ('<div class="wf" data-next="%d"><div class="cc-pair"><label class="f">Your name<select class="who">%s</select>'
+            '<input type="text" class="other" autocomplete="off" placeholder="Your name in the chat" '
+            'aria-label="Your name in the chat" hidden></label><p class="f num-note">This will be <b>fact %d</b>, the '
+            'number the ledger gives next. If someone posts an entry before yours, take the one after.</p></div>'
+            '<label class="f">SAYS<span class="q">one sentence</span><textarea class="says" rows="3" '
+            'placeholder="Between 2026-09-29 and 2026-10-09 the wallet that created $FEBU bought no $FEBU."></textarea>'
+            '</label><label class="f">LINK<span class="q">full links anyone can open without asking you (rule 1), one '
+            'to a line; a line of words says what to look for</span><textarea class="link" rows="3" spellcheck="false" '
+            'placeholder="https://..."></textarea></label><fieldset class="cc-set wis-set"><legend>WRONG IF<span '
+            'class="q">one line for each part of SAYS</span></legend><p class="prompt">Could a stranger make this '
+            'true? End-date it.</p><ol class="wis">%s</ol><p class="acts"><button type="button" class="btn wi-add">'
+            'Add a WRONG IF line</button></p></fieldset><p class="need" id="need-w"></p></div>'
+            % (n, name_options(names), n, wi))
+    copy = lambda cls, label: ('<p class="acts"><button type="button" class="btn primary %s" disabled '
+                               'aria-describedby="need-w">%s</button></p>' % (cls, label))
+    body = ('<div class="intro"><p>%s</p></div>' % doc.fmt(
+                "Write a fact the way the ledger writes them, and post it in the chat. Nobody approves it. Two members "
+                "other than you check it by opening the link (rule 3). Every part of SAYS needs a WRONG IF line that "
+                "would catch it; if SAYS claims more, cut SAYS.")
+            + step(1, "w-form", "write it", form)
+            + step(2, "w-chat", "post it in the chat",
+                   '<pre class="post keep chat-out" aria-live="polite"></pre>%s<p class="hint">Paste it yourself: this page '
+                   'sends nothing. Until the first SEEN line you may change WRONG IF with a dated CHANGED line; after '
+                   'that, never.</p>' % copy("w-copy-chat", "Copy the chat post"))
+            + step(3, "w-file", "put it in ledger.txt",
+                   '<pre class="post keep entry-out"></pre>%s<p class="hint">You or the week\'s member: on <a href="%s" '
+                   'rel="noopener noreferrer">ledger.txt on GitHub</a>, press the pencil, paste it under THE ENTRIES '
+                   'above &ldquo;The next entry is number %d.&rdquo;, and raise that number by one (README, Add an '
+                   'entry).</p>' % (copy("w-copy-entry", "Copy the entry"), GITHUB_EDIT, n))
+            + '<details class="win" id="how-written"><summary><span class="t">how an entry is written</span><span '
+              'class="q">in the ledger\'s own words</span></summary><div class="win-body">%s</div></details>'
+            % doc.blocks(to_lines(how), 2))
+    return page("write.html", "Write an entry", "write an entry", "a fact, a link, and what would prove it wrong",
+                body, mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
+                description="Write a fact for the febu Assembly's ledger: what it says, a link anyone can open, and what "
+                "would prove it wrong. Laid out for the ledger and the chat.")
+
+
 def main():
     raw = raw_text(LEDGER)
     text = raw.decode("utf-8").rstrip("\n")
-    secs = sections(text)[1]
+    title, secs = sections(text)
     steps = raw_text(STEPS).decode("utf-8").rstrip("\n")
     ledger, archives = ledger_page(text, raw, steps)
     findings, counts = findings_page()
@@ -946,8 +1263,11 @@ def main():
         "ledger.html": ledger,
         "tests.html": tests_page(raw_text(TESTS).decode("utf-8").rstrip("\n"), secs),
         "how.html": how_page(raw_text(HOW).decode("utf-8").rstrip("\n"), secs),
-        "febu-assembly.html": assembly_page(secs, steps_fact(steps), sections(raw_text(HOW).decode("utf-8").rstrip("\n"))[1]),
+        "febu-assembly.html": assembly_page(title, secs, steps_fact(steps),
+                                            sections(raw_text(HOW).decode("utf-8").rstrip("\n"))[1]),
         "people.html": people_page(secs),
+        "weekly.html": weekly_page(title, secs),
+        "write.html": write_page(secs),
         "findings.html": findings,
     }
     if LEDGER.read_bytes() != raw:   # the page prints the hash of the LF text, so serve exactly that

@@ -15,10 +15,31 @@ findings).
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
-| `build.py`, `findings_html.py` | Write the five pages from the texts. `test_build.py` tests the people page. |
-| `assets/` | The pages' stylesheets, and `claims.js` (tap to copy a hash or a result post, hash checks). Written by hand. |
+| `build.py`, `findings_html.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
+| `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
-| `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html`, `people.html` | Written by `build.py`. Don't edit them by hand. |
+| `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html` | Written by `build.py`. Don't edit them by hand. |
+
+## Member flows
+
+Each turns one job into one page and one message for the chat. None of them posts, stores or sends anything.
+
+- **Check card** (front page, under each entry rule 3 has not closed): tick the WRONG IF lines you tested, say what you
+  saw on each, name one new thing on the page, pick your result. Copy waits until the new thing is filled in. The post's
+  first line is the part a machine reads: `CHECK FACT 8 · HOLDS · lines 1,3 · Laura · 2026-10-15`. WRONG IF lines are
+  numbered by clause, split at ", or" and "; or", the way `checks/resolve.py` names them.
+- **Your next move** (front page): pick your name to see the entries you can check, the open vote with its closing date
+  (from STATUS and the last "yes" or "object" date in the ledger), and whose weekly turn it is. Weeks are counted from
+  the first date in STATUS, in Member order, on the reader's own clock.
+- **The weekly turn** (`weekly.html`, rule 6): paste the week's chat. It reads the CHECK, VOTE and ENTRY posts and lists
+  the SEEN lines to add in the ledger's layout, the SEEN lines with no post, the entries rule 3 would close, the votes
+  against rule 7, and every line it could not read. You paste its blocks into `ledger.txt` (Editing in the browser).
+- **Write an entry** (`write.html`): SAYS, LINK and one WRONG IF line per part of SAYS, laid out for `ledger.txt` and as
+  a chat post. Facts only; write a promise by hand from HOW AN ENTRY IS WRITTEN.
+
+A SEEN line the weekly page writes reads `- Laura, 2026-10-15: HOLDS on lines 1, 3. Saw: ... New: ... 14 minutes.`,
+the first replacing "nobody yet". The build reads that form back to decide which entries rule 3 has closed; a SEEN line
+written another way still shows, but is left to a person to count.
 
 ## Add an entry
 
