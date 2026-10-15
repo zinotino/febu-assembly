@@ -1353,7 +1353,9 @@ def ledger_json(title, secs, raw):
                     "differ. Links are not here, and an address is cut to its first 7 characters: read ledger.txt for them.",
            "ledger": {"url": SITE + "/ledger.txt", "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)},
            "proposed": status(secs)[1], **ledger_dict(title, secs, more=True)}
-    return vetted("ledger.json", json.dumps(out, indent=1, ensure_ascii=False) + "\n")
+    text = json.dumps(out, indent=1, ensure_ascii=False) + "\n"
+    vetted("ledger.json", text.replace(out["ledger"]["sha256"], ""))   # a hash with no 0 in it (1 in 60) reads as an address
+    return text
 
 
 def step(n, key, head, inner, hidden=False):
@@ -1474,11 +1476,12 @@ def main():
         "write.html": write_page(secs),
         "process.html": process_page(),
     }
+    index = ledger_json(title, secs, raw)   # before any file is written: a refusal must not leave the repo half built
     if LEDGER.read_bytes() != raw:   # the page prints the hash of the LF text, so serve exactly that
         LEDGER.write_bytes(raw)
     for name, out in pages.items():
         (ROOT / name).write_text(out, encoding="utf-8", newline="\n")
-    (ROOT / "ledger.json").write_text(ledger_json(title, secs, raw), encoding="utf-8", newline="\n")
+    (ROOT / "ledger.json").write_text(index, encoding="utf-8", newline="\n")
     (ROOT / "assembly.ics").write_bytes(calendar_ics(open_votes(title, secs), member_names(secs), turn_start(secs),
                                                      secs).encode("utf-8"))
     print("ledger.txt sha256 %s (%d bytes); %s; wrote %s" % (

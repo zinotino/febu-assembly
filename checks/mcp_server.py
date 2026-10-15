@@ -1,7 +1,7 @@
 """checks/agent.py as an MCP server, for an agent that has no shell (a chat app). The same four commands and the same rule:
 it helps a person look and it posts nothing. There is no tool that posts, signs or edits a file.
 
-    pip install mcp
+    pip install "mcp>=1.26,<2"        (the versions it was tried on)
     python checks/mcp_server.py        (talks over stdin and stdout: a client starts it)
 
 In a client's config, with the path to your own copy of the repo:

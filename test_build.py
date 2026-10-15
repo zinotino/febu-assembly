@@ -114,6 +114,23 @@ class LedgerJson(unittest.TestCase):
         wallet = "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG"
         self.assertEqual(build.clip("signed by %s and by ApWpkd8" % wallet), "signed by ApWpkd8… and by ApWpkd8")
 
+    def test_a_hash_with_no_zero_is_not_an_address(self):
+        import hashlib, json
+        title, secs = build.sections(LEDGER)
+        for i in range(5000):   # about 1 hash in 60 has no 0 in it, and then reads as a 64-character base58 address
+            raw = (LEDGER + "x" * i).encode("utf-8")
+            if "0" not in hashlib.sha256(raw).hexdigest():
+                break
+        else:
+            self.fail("no zero-free hash in 5000 tries")
+        out = json.loads(build.ledger_json(title, secs, raw))   # exits if the hash is vetted as an address
+        self.assertEqual(out["ledger"]["sha256"], hashlib.sha256(raw).hexdigest())
+
+    def test_the_committed_file_is_what_build_writes(self):
+        raw = build.raw_text(build.LEDGER)
+        title, secs = build.sections(raw.decode("utf-8").rstrip("\n"))
+        self.assertEqual(build.ledger_json(title, secs, raw), (build.ROOT / "ledger.json").read_text(encoding="utf-8"))
+
 
 class ProcessTables(unittest.TestCase):
     def test_data_th(self):

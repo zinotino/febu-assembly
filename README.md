@@ -128,7 +128,7 @@ them. The site does not lag, because Vercel builds its own.
 ## Rerunnable checks
 
 `checks/` re-reads the facts a machine can read, with Python 3 and nothing else: no packages, no account, no key. (Two
-helpers for a member's AI need more: `agent.py lint` needs node, and `mcp_server.py` needs `pip install mcp`. Neither posts.)
+helpers for a member's AI need more: `agent.py lint` needs node, and `mcp_server.py` needs `pip install "mcp>=1.26,<2"`. Neither posts.)
 Each takes its addresses and transactions from `ledger.txt` and `fact-6-steps.txt`, so it tests what the ledger
 says, and prints what it saw. `resolve.py` also names which WRONG IF lines tripped. None of them posts anything:
 a person reads the output, compares it with the entry's WRONG IF lines, opens a link by hand, and posts (HOW TO
