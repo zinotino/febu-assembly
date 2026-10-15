@@ -133,3 +133,23 @@ class Calendar(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AfterAdoption(unittest.TestCase):
+    """The vote-week wording and the fact 1 note clear themselves: no page edit is needed once the ledger changes."""
+    def test_freeze_wording_only_while_proposed(self):
+        real = build.LEDGER.read_text(encoding="utf-8")
+        status = lambda s: re.sub(r"(?ms)^STATUS\n.*?(?=^\S)", "STATUS\n  %s\n\n" % s, real, count=1)
+        for text, frozen in ((status("Proposed by Z."), True), (status("Adopted 2026-10-22 under rule 7."), False)):
+            title, secs = build.sections(text)
+            for page in (build.weekly_page(title, secs), build.write_page(secs)):
+                self.assertEqual("Not during a vote" in page, frozen)
+
+    def test_fact1_note_until_link_names_the_account(self):
+        from types import SimpleNamespace as L
+        account = build.FACT1_ACCOUNT.rsplit("/", 1)[1]
+        old = [("LINK", [L(txt="https://solscan.io/account/ApWpkd8#transfers")])]
+        new = [("LINK", [L(txt="https://solscan.io/account/" + account)])]
+        self.assertTrue(build.site_note(build.SITE_NOTES, "FACT", "1", old))
+        self.assertEqual(build.site_note(build.SITE_NOTES, "FACT", "1", new), "")
+        self.assertEqual(build.site_note(build.SITE_NOTES, "FACT", "3", old), "")
