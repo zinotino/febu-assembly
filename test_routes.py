@@ -80,12 +80,10 @@ def test():
     for p in pages:
         assert csp(DEN, "/" + p), p
         assert serve(DEN, "/" + p)[0] == ("file", "/" + p), p
-    for p in ["/assets/claims.js", "/assets/how-it-connects.svg", "/archive/x.txt", "/api/claim"]:
+    for p in ["/assets/claims.js", "/assets/how-it-connects.svg", "/archive/x.txt"]:
         assert csp(DEN, p), p
     assert not csp(DEN, "/api/keepalive") and den_csp(DEN, "/api/keepalive")
-    assert serve(DEN, "/api/entries/3/check")[0] == ("rewrite", "/api/entries?num=$1&act=$2")   # the live record's pretty URLs
-    assert csp(DEN, "/api/entries/3/second")
-    assert CFG["functions"]["api/entries.js"]["includeFiles"] == "ledger.txt"
+    assert "functions" not in CFG                                                                 # no member-facing API is left
     assert serve(DEN, "/z")[0] == ("rewrite", "/index.html")                                     # no findings page
     assert serve(DEN, "/findings.html")[0] == ("rewrite", "/index.html")
     assert serve(DEN, "/start")[0] == ("redirect", 308, "/febu-assembly.html#check")
@@ -93,11 +91,11 @@ def test():
     # the old domain serves nothing: every path is a 308 to the same path on the one address
     ONE = "https://" + DEN
     assert serve(LEDGER, "/")[0] == ("redirect", 308, ONE + "/febu-assembly.html")
-    for p in pages + ["api/claim", "api/entries", "archive/08_CLAIMS_LEDGER_v3.txt", "assets/claims.js", "nope"]:
+    for p in pages + ["api/archive", "archive/08_CLAIMS_LEDGER_v3.txt", "assets/claims.js", "nope"]:
         assert serve(LEDGER, "/" + p)[0] == ("redirect", 308, ONE + "/" + p), p
     assert not any("febu-ledger" in str(x) for x in serve(DEN, "/")[0])
 
-    assert [c["path"] for c in CFG["crons"]] == ["/api/archive", "/api/claim?name=Zurandol", "/api/keepalive"]
+    assert [c["path"] for c in CFG["crons"]] == ["/api/archive", "/api/keepalive"]
     assert CFG["buildCommand"] == "python3 build.py" and CFG["outputDirectory"] == "."
     print("routes ok:", len(pages), "assembly files, den paths, old domain redirects everything")
 

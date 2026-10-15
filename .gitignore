@@ -1,4 +1,2 @@
 __pycache__/
 *.bak
-live/*.db
-live/salt

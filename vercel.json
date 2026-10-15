@@ -35,7 +35,7 @@
       "continue": true
     },
     {
-      "src": "/(?:(?:febu-assembly|how|people|process|weekly|write|ledger|tests)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|start(?:\\.html)?|api/(?!keepalive).+|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
+      "src": "/(?:(?:febu-assembly|how|people|process|weekly|write|ledger|tests)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|start(?:\\.html)?|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
       "headers": {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
@@ -53,10 +53,6 @@
       }
     },
     {
-      "src": "/api/entries/(\\d+)/(second|check)",
-      "dest": "/api/entries?num=$1&act=$2"
-    },
-    {
       "handle": "filesystem"
     },
     {
@@ -64,19 +60,10 @@
       "dest": "/index.html"
     }
   ],
-  "functions": {
-    "api/entries.js": {
-      "includeFiles": "ledger.txt"
-    }
-  },
   "crons": [
     {
       "path": "/api/archive",
       "schedule": "41 4 * * *"
-    },
-    {
-      "path": "/api/claim?name=Zurandol",
-      "schedule": "17 5 * * *"
     },
     {
       "path": "/api/keepalive",

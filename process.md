@@ -126,9 +126,8 @@ carries a bond.
 | An AI | Help a person find things on a page; draft a script | Post a result |
 
 A member silent in the chat for 90 days stops counting for rules 3, 6 and 7 until they post again. Witness is one of
-the seven, with one vote: not a gate, and nothing waits on Witness. A live record page, where results would be posted
-straight into the ledger, is a prototype and not public. Before anyone else reaches it, it needs sign-in limited to the
-seven, because a typed name lets one person act as seven. Anyone may reopen an entry with a second person, but only
+the seven, with one vote: not a gate, and nothing waits on Witness. Results are posted in the chat and added to the
+file by the weekly turn; no page writes into the ledger, because a typed name would let one person act as seven. Anyone may reopen an entry with a second person, but only
 members can post in the chat, so a non-member has nowhere to do it yet (KNOWN BUGS 7). The fix is an issue on the
 ledger's public repository, which the weekly turn adds to the file.
 
@@ -153,7 +152,7 @@ edit visible, with a date nobody in the group set. Bitcoin is used for that stam
   with its hash first.
 - An objection says what would change the objector's mind. A habit for now, proposed as a rule in round two.
 - Anything only one person can do is a bug, listed under KNOWN BUGS with a fix-by date. Bugs 1 to 3 and 7 are due 2026-11-14;
-  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z; 7 is that
+  4 is fixed on the site; 5 has a proposed close (section 6); 6 is the name claim's codes and key, held by Z (the claim is gone from the site; the ledger's line is closed after the version 3 vote); 7 is that
   a non-member has nowhere to reopen an entry.
 - Anyone may copy the file and run it their own way.
 
@@ -299,7 +298,7 @@ and PROMISE 7 by theirs; the three holes filled and rules 3 and 6 edited (sectio
 | 1 | Adopt version 3 as served, with the KNOWN BUGS 5 close | Members | Rule 7, by 2026-10-22 |
 | 2 | The Saw line for scripts (section 5) | Members | Rule 7, the same week |
 | 3 | The stop rule: E0 to E3 and what each failure does (section 7) | Members | Rule 7, the same week, so it holds from the first of the 30 days |
-| 4 | Round two: a dated WRONG line for anything later shown wrong; objections say what would change one's mind; a rule for leaving; OUT OF SCOPE and DEPENDS ON lines; WRONG IF lines a stranger cannot make true; the optional second; sign-in for the live record | Members | Rule 7, after round one |
+| 4 | Round two: a dated WRONG line for anything later shown wrong; objections say what would change one's mind; a rule for leaving; OUT OF SCOPE and DEPENDS ON lines; WRONG IF lines a stranger cannot make true; the optional second | Members | Rule 7, after round one |
 | 5 | Whether a stranger can ever close an entry (today: can reopen with a second person, cannot close) | Members | Open |
 | 6 | The OPEN QUESTION: a record for each of the three problems, or "none" | Anyone | Chat, then entries |
 | 7 | KNOWN BUGS 1 to 3 | Each member | By 2026-11-14 |
