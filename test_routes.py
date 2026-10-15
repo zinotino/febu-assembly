@@ -65,6 +65,10 @@ def test():
     assert serve(DEN, "/")[0] == ("file", "/index.html")
     assert serve(DEN, "/library/scripture")[0] == ("rewrite", "/index.html")
     assert serve(DEN, "/scripture.html")[0] == ("file", "/scripture.html")
+    # the den's policy has no inline script: a den page that still carries one renders as an empty shell
+    for f in ("index.html", "scripture.html"):
+        src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        assert not re.search(r"<script(?![^>]*src=)[^>]*>", src), f + " has an inline script"
 
     # every page and text file the Assembly serves keeps its CSP on both domains
     pages = [f for f in FILES if re.fullmatch(r"[a-z0-9-]+\.(html|txt|ics)", f)
