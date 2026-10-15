@@ -6,6 +6,8 @@ STATUS
   and at most one writes "object". Versions 1, 2 and 2.1 were never adopted either; all are kept in
   archive/. The week of the vote is also a dry run: entries 3, 8 and 9 are the cheapest to
   check. Post what you saw, and how many minutes it took.
+  Also up for the vote by 2026-10-22: the Saw line; the stop rule. Both are in process.md,
+  sections 5 and 7, and in the chat post that showed them.
 
 WHAT THIS IS
   A public list of promises and facts. Nobody approves anything. Anyone can check anything.
