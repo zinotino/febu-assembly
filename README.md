@@ -43,7 +43,7 @@ This repo is the whole of the Assembly: the pages, the ledger, the two daily job
 - The den's bundle puts raw HTML into the page in two places only, both react-tweet's rendering of a tweet's own text, and in one theme script the policy blocks. The count of 16 this file used to give was the string `dangerouslySetInnerHTML` appearing in React's own code. Posts and comments are drawn as text.
 - Not covered: a bug in the bundle's own code that a post can steer into running, which the policy does not stop. It would reach a picked name and an unfinished post, nothing more. If that worries you, the den goes, and nothing else changes.
 
-`test_routes.py` checks both policies on every path. The one environment variable (set in Vercel, never in the repo) is `CRON_SECRET`, in the `febu-assembly` project: it guards `/api/archive`. The copies in the old `febu-ledger` project are not used any more and can be removed.
+`test_routes.py` checks both policies on every path. The one environment variable the site can use (set in Vercel, never in the repo) is `CRON_SECRET`: with it set in the `febu-assembly` project, only the daily cron may call `/api/archive`. It is not set today, so anyone may call it; that asks the Internet Archive to save a public file and nothing else, and the worst a caller can do is get the daily save refused for a while. The copies in the old `febu-ledger` project are not used any more and can be removed.
 
 ## Member flows
 
