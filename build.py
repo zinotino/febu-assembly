@@ -949,7 +949,7 @@ def check_card(kind, num, author, fields, members):
         '<pre class="post" aria-live="polite"></pre></div><p class="need" id="need-%s"></p>'
         '<p class="acts"><button type="button" class="btn primary cc-copy" disabled aria-describedby="need-%s">'
         'Copy the post</button></p><p class="hint">Paste it in the chat yourself: this page sends nothing. That '
-        'week\'s member copies it into the ledger as a SEEN line (rule 6).</p></div>'
+        'week\'s member copies it into the ledger as a SEEN line (rule 6), from the first turn after the vote.</p></div>'
         % (aid, kind, num, html.escape(author), who, tests, name_options(members), aid, yes, yes, aid, no, no, aid, aid))
 
 
