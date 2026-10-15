@@ -10,6 +10,8 @@
                 (#fact-6, with #6 kept for links made before version 2), and under the fact that
                 fact-6-steps.txt is about, its steps and every row with a link
   how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg
+  process.html  process.md: the whole process in one file, the clock and the tests (needs the markdown package, as
+                findings.html does; otherwise the committed page is kept while process.md is unchanged)
   tests.html    tests.txt as a page       (background: no tab; the front page's "background" window links it)
   findings.html findings.md (findings_html.py) in the den's look   (background: same)
   people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
@@ -36,6 +38,7 @@ TESTS = ROOT / "tests.txt"
 STEPS = ROOT / "fact-6-steps.txt"
 FINDINGS = ROOT / "findings.md"
 HOW = ROOT / "how.txt"
+PROCESS = ROOT / "process.md"
 
 # This notation never goes on a public page.
 BANNED = re.compile(r"GF\(3\)|\btrits?\b|(?<![\w=\"'-])[-\u2212]1(?![\d])", re.I)
@@ -532,7 +535,8 @@ SHELL = """<!doctype html>
 </html>
 """
 
-TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("ledger.html", "the ledger"))
+TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("process.html", "the process"),
+        ("ledger.html", "the ledger"))
 # Reading, not the experiment: no tab. Each shows as one extra marked tab that leads back to the front page's window.
 BACKGROUND = {"tests.html": "four tests", "findings.html": "findings"}
 QUIET = "Nothing on this page is stored or counted, and it loads nothing from other sites."
@@ -621,6 +625,51 @@ def findings_page():
     return vetted("findings.html", out), counts
 
 
+PROCESS_DESC = ("The Assembly's whole process in one file: the ledger, the scripts that check it, money, the 30-day "
+                "clock and its stop rule, and the decisions waiting. Adds no rule.")
+PROCESS_CLOCK = "process.html#7-the-clock-from-now-to-a-decision"
+
+
+def md_tables(out):
+    """markdown's plain tables, in the stylesheet's stacking form: data-th on every cell, so a phone shows the header
+    beside each value (the way Doc.table writes them)."""
+    def one(m):
+        heads = re.findall(r"<th>(.*?)</th>", m.group(), re.S)
+        def row(r):
+            cells = iter(heads)
+            return re.sub(r"<td>", lambda _: '<td data-th="%s">' % html.escape(re.sub(r"<[^>]+>", "", next(cells, ""))),
+                          r.group())
+        body = re.sub(r"<tr>.*?</tr>", row, m.group().split("<tbody>", 1)[1], flags=re.S)
+        return '<div class="tbl stack">%s<tbody>%s</div>' % (m.group().split("<tbody>", 1)[0], body)
+    return re.sub(r"<table>.*?</table>", one, out, flags=re.S)
+
+
+def process_page():
+    """process.md as a page: the title line becomes the heading, each ## section is a section with the heading's own
+    anchor (markdown's toc ids: '7-the-clock-from-now-to-a-decision'). Needs the markdown package; without it the
+    committed page is kept while process.md is unchanged, as findings_page does."""
+    text = raw_text(PROCESS).decode("utf-8")
+    mark = "from process.md (sha256 %s)" % hashlib.sha256(raw_text(PROCESS)).hexdigest()[:16]
+    try:
+        import markdown
+    except ModuleNotFoundError:
+        built = ROOT / "process.html"
+        if built.exists() and mark in built.read_text(encoding="utf-8"):
+            return built.read_text(encoding="utf-8")
+        sys.exit("process.md has changed since process.html was built, and building it needs the markdown package "
+                 "(pip install markdown)")
+    first, rest = text.split("\n", 1)
+    h1, sub = titled(first.lstrip("# ").strip())
+    body = markdown.markdown(rest, extensions=["tables", "fenced_code", "toc"])
+    body = md_tables(body)
+    # each h2 opens a section; the toc extension gave it an id
+    body = re.sub(r'<h2 id="([^"]+)">', lambda m: '</section><section id="%s"><h2>' % m.group(1), body)
+    body = '<section class="md-lead">' + body + "</section>"
+    body = body.replace('<section class="md-lead"></section>', "")
+    return page("process.html", "The process", h1.lower(), sub.lower(), '<div class="md">%s</div>' % body,
+                source=" " + mark, description=PROCESS_DESC)
+
+
 def status(secs):
     """(the STATUS section's lines, whether it says the rules are only proposed)"""
     body = next((b for h, b in secs if short(h) == "STATUS"), None)
@@ -642,7 +691,8 @@ def status_banner(secs, doc, brief=False):
     """The STATUS section as a banner. Proposed rules say so first, in plain words."""
     body, proposed = status(secs)
     head = "Proposed, not yet adopted" if proposed else "Status"
-    inner = ('<p>These rules are a draft until the group adopts them. <a href="ledger.html#status">Read the status</a>.</p>'
+    inner = ('<p>These rules are a draft until the group adopts them. <a href="ledger.html#status">Read the status</a>. '
+             'What happens next, step by step: <a href="%s">the clock</a>.</p>' % PROCESS_CLOCK
              if brief else doc.blocks(to_lines(body), 2))
     return '<div class="banner%s" id="status" role="note"><strong>%s</strong>%s</div>' % (
         (" proposed" if proposed else "") + (" brief" if brief else ""), head, inner)
@@ -942,8 +992,15 @@ def open_votes(title, secs):
     weekly page counts any VOTE post."""
     if not status(secs)[1]:
         return []
-    dates = re.findall(r'"yes" or "object" by (\d{4}-\d\d-\d\d)', re.sub(r"\s+", " ", " ".join(r for _, b in secs for r in b)))
-    return [(titled(title)[1] or "this version", dates[-1] if dates else None)]
+    flat = re.sub(r"\s+", " ", " ".join(r for _, b in secs for r in b))
+    dates = re.findall(r'"yes" or "object" by (\d{4}-\d\d-\d\d)', flat)
+    by = dates[-1] if dates else None
+    votes = [(titled(title)[1] or "this version", by)]
+    # STATUS may add: 'Also up for the vote by 2026-10-22: the Saw line; the stop rule.' (one line, subjects by ';')
+    m = re.search(r"Also up for the vote by (\d{4}-\d\d-\d\d): ([^.]+)\.", re.sub(r"\s+", " ", " ".join(status(secs)[0])))
+    if m:
+        votes += [(sub.strip(), m.group(1)) for sub in m.group(2).split(";") if sub.strip()]
+    return votes
 
 
 def turn_start(secs):
@@ -1068,6 +1125,13 @@ def assembly_page(title, secs, steps_num, how_secs):
                 small("write", "write an entry", "A fact, a link anyone can open, and one line for each part of it that "
                       "would prove it wrong. The page lays it out for the ledger and the chat.", "write.html",
                       "Write an entry"),
+                small("scripts", "run a script", "Eight entries have a script that reads their record for you, with "
+                      "Python 3 and no account or key. Say in your post that you ran one, and still open one link by "
+                      "hand: until the Saw line is adopted, a script run alone is not a Saw. <code>python "
+                      "checks/resolve.py test9</code> takes seconds; <code>fact8</code> about a minute; "
+                      '<code>checks/fact6.py</code> a minute or two. <a href="%s">What makes a script count</a>.'
+                      % "process.html#5-add-on-a-scripts",
+                      "https://github.com/zinotino/febu-assembly/tree/main/checks", "The scripts, with a line each"),
                 '<section class="win" id="background" aria-labelledby="background-h"><h2 class="bar" id="background-h">'
                 'background: not part of the experiment</h2><div class="win-body"><p>Reading, for anyone who wants it. Z\'s '
                 'findings are one member\'s study of febu, checked by nobody else; the four tests answer Witness\'s '
@@ -1269,6 +1333,7 @@ def main():
         "weekly.html": weekly_page(title, secs),
         "write.html": write_page(secs),
         "findings.html": findings,
+        "process.html": process_page(),
     }
     if LEDGER.read_bytes() != raw:   # the page prints the hash of the LF text, so serve exactly that
         LEDGER.write_bytes(raw)

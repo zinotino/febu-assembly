@@ -79,5 +79,26 @@ class CheckedEntry(unittest.TestCase):
         self.assertEqual(build.closed(found, "Zed", members), ("HOLDS", (1, 2)))
 
 
+
+class Votes(unittest.TestCase):
+    def test_status_subjects(self):
+        secs = build.sections(LEDGER.replace("  Proposed by Zed.", '  Proposed by Zed. "yes" or "object" by 2026-10-22.\n'
+                                             "  Also up for the vote by 2026-10-22: the Saw line; the stop rule."))[1]
+        self.assertEqual(build.open_votes("TEST LEDGER (version 0)", secs),
+                         [("version 0", "2026-10-22"), ("the Saw line", "2026-10-22"), ("the stop rule", "2026-10-22")])
+
+    def test_no_subjects_line(self):
+        secs = build.sections(LEDGER)[1]
+        self.assertEqual(build.open_votes("TEST LEDGER (version 0)", secs), [("version 0", None)])
+
+
+class ProcessTables(unittest.TestCase):
+    def test_data_th(self):
+        out = build.md_tables("<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr>"
+                              "</tbody></table>")
+        self.assertIn('<td data-th="A">1</td><td data-th="B">2</td>', out)
+        self.assertTrue(out.startswith('<div class="tbl stack"><table>'))
+
+
 if __name__ == "__main__":
     unittest.main()

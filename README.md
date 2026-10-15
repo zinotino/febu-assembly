@@ -9,7 +9,7 @@ findings).
 | `ledger.txt` | The ledger. Edit this one. It is served byte for byte, and its SHA-256 is the hash in rule 6. |
 | `fact-6-steps.txt` | Fact 6 as four steps, each a link, with all 44 payments. |
 | `tests.txt` | The four tests. |
-| `process.md` | The whole process in one file: the ledger, scripts and money as add-ons, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. |
+| `process.md` | The whole process in one file: the ledger, scripts and money as add-ons, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, built like `findings.html`: needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
 | `findings.md` | Z's findings report. |
 | `archive/` | Earlier versions, word for word. Add to it; never edit or delete. |
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
@@ -18,7 +18,7 @@ findings).
 | `build.py`, `findings_html.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
-| `febu-assembly.html`, `ledger.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html` | Written by `build.py`. Don't edit them by hand. |
+| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html` | Written by `build.py`. Don't edit them by hand. |
 
 ## Member flows
 
@@ -28,8 +28,9 @@ Each turns one job into one page and one message for the chat. None of them post
   saw on each, name one new thing on the page, pick your result. Copy waits until the new thing is filled in. The post's
   first line is the part a machine reads: `CHECK FACT 8 · HOLDS · lines 1,3 · Laura · 2026-10-15`. WRONG IF lines are
   numbered by clause, split at ", or" and "; or", the way `checks/resolve.py` names them.
-- **Your next move** (front page): pick your name to see the entries you can check, the open vote with its closing date
-  (from STATUS and the last "yes" or "object" date in the ledger), and whose weekly turn it is. Weeks are counted from
+- **Your next move** (front page): pick your name to see the entries you can check, the open votes with their closing date
+  (the version from STATUS and the last "yes" or "object" date in the ledger; more subjects from one STATUS line
+  `Also up for the vote by 2026-10-22: the Saw line; the stop rule.`), and whose weekly turn it is. Weeks are counted from
   the first date in STATUS, in Member order, on the reader's own clock.
 - **The weekly turn** (`weekly.html`, rule 6): paste the week's chat. It reads the CHECK, VOTE and ENTRY posts and lists
   the SEEN lines to add in the ledger's layout, the SEEN lines with no post, the entries rule 3 would close, the votes
