@@ -12,8 +12,8 @@
   how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg
   process.html  process.md: the whole process in one file, the clock and the tests (needs the markdown package, as
                 findings.html does; otherwise the committed page is kept while process.md is unchanged)
-  tests.html    tests.txt as a page       (background: no tab; the front page's "background" window links it)
-  findings.html findings.md (findings_html.py) in the den's look   (background: same)
+  tests.html    tests.txt as a page       (background: no tab, and nothing on the front page links it)
+  findings.html findings.md (findings_html.py) in the den's look   (background: same; /z redirects to it)
   people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
                 (reached from the front page's "who" window, not a tab)
 
@@ -537,11 +537,8 @@ SHELL = """<!doctype html>
 
 TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("process.html", "the process"),
         ("ledger.html", "the ledger"))
-# Reading, not the experiment: no tab. Each shows as one extra marked tab that leads back to the front page's window.
-BACKGROUND = {"tests.html": "four tests", "findings.html": "findings"}
 QUIET = "Nothing on this page is stored or counted, and it loads nothing from other sites."
-BAR = ('<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> ] [ <a href="/library/scripture">scripture'
-       '</a> ] [ <a href="/febu-assembly.html">febu assembly</a> ]</div>')
+BAR = '<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> ]</div>'
 
 
 SITE = "https://febu-ledger.vercel.app"                 # the card image's address must be absolute for a chat to fetch it
@@ -563,10 +560,8 @@ def meta_tags(title, description):
 
 
 def tabs_html(name):
-    tabs = TABS + ((("febu-assembly.html#background", "background: " + BACKGROUND[name]),) if name in BACKGROUND else ())
     return '<nav class="tabs" aria-label="Assembly pages">%s</nav>' % "".join(
-        '<a href="%s"%s>%s</a>' % (href, ' aria-current="page"' if href == name or href.endswith("#background") else "",
-                                   label) for href, label in tabs)
+        '<a href="%s"%s>%s</a>' % (href, ' aria-current="page"' if href == name else "", label) for href, label in TABS)
 
 
 def vetted(name, out):
@@ -687,13 +682,13 @@ def entries_section(secs):
     return found[0]
 
 
-def status_banner(secs, doc, brief=False):
-    """The STATUS section as a banner. Proposed rules say so first, in plain words."""
+def status_banner(secs, doc, brief=False, task=""):
+    """The STATUS section as a banner. Proposed rules say so first, in plain words. On the front page (brief) the
+    banner is the immediate task and the group's goal, which assembly_page writes as `task`."""
     body, proposed = status(secs)
     head = "Proposed, not yet adopted" if proposed else "Status"
-    inner = ('<p>These rules are a draft until the group adopts them. <a href="ledger.html#status">Read the status</a>. '
-             'What happens next, step by step: <a href="%s">the clock</a>.</p>' % PROCESS_CLOCK
-             if brief else doc.blocks(to_lines(body), 2))
+    inner = (task + '<p><a href="%s">What happens next, step by step</a> &middot; <a href="ledger.html#status">'
+             'Read the status</a></p>' % PROCESS_CLOCK if brief else doc.blocks(to_lines(body), 2))
     return '<div class="banner%s" id="status" role="note"><strong>%s</strong>%s</div>' % (
         (" proposed" if proposed else "") + (" brief" if brief else ""), head, inner)
 
@@ -1072,9 +1067,11 @@ def one_sentence(how_secs):
 
 
 def assembly_page(title, secs, steps_num, how_secs):
-    """The Assembly's front page, for someone who has just followed a link: what this is in a sentence, three entries
-    to check, each with its check card, and the other open ones folded under them; then your next move by name, and
-    the rest (every entry, how to check, who, the weekly turn, writing an entry, the background)."""
+    """The Assembly's front page, for someone who has just followed a link: the task now and the group's goal in the
+    banner, what this is in a sentence, three entries to check, each with its check card, and the other open ones
+    folded under them; then your next move by name, and the rest (every entry, how to check, who, the weekly turn,
+    writing an entry, the scripts). Z's findings and the four tests are reading, not the experiment: served, not
+    linked from here."""
     doc = Doc(secs, "ledger.html")
     by = {short(h): b for h, b in secs}
     names = member_names(secs)
@@ -1096,8 +1093,23 @@ def assembly_page(title, secs, steps_num, how_secs):
         done += checked(fields)
         rows.append(entry_li(kind, num, fields, "checks posted" if checked(fields) else "not yet checked"))
     after = "".join(doc.blocks(to_lines(it[1]), 2) for it in items if it[0] == "text")
-    intro = '<div class="intro">%s</div>' % doc.blocks(to_lines(by["WHAT THIS IS"]), 2) if "WHAT THIS IS" in by else ""
     proposed = status(secs)[1]
+    votes = open_votes(title, secs)
+    shut = sum(1 for it in ents if closed(results(it[4]), author[it[2]], names))
+    goal = next((it for it in ents if it[1] == "PROMISE" and "entries under rule 3" in text_of(it[4], "WILL")), None)
+    task = "<p><strong>Your task now:</strong> check one entry below and post what you saw."
+    if votes:
+        task += (' Then vote &ldquo;yes&rdquo; or &ldquo;object&rdquo;%s on %s (<a href="#next">pick your name</a>).'
+                 % (" by %s" % votes[0][1] if votes[0][1] else "",
+                    ", ".join(html.escape(v) for v, _ in votes[:-1]) + (" and " if len(votes) > 1 else "")
+                    + html.escape(votes[-1][0])))
+    task += "</p>"
+    if goal:
+        task += ('<p><strong>The group&rsquo;s goal</strong> (<a href="ledger.html#%s">PROMISE %s</a>): %s %s '
+                 'Closed so far: %d of %d.</p>' % (anchor("PROMISE", goal[2]), goal[2],
+                                                 html.escape(text_of(goal[4], "WILL")),
+                                                 "By " + html.escape(text_of(goal[4], "BY").rstrip(".")) + ".",
+                                                 shut, len(ents)))
 
     def small(key, title, text, href, go):
         return ('<section class="win" aria-labelledby="%s-h"><h2 class="bar" id="%s-h">%s</h2><div class="win-body">'
@@ -1114,7 +1126,7 @@ def assembly_page(title, secs, steps_num, how_secs):
              '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></summary>'
              '<div class="win-body"><ul class="entries">%s</ul>%s<p class="go"><a href="ledger.html">Read the whole '
              'ledger</a></p></div></details>' % (len(rows), done, "".join(rows), after))
-    body = (start + next_move(names, todo, open_votes(title, secs), turn_start(secs)) + intro + every +
+    body = (start + next_move(names, todo, votes, turn_start(secs)) + every +
             check_section(secs, doc, steps_num) +
             '<div class="more">%s</div>' % "".join([
                 small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
@@ -1131,16 +1143,10 @@ def assembly_page(title, secs, steps_num, how_secs):
                       "checks/resolve.py test9</code> takes seconds; <code>fact8</code> about a minute; "
                       '<code>checks/fact6.py</code> a minute or two. <a href="%s">What makes a script count</a>.'
                       % "process.html#5-add-on-a-scripts",
-                      "https://github.com/zinotino/febu-assembly/tree/main/checks", "The scripts, with a line each"),
-                '<section class="win" id="background" aria-labelledby="background-h"><h2 class="bar" id="background-h">'
-                'background: not part of the experiment</h2><div class="win-body"><p>Reading, for anyone who wants it. Z\'s '
-                'findings are one member\'s study of febu, checked by nobody else; the four tests answer Witness\'s '
-                'question about Satoshi. Nothing in either is an entry. A finding counts as one only once it is written '
-                'as a fact and two other members check it.</p><p class="go"><a href="findings.html">Z\'s findings</a>'
-                '<br><a href="tests.html">The four tests</a></p></div></section>']))
+                      "https://github.com/zinotino/febu-assembly/tree/main/checks", "The scripts, with a line each")]))
     return page("febu-assembly.html", "febu assembly", "febu assembly",
                 "%d members studying febu, and a ledger anyone can check" % members, body,
-                mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
+                mast=status_banner(secs, doc, brief=True, task=task), source=" from ledger.txt",
                 share="febu assembly: claims about febu that anyone can check",
                 description="%d claims about febu, each with a link and a line that would prove it wrong. %s Pick one "
                 "and check it.%s" % (len(rows), "%d checked so far." % done if done else "None checked yet.",
