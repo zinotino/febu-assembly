@@ -1,0 +1,129 @@
+HOW IT WORKS (the ledger in plain words, written 2026-10-14 by Z, checked by nobody yet)
+ONE SENTENCE
+  A claim costs a link and a line saying what would prove it wrong; a check costs a click by two
+  people who did not write it; the result goes in one text file that anyone can copy and nobody
+  can quietly edit.
+
+THE PICTURE
+  One entry, four steps, on top. Febu's pages below, in the same four slots. The third slot is the
+  one febu never ran. Everything in the picture that is not slot 3 exists to keep slot 3 honest.
+
+HOW IT CONNECTS
+  Five places, left to right. The record outside the group is what a claim is about: a
+  transaction, an archived page, a dated file. A writer turns it into an entry and posts it in
+  the chat. Two members who did not write it open its link, or run its script and open one
+  link by hand, and post what they saw. Anyone votes on a rule change. Once a week one member
+  copies the chat's posts into ledger.txt and posts the file's hash outside the chat. Two
+  matching results close an entry; the file counts them, and that count is PROMISE 7. The
+  site is built from the file and adds nothing. The only way into the file is the weekly
+  turn; the only way an entry closes is two SEEN lines; the only thing that counts is what
+  the file shows.
+
+THE FOUR PARTS
+  1. The file. ledger.txt: FACT and PROMISE entries, eight rules, KNOWN BUGS, RISKS, CHANGES.
+     Served byte for byte. The pages are built from it and add nothing.
+  2. The people. Seven named members, no accounts, no scores. Two close an entry, two keep it
+     open, four say yes to a rule change, one per week adds the week's posts and publishes the
+     hash.
+  3. The outside record. Four things the group does not control: the GitHub history, the hash
+     posted outside the chat, a daily Internet Archive capture, and an OpenTimestamps proof in a
+     Bitcoin block. None of them stop an edit. Together they make every edit visible, with a date
+     nobody in the group set.
+  4. The bond. Optional, per promise, in $FEBU. BROKEN means the promiser sends it to the
+     incinerator and the transaction is the link. No new promise while a bond is owed. The group
+     never holds it.
+
+WHAT IT RUNS ON
+  GitHub for the history, Vercel for the pages (a static build and one daily call to the Internet
+  Archive), a public Solana RPC and explorer links for chain facts, web.archive.org, the
+  OpenTimestamps calendars and Bitcoin for the stamps, and the group chat for posts. It costs
+  nothing. If Vercel or GitHub vanish, the file survives in every archive and every copy. If the
+  Internet Archive vanishes, the Bitcoin proof survives. If the chat vanishes, the posts move; the
+  ledger does not.
+
+  Bitcoin is used for one thing: a timestamp no member could have forged. Not for money, not for
+  agreement, not for identity. That is the whole lean.
+
+WHAT IT CANNOT DO
+  - Hold a claim with no public record. "Febu is honest" cannot be an entry. "The fee account paid
+    nothing out since 09-14" can.
+  - Settle what a link means. It settles what a link shows. Interpretation stays in the chat.
+  - Work among strangers. It cannot tell one person from two names, or a real check from a copied
+    one beyond the "one new thing" rule.
+  - Pay anyone or make anyone look. If the seven do not check, PROMISE 7 breaks, and that is the
+    honest result. The week-one dry run exists to measure this before anyone argues about pay.
+  - Stop an edit. Anyone with the repository can edit; the edit cannot be hidden. The archive and
+    the stamps prove what the file was, not that the file was right.
+  - Bind anyone. No entity, no contract, no legal weight. A bond is kept by the rule and by shame,
+    not by code.
+  - Detect a machine. A check written by a model and posted by a person is undetectable; the AI
+    line is a rule, not a filter.
+  - Show that anyone outside the seven wants it. Seven people and 30 days will say.
+
+HOW IT ANSWERS FEBU
+  Febu's pages name eleven problems: corrupt leaders, invented debt, repeating history, arrogance,
+  war, dependence on machines, machines that imitate, hidden systems, hollow law, misinformation,
+  the environment. Read together they share one disease: speech that costs nothing. In every case
+  the sentence was free to say and nobody had to check it.
+
+  Febu is the purest case of its own disease. 164 pages, every one about what is wrong, none about
+  how anything should work, none with a claim you could test. Written by a script, on a schedule,
+  numbered without a gap, so nothing was ever refused. The one checker the story had, UBEF, was
+  "removed", in the first person. "Every page survives an argument" was said five minutes after
+  being asked who UBEF was. Then the writing stopped (09-19) and the bag was sold (09-22).
+
+  So the ledger is not a fan project and not a treasury. It is the one step febu's pipeline never
+  ran: the check.
+
+  febu says                              the ledger does
+  -------------------------------------  ------------------------------------------------------
+  nothing to believe, only to verify     no entry without a link anyone can open and a WRONG IF
+                                         line fixed before the check
+  hidden systems                         one plain file, every version archived, every step only
+                                         one person can do listed as a bug with a date
+  hollow law                             a rule changes only after 7 days and four yeses; the
+                                         group's own failure test is an entry (PROMISE 7)
+  corrupt leaders                        nobody approves; nobody checks their own entry; the file
+                                         is whichever copy matches the last posted hash
+  financial illusion                     no pool, no pay, no new token, no price talk; $FEBU is
+                                         only a bond that burns on a broken promise
+  machines that imitate                  an AI may help someone look; it never posts a result; a
+                                         check names one thing on the page nobody wrote yet
+  repeating history                      a result cannot be un-posted; CAN'T TELL after 30 days
+                                         is itself a record
+
+FOUR QUESTIONS FROM THE CHAT
+  WitnesstoFebu read it as: a claim with a link, a WRONG IF and a bond; a cheap check; a result
+  set by what the link shows; a record that builds up. Right, except the bond: only a promise
+  can carry one. A fact never does. A wrong fact costs its writer the DOESN'T HOLD line.
+
+  1. How big is a bond? The promiser picks it, in $FEBU, with no minimum. A reader weighs the
+     promise by it: a promise backed by 10 $FEBU says less than one backed by a million. The
+     group never says what that is worth in money (rule 5).
+  2. Does a smart contract burn it? No. Within 7 days of a promise closing BROKEN, the promiser
+     sends the bond to the incinerator, or burns it, and the transaction is the link. A contract
+     holding bonds in advance would be a pool, which rule 5 forbids, and code someone has to
+     write and run, which rule 8 calls a bug. Unpaid after 7 days, the entry says UNPAID, and
+     its owner posts no new promise until it is paid. That is all the enforcement there is.
+  3. Why take part? Nobody is paid, and reputation here is a list, not a score: nothing is
+     summed. A writer gets a fact anyone can cite without trusting them, once two others close
+     it. A promiser gets believed: a promise with a date and a bond counts for more than a chat
+     message. A checker gets something to rely on without taking anyone's word. If seven people
+     will not check unpaid, PROMISE 7 breaks, and the dry run's minutes say what pay would cost.
+  4. Can I enter "the sun will rise tomorrow"? No. It is a forecast of something nobody here
+     does, so it is neither a fact (true now, and a link shows it) nor a promise (something you
+     will do). An easy fact that fits ("febu's site is up") can be entered: nobody approves or
+     refuses anything. It costs two checkers a minute and earns nothing, because nothing is
+     added up. Usefulness is decided by whether anyone bothers to check: an entry nobody needs
+     stays OPEN. An easy entry could still count toward PROMISE 7 (RISKS WE ACCEPT).
+
+WHAT IT COULD BECOME
+  - The one record of what febu said and did, with dates, that a holder can check without trusting
+    the Assembly.
+  - A template. The file and the rules copy in a minute; any group with claims can run its own.
+  - $FEBU's first use that is not trading: a bond behind a promise. A broken promise's bond
+    goes where nobody can spend it, and the group holds nothing.
+  - If febu returns, every new page gets a day-one entry: what it claims, what would show it wrong.
+  - Prediction records without a scoreboard: KEPT and BROKEN lines with links, nothing summed.
+  - The first real numbers on what a check costs in minutes, which every later decision about pay
+    needs.

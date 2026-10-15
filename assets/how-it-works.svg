@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" role="img" aria-labelledby="t d">
+  <title id="t">How the ledger works, and the step febu never ran</title>
+  <desc id="d">Top row: one entry moves through four steps: a claim with a link and a WRONG IF line; two people other than its writer open the link; a result that is HOLDS, DOESN'T HOLD, KEPT or BROKEN; and a record kept in a text file, every version archived, its hash posted outside the group, saved by the Internet Archive and stamped into a Bitcoin block. Bottom row: febu's pages take the same four slots: write, publish, no check, page N+1. The third slot is empty. Anyone may copy the file and run it their own way.</desc>
+  <style>
+    text{font-family:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;fill:#111}
+    .h{font-size:15px;font-weight:700;fill:#1f1a8c}
+    .n{font-size:12px}
+    .s{font-size:11px;fill:#333}
+    .k{font-size:12px;font-weight:700}
+    .box{fill:#fff;stroke:#000;stroke-width:1.5}
+    .silver{fill:#d4d0c8;stroke:#000;stroke-width:1.5}
+    .missing{fill:none;stroke:#8b0000;stroke-width:1.5;stroke-dasharray:6 4}
+    .arrow{fill:none;stroke:#000;stroke-width:1.5;marker-end:url(#m)}
+    .barfill{fill:#000080}
+    .bart{font-size:13px;font-weight:700;fill:#fff}
+  </style>
+  <defs>
+    <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="700" fill="#fff"/>
+
+  <rect x="20" y="16" width="920" height="26" class="barfill"/>
+  <text x="32" y="34" class="bart">one entry, four steps. the ledger on top; febu's pages below, in the same four slots</text>
+
+  <!-- ===== THE LEDGER ===== -->
+  <text x="20" y="74" class="h">THE LEDGER</text>
+
+  <rect x="20" y="86" width="220" height="150" class="box"/>
+  <rect x="20" y="86" width="220" height="24" class="silver"/>
+  <text x="30" y="103" class="k">1  a claim is written</text>
+  <text x="30" y="132" class="n">SAYS     one sentence</text>
+  <text x="30" y="150" class="n">LINK     opens for anyone</text>
+  <text x="30" y="168" class="n">WRONG IF what would show</text>
+  <text x="30" y="184" class="n">         it false, fixed</text>
+  <text x="30" y="200" class="n">         before any check</text>
+  <text x="30" y="226" class="s">a promise adds BY and a bond</text>
+
+  <path d="M240,160 L251,160" class="arrow"/>
+
+  <rect x="253" y="86" width="220" height="150" class="box"/>
+  <rect x="253" y="86" width="220" height="24" class="silver"/>
+  <text x="263" y="103" class="k">2  two people check</text>
+  <text x="263" y="132" class="n">not the writer</text>
+  <text x="263" y="150" class="n">each opens the link</text>
+  <text x="263" y="168" class="n">posts what they saw, and</text>
+  <text x="263" y="184" class="n">one thing nobody wrote yet</text>
+  <text x="263" y="210" class="s">an AI may help it look.</text>
+  <text x="263" y="226" class="s">it never posts a result</text>
+
+  <path d="M473,160 L484,160" class="arrow"/>
+
+  <rect x="486" y="86" width="220" height="150" class="box"/>
+  <rect x="486" y="86" width="220" height="24" class="silver"/>
+  <text x="496" y="103" class="k">3  a result</text>
+  <text x="496" y="132" class="n">fact:    HOLDS</text>
+  <text x="496" y="148" class="n">         DOESN'T HOLD</text>
+  <text x="496" y="168" class="n">promise: KEPT</text>
+  <text x="496" y="184" class="n">         BROKEN: bond burnt</text>
+  <text x="496" y="210" class="s">two who disagree keep it open</text>
+  <text x="496" y="226" class="s">30 days of that: CAN'T TELL</text>
+
+  <path d="M706,160 L717,160" class="arrow"/>
+
+  <rect x="719" y="86" width="220" height="150" class="box"/>
+  <rect x="719" y="86" width="220" height="24" class="silver"/>
+  <text x="729" y="103" class="k">4  the record</text>
+  <text x="729" y="132" class="n">one plain text file</text>
+  <text x="729" y="150" class="n">nothing removed, ever</text>
+  <text x="729" y="168" class="n">every version archived</text>
+  <text x="729" y="186" class="n">its hash posted outside</text>
+  <text x="729" y="210" class="s">Internet Archive, daily</text>
+  <text x="729" y="226" class="s">+ a Bitcoin block (OTS)</text>
+
+  <path d="M829,236 L829,262 L130,262 L130,240" class="arrow"/>
+  <rect x="290" y="250" width="380" height="24" class="box"/>
+  <text x="300" y="267" class="n">anyone may copy the file and run it their own way</text>
+
+  <text x="20" y="306" class="h">WHAT HOLDS IT UP</text>
+  <text x="20" y="328" class="n">no scores. no approver. nobody checks their own entry. an AI never posts a result. no pool, no treasury,</text>
+  <text x="20" y="346" class="n">no new token. a rule changes only after 7 days and four yeses. anything only one person can do is a listed bug.</text>
+  <text x="20" y="364" class="n">the group's own failure test is an entry (PROMISE 7). the file is whichever copy matches the last posted hash.</text>
+
+  <!-- ===== FEBU ===== -->
+  <text x="20" y="412" class="h">FEBU'S PAGES, SAME FOUR SLOTS</text>
+
+  <rect x="20" y="424" width="220" height="120" class="box"/>
+  <rect x="20" y="424" width="220" height="24" class="silver"/>
+  <text x="30" y="441" class="k">1  a page is written</text>
+  <text x="30" y="470" class="n">164 pages of what is wrong</text>
+  <text x="30" y="488" class="n">0 of how it should work</text>
+  <text x="30" y="506" class="n">0 claims anyone can test</text>
+  <text x="30" y="532" class="s">no link, no WRONG IF</text>
+
+  <path d="M240,484 L251,484" class="arrow"/>
+
+  <rect x="253" y="424" width="220" height="120" class="box"/>
+  <rect x="253" y="424" width="220" height="24" class="silver"/>
+  <text x="263" y="441" class="k">2  it is published</text>
+  <text x="263" y="470" class="n">on a schedule, by a script</text>
+  <text x="263" y="488" class="n">"every page survives an</text>
+  <text x="263" y="504" class="n">argument" was said 5 min</text>
+  <text x="263" y="520" class="n">after being asked who</text>
+  <text x="263" y="536" class="n">UBEF was</text>
+
+  <path d="M473,484 L484,484" class="arrow"/>
+
+  <rect x="486" y="424" width="220" height="120" class="missing"/>
+  <text x="496" y="441" class="k" fill="#8b0000">3  (empty)</text>
+  <text x="496" y="470" class="n">no check. no reject.</text>
+  <text x="496" y="488" class="n">pages numbered 1 to 164</text>
+  <text x="496" y="504" class="n">with no gap: nothing was</text>
+  <text x="496" y="520" class="n">ever refused</text>
+  <text x="496" y="538" class="s">UBEF, the checker, "removed"</text>
+
+  <path d="M706,484 L717,484" class="arrow"/>
+
+  <rect x="719" y="424" width="220" height="120" class="box"/>
+  <rect x="719" y="424" width="220" height="24" class="silver"/>
+  <text x="729" y="441" class="k">4  page N+1</text>
+  <text x="729" y="470" class="n">never revised, never</text>
+  <text x="729" y="486" class="n">withdrawn, never checked</text>
+  <text x="729" y="506" class="n">then: writing stopped</text>
+  <text x="729" y="522" class="n">09-19; bag sold 09-22</text>
+
+  <rect x="20" y="572" width="920" height="24" class="barfill"/>
+  <text x="32" y="590" class="bart">the ledger is slot 3, built so that anyone can run it. everything else is there to keep slot 3 honest.</text>
+
+  <text x="20" y="626" class="h">WHAT IT CANNOT DO</text>
+  <text x="20" y="648" class="n">hold a claim with no public record. tell a real check from a copied one, or one person from two names.</text>
+  <text x="20" y="666" class="n">make anyone look. pay anyone. stop an edit; it can only make every edit visible. work among strangers.</text>
+  <text x="20" y="684" class="s">tamper-evident, not tamper-proof. seven named people, not a protocol. version 3, proposed 2026-10-14.</text>
+</svg>

@@ -1,0 +1,110 @@
+"""What the checks share: the ledger's own text, and one public Solana RPC (no key, read-only).
+
+The addresses and transactions come from ledger.txt and fact-6-steps.txt, not from these scripts, so a check tests
+what the ledger says. To ask another node, your own for example, set SOLANA_RPC:
+    SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py
+"""
+import datetime as dt
+import http.client
+import json
+import os
+import re
+import time
+import urllib.error
+import urllib.request
+from decimal import Decimal
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+RPC = os.environ.get("SOLANA_RPC", "https://api.mainnet-beta.solana.com")
+WSOL = "So11111111111111111111111111111111111111112"
+B58 = r"[1-9A-HJ-NP-Za-km-z]{32,90}"
+
+
+def text(name):
+    return (ROOT / name).read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
+
+
+def entry(num):
+    """FACT num from ledger.txt: its header line and the lines indented under it."""
+    m = re.search(r"^  FACT %d\. .*\n(?:(?:    .*)?\n)*" % num, text("ledger.txt"), re.M)
+    if not m:
+        raise SystemExit("ledger.txt has no FACT %d" % num)
+    return m.group()
+
+
+def find(pattern, where, what):
+    m = re.search(pattern, where)
+    if not m:
+        raise SystemExit("could not find %s in the ledger's text" % what)
+    return m.group(1)
+
+
+def rpc(method, params):
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
+    last = None
+    for attempt in range(6):
+        if attempt:
+            time.sleep(3 * attempt)   # the public node's "slow down" passes after a few seconds
+        req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
+        try:
+            r = json.load(urllib.request.urlopen(req, timeout=60))
+        except urllib.error.HTTPError as err:
+            if err.code < 500 and err.code != 429:   # refused, not busy: asking again will not help
+                raise SystemExit("%s: %s answered HTTP %d" % (method, RPC, err.code))
+            last = "HTTP %d" % err.code
+            continue
+        except (OSError, ValueError, http.client.HTTPException) as err:   # no connection, or a cut-off or non-JSON body
+            last = repr(err)
+            continue
+        if "error" in r and r["error"].get("code") in (429, -32429):
+            last = r["error"]
+            continue
+        if "error" in r:
+            raise SystemExit("%s: %s" % (method, r["error"]))
+        return r["result"]
+    raise SystemExit("%s: no answer from %s after 6 tries (last: %s)" % (method, RPC, last))
+
+
+def tx(sig):
+    time.sleep(0.4)   # the public node allows a few requests a second
+    # version 1: the creator wallet moved to v1 transactions on 2026-09-20
+    r = rpc("getTransaction", [sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 1}])
+    if r is None:
+        raise SystemExit("%s does not know transaction %s" % (RPC, sig))
+    return r
+
+
+def when(t):
+    return dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def now():
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def keys(r):
+    return [k["pubkey"] for k in r["transaction"]["message"]["accountKeys"]]
+
+
+def signers(r):
+    return [k["pubkey"] for k in r["transaction"]["message"]["accountKeys"] if k.get("signer")]
+
+
+def token_changes(r):
+    """[(token account, owner, mint, before, after)] from the transaction's own balance lists."""
+    k = keys(r)
+    pre = {b["accountIndex"]: b for b in r["meta"]["preTokenBalances"]}
+    post = {b["accountIndex"]: b for b in r["meta"]["postTokenBalances"]}
+    amt = lambda b: Decimal((b or {}).get("uiTokenAmount", {}).get("uiAmountString") or "0")
+    return [(k[i], (post.get(i) or pre[i]).get("owner"), (post.get(i) or pre[i])["mint"], amt(pre.get(i)),
+             amt(post.get(i))) for i in sorted(set(pre) | set(post))]
+
+
+def sol_change(r, who):
+    i = keys(r).index(who)
+    return Decimal(r["meta"]["postBalances"][i] - r["meta"]["preBalances"][i]) / 10 ** 9
+
+
+def short(s):
+    return s[:8] + "..."

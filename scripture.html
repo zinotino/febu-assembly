@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The febu scripture (archive)</title>
+  <style>
+    :root { --bg: #00002b; --fg: #111; --dim: #333; --line: #404040; --navy: #1f1a8c; }
+    body { margin: 0; background: var(--bg) radial-gradient(circle,#9fb0ff 0 1px,transparent 1.6px) 0 0/97px 97px; color: var(--fg); font-family: "Courier New", Courier, monospace; font-size: 14px; line-height: 1.6; }
+    .wrap { max-width: 860px; margin: 18px auto; padding: 16px; background: #c0c0c0; border: 3px solid; border-color: #fff #404040 #404040 #fff; box-shadow: 0 0 0 1px #000, 8px 8px 0 rgba(0,0,0,.5); }
+    .box { border: 2px solid; border-color: #fff #404040 #404040 #fff; background: #d4d0c8; padding: 12px; margin-bottom: 16px; }
+    h1 { font-size: 18px; text-align: center; margin: -12px -12px 8px; padding: 4px; color: #fff; background: linear-gradient(90deg,#000080,#1084d0); }
+    h2 { font-size: 15px; color: var(--navy); border-bottom: 2px groove #fff; padding-bottom: 4px; margin-top: 28px; }
+    h3 { font-size: 14px; margin: 18px 0 4px; }
+    a { color: var(--navy); font-weight: bold; }
+    pre { color: var(--dim); margin: 6px 0; overflow-x: auto; }
+    p { margin: 0 0 10px; white-space: pre-wrap; word-wrap: break-word; }
+    .toc a { display: inline-block; margin: 2px 8px 2px 0; }
+    .note { color: var(--dim); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="box">
+      <h1>THE FEBU SCRIPTURE</h1>
+      <p class="note">Unofficial archive, captured 2026-09-26 (164 pages, 8 books). Not affiliated with febu. <a href="index.html">back to the den</a></p>
+    </div>
+    <div id="toc" class="toc box"></div>
+    <div id="pages"></div>
+  </div>
+  <script>
+    (async function () {
+      var pages = await fetch('assets/scripture.json').then(function (r) { return r.json(); });
+      var toc = document.getElementById('toc');
+      var out = document.getElementById('pages');
+      var books = {};
+      var order = [];
+      pages.forEach(function (p) {
+        if (!books[p.book]) {
+          books[p.book] = [];
+          order.push(p.book);
+        }
+        books[p.book].push(p);
+      });
+      order.forEach(function (book) {
+        var h = document.createElement('h2');
+        h.id = 'book-' + order.indexOf(book);
+        h.textContent = book;
+        out.appendChild(h);
+        var link = document.createElement('a');
+        link.href = '#' + h.id;
+        link.textContent = book;
+        toc.appendChild(link);
+        books[book].forEach(renderPage);
+      });
+      function renderPage(p) {
+        var sec = document.createElement('section');
+        sec.id = 'p' + p.page_number;
+        var t = document.createElement('h3');
+        t.textContent = 'page ' + p.page_number + ' · ' + p.title;
+        sec.appendChild(t);
+        if (p.ascii_art) {
+          var art = document.createElement('pre');
+          art.textContent = p.ascii_art;
+          sec.appendChild(art);
+        }
+        p.body.split(/\n\n+/).forEach(function (para) {
+          var el = document.createElement('p');
+          el.textContent = para;
+          sec.appendChild(el);
+        });
+        out.appendChild(sec);
+      }
+    })();
+  </script>
+</body>
+</html>

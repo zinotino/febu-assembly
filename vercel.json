@@ -1,0 +1,70 @@
+{
+  "buildCommand": "python3 build.py",
+  "routes": [
+    {
+      "src": "/(?:(?:febu-assembly|how|people|process|weekly|write|ledger|tests)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|start(?:\\.html)?|api/(?!keepalive).+|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "no-referrer",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+        "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+      },
+      "continue": true
+    },
+    {
+      "src": "/start(\\.html)?",
+      "status": 308,
+      "headers": {
+        "Location": "/febu-assembly.html#check"
+      }
+    },
+    {
+      "src": "/api/entries/(\\d+)/(second|check)",
+      "dest": "/api/entries?num=$1&act=$2"
+    },
+    {
+      "src": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "febu-ledger\\.vercel\\.app"
+        }
+      ],
+      "dest": "/febu-assembly.html"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "missing": [
+        {
+          "type": "host",
+          "value": "febu-ledger\\.vercel\\.app"
+        }
+      ],
+      "dest": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/entries.js": {
+      "includeFiles": "ledger.txt"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/archive",
+      "schedule": "41 4 * * *"
+    },
+    {
+      "path": "/api/claim?name=Zurandol",
+      "schedule": "17 5 * * *"
+    },
+    {
+      "path": "/api/keepalive",
+      "schedule": "17 6 * * *"
+    }
+  ],
+  "outputDirectory": "."
+}
