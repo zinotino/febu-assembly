@@ -368,6 +368,11 @@ def single(html_text):
     return html_text
 
 
+def site_note(notes, kind, num, fields):
+    """The site's note beside an entry, until the entry's own LINK names the account the note points at."""
+    return "" if FACT1_ACCOUNT.rsplit("/", 1)[1] in text_of(fields, "LINK") else notes.get((kind, num), "")
+
+
 def text_of(fields, label):
     """Every line of the entry's fields with this label, as one line of text."""
     return " ".join(ln.txt for lab, lines in fields if lab == label for ln in lines if ln.txt)
@@ -733,7 +738,7 @@ def ledger_page(text, raw, steps_text):
             else:
                 _, kind, num, who, fields = it
                 out.append(entry_html(kind, num, who, fields, doc, (walk if (kind, num) == ("FACT", num6) else "")
-                                      + SITE_NOTES.get((kind, num), "")))
+                                      + site_note(SITE_NOTES, kind, num, fields)))
         return "".join(out)
 
     ids = {"THE RULES": "rule-", "KNOWN BUGS": "bug-"}
@@ -944,7 +949,7 @@ def check_card(kind, num, author, fields, members):
     yes, no = RESULTS[kind]
     who = ('<span class="by">%s wrote it, so %s cannot check it (rule 3).</span>' % ((html.escape(author),) * 2)
            if author in members else "")
-    if (kind, num) in CARD_NOTES:
+    if site_note(CARD_NOTES, kind, num, fields):
         who += " " + CARD_NOTES[(kind, num)]
     return (
         '<div class="cc" id="check-%s" data-kind="%s" data-num="%s" data-writer="%s" hidden>'
@@ -1185,8 +1190,8 @@ def assembly_page(title, secs, steps_num, how_secs):
     if by:
         due.append('vote closes <time data-due="%s">%s</time>' % (by, by))
     if start:
-        due.append('weekly turn: <span class="due-turn">in Member order from %s, a dry run until the vote closes</span>'
-                   % start)
+        due.append('weekly turn: <span class="due-turn">in Member order from %s%s</span>'
+                   % (start, ", a dry run until the vote closes" if proposed else ""))
     due.append('<a href="assembly.ics" download>the dates as a calendar</a>')
     task += '<p class="due"><b>Due</b> %s</p>' % " &middot; ".join(due)
     remind = ["DUE" + CHAT + "{today}"]
@@ -1351,8 +1356,9 @@ def weekly_page(title, secs):
             + step(5, "w-votes", "votes (rule 7)", out("w-votes-out"), hidden=True)
             + step(6, "w-unread", "lines it could not read", out("w-unread-out"), hidden=True)
             + step(7, "w-file", "put it in the file, then post the hash",
-                   '<ol class="plain"><li>Not during a vote: until the vote closes the file does not change, so this '
-                   'week stops at step 6 and you post what it would add.</li><li><a href="%s" rel="noopener '
+                   '<ol class="plain">' + ('<li>Not during a vote: until the vote closes the file does not change, so '
+                                           'this week stops at step 6 and you post what it would add.</li>'
+                                           if status(secs)[1] else '') + '<li><a href="%s" rel="noopener '
                    'noreferrer">Open ledger.txt on GitHub</a> and press '
                    'the pencil (README, &ldquo;Editing in the browser&rdquo;).</li><li>Paste each block where step 2 '
                    'says, lined up like the lines around it. Add nothing else.</li><li>Commit to main (only Z can '
@@ -1406,12 +1412,13 @@ def write_page(secs):
                    'sends nothing. Until the first SEEN line you may change WRONG IF with a dated CHANGED line; after '
                    'that, never.</p>' % copy("w-copy-chat", "Copy the chat post"))
             + step(3, "w-file", "put it in ledger.txt",
-                   '<pre class="post keep entry-out"></pre>%s<p class="hint">Not during a vote: until the vote closes '
-                   'the file does not change, and your chat post waits in the chat. After it, the week\'s member: on '
+                   '<pre class="post keep entry-out"></pre>%s<p class="hint">%s week\'s member: on '
                    '<a href="%s" rel="noopener noreferrer">ledger.txt on GitHub</a>, press the pencil, paste it under '
                    'THE ENTRIES above &ldquo;The next entry is number %d.&rdquo;, and raise that number by one (README, '
                    'Add an entry). Only Z can commit there today (KNOWN BUGS 1); anyone else gets &ldquo;Propose '
-                   'changes&rdquo;, which Z merges.</p>' % (copy("w-copy-entry", "Copy the entry"), GITHUB_EDIT, n))
+                   'changes&rdquo;, which Z merges.</p>' % (copy("w-copy-entry", "Copy the entry"), (
+                       "Not during a vote: until the vote closes the file does not change, and your chat post waits in "
+                       "the chat. After it, the" if status(secs)[1] else "The"), GITHUB_EDIT, n))
             + '<details class="win" id="how-written"><summary><span class="t">how an entry is written</span><span '
               'class="q">in the ledger\'s own words</span></summary><div class="win-body">%s</div></details>'
             % doc.blocks(to_lines(how), 2))
