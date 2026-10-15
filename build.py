@@ -1019,10 +1019,13 @@ def calendar_ics(votes, members, start, secs):
     ev = []
     for by in sorted({b for _, b in votes if b}):
         ev.append((by, plus(by, 1), "Assembly vote closes: " + "; ".join(v for v, b in votes if b == by), "vote-" + by))
+    close = max((b for _, b in votes if b), default="")
     if start:
         for w in range(12):
             d = plus(start, 7 * w)
-            ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)" % members[w % len(members)], "turn-" + d))
+            dry = ", a dry run: the vote is open" if plus(d, 7) <= close else ""   # process.md section 10, the freeze
+            ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)%s" % (members[w % len(members)], dry),
+                       "turn-" + d))
     bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
     for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
         ev.append((d, plus(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
