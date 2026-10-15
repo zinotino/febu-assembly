@@ -9,8 +9,6 @@ turns them into the Assembly's pages on https://febu-assembly.vercel.app (assemb
 | `fact-6-steps.txt` | Fact 6 as four steps, each a link, with all 44 payments. |
 | `tests.txt` | The four tests. Reading, not the experiment: served at `/tests.html`, not linked from the front page. |
 | `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
-| `claims.sql`, `api/claim.js`, `api/_claims.js`, `claims.py` | The one-time name claim: the table, the function, its pure part, the script that issues codes. Setup below. |
-| `live.sql`, `api/entries.js`, `api/_record.js`, `live/` | The live record: the two tables (seconds and checks), the function, its pure rules, and `live/server.py`, its local twin that runs on one machine with SQLite. `live/live.js` and `live.css` are the ledger page's forms. Setup under "The live record" below. |
 | `paid.md` | The shape for a member who wants to pay for scripts: their own promise, the cap, two tests of its own. Not linked from the site, not part of the vote. |
 | `archive/` | Empty at the clean start of 2026-10-15. Each later change to `ledger.txt` puts the text before it here, word for word. Add to it; never edit or delete. |
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. None yet: stamp the clean-start text first (see "Records outside the group"). |
@@ -24,7 +22,7 @@ turns them into the Assembly's pages on https://febu-assembly.vercel.app (assemb
 
 ## One project
 
-This repo is the whole of the Assembly: the pages, the ledger, the claim and record API, and the unofficial archive of imfebu.com (the "den"). It replaces two repos and two project names that were easy to confuse:
+This repo is the whole of the Assembly: the pages, the ledger, the two daily jobs, and the unofficial archive of imfebu.com (the "den"). It replaces two repos and two project names that were easy to confuse:
 
 | Old name | What it was | Now |
 |---|---|---|
@@ -39,13 +37,13 @@ This repo is the whole of the Assembly: the pages, the ledger, the claim and rec
 | `api/keepalive.js` | A daily read so the free Supabase project is not paused. |
 | `test_routes.py` | Checks `vercel.json`: the Assembly's security headers sit on the Assembly's files only (the den needs inline styles and Supabase), `/` is the den here and the front page on the old domain, unknown paths reach the den. |
 
-**One address.** Sign-in (the name claim, seconds and checks) and the den share https://febu-assembly.vercel.app, so they share browser storage: a script that runs in the den can read a member's token. What keeps one in from the other:
+**One address.** The Assembly and the den share https://febu-assembly.vercel.app, so they share browser storage. The Assembly keeps nothing there that anyone could use (the name a member picked and unfinished posts, on the device; no token, no key), but a script that ran in the den could still read those, and one that ran could be made to do worse. What keeps one in from the other:
 
 - Every path that is not an Assembly file gets a content-security policy (the first route in `vercel.json`): scripts from this address only, no inline script, no `javascript:` links, connections to this address and the one Supabase project only. A post that smuggles in a script, an event handler or a `javascript:` link does nothing. Checked in a browser on 2026-10-15: with the policy on, the den's home, library and community pages load with no violations, and an inline script and a `javascript:` link are both refused.
 - The den's bundle puts raw HTML into the page in two places only, both react-tweet's rendering of a tweet's own text, and in one theme script the policy blocks. The count of 16 this file used to give was the string `dangerouslySetInnerHTML` appearing in React's own code. Posts and comments are drawn as text.
-- Not covered: a bug in the bundle's own code that a post can steer into running, which the policy does not stop; and the token is still stored in the browser and never expires (KNOWN BUGS 6). If either worries you, the den goes, and nothing else changes.
+- Not covered: a bug in the bundle's own code that a post can steer into running, which the policy does not stop. It would reach a picked name and an unfinished post, nothing more. If that worries you, the den goes, and nothing else changes.
 
-`test_routes.py` checks both policies on every path. Environment variables (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (one value, kept), `ASSEMBLY_STRANGERS`, `CRON_SECRET`, all in the `febu-assembly` project, the first four for Production only. Until they are set there, `/api/claim` and `/api/entries` answer 503. The copies in the old `febu-ledger` project are not used any more and can be removed.
+`test_routes.py` checks both policies on every path. The one environment variable (set in Vercel, never in the repo) is `CRON_SECRET`, in the `febu-assembly` project: it guards `/api/archive`. The copies in the old `febu-ledger` project are not used any more and can be removed.
 
 ## Member flows
 
@@ -165,10 +163,9 @@ is not a Saw.
 Two kinds of dated record that nobody in the group controls. Both start from the clean-start text of
 2026-10-15; copies dated before then are of drafts that were withdrawn.
 
-**Three daily crons** (`crons` in `vercel.json`), none of which takes input or changes anything: `/api/archive` (below);
-`/api/keepalive`, one read of the den's `site_stats` with the publishable key; and `/api/claim?name=Zurandol`, one read
-of the claim table through the function. The last two exist so the free Supabase project is never idle long enough to
-pause. On the den's address the claim read answers 503 ("not set up"), as it should.
+**Two daily crons** (`crons` in `vercel.json`), neither of which takes input or changes anything: `/api/archive`
+(below); and `/api/keepalive`, one read of the den's `site_stats` with the publishable key, so the free Supabase
+project is never idle long enough to pause.
 
 **The Internet Archive, every day.** `api/archive.js` runs once a day (the `crons` entry in `vercel.json`; on
 Vercel's free plan it fires some time between 04:00 and 05:00 UTC) and asks the Archive to save
@@ -233,100 +230,11 @@ before it was cut along with the drafts it described. From here on, earlier vers
 SHA-256 the ledger cites for each one.
 
 
-## The one-time name claim
+## One write path
 
-A name on the Member line belongs to whoever enters its invite code first on the front page; that browser then
-holds a token, and the panel says "Claimed <date>, on this device". It marks a device, not a post: the chat, checked
-by the weekly turn, still decides who posted what (KNOWN BUGS 6). Without the setup below the panel says claims are
-not switched on and everything else works as before.
-
-### Switching it on
-
-Each step is Z's: they need the service key. Steps 1 to 3 were done on 2026-10-15, with the variables in the old `febu-ledger` project; they are still to be set in `febu-assembly` (the one address), where the claim answers 503 until they are. `python claims.py status` reads the live
-endpoint, needs no key, and names the first step still missing.
-
-Use a Supabase project of the Assembly's own (the free plan allows two), not febu-host's. The service key sits in the
-build environment of a public repository, so whoever can push to `main` can read it, and on febu-host's project it
-would open the community's posts and uploads too.
-
-1. Create the project. In its SQL editor run `claims.sql` once: one table, row-level security on, no policies, and
-   nothing granted to the public roles.
-2. In the febu-assembly Vercel project set `SUPABASE_URL` (the project URL) and `SUPABASE_SERVICE_KEY` (the service role
-   key: never the publishable one, never in this repository) for Production only, so a preview deployment never sees
-   them. Redeploy. `python claims.py status` should now say "ON, no codes yet".
-3. On your machine, with the same two variables in the shell for that one session, run `python claims.py issue`. It
-   prints one message per member, with their code and their own link, once; only hashes are stored. DM each member
-   their message. The codes are not written to a file.
-4. `python claims.py list` shows who has claimed and how many wrong codes were tried. `python claims.py reissue Laura`
-   clears a claim and prints a new message, for a lost device.
-5. Adding a member: change the Member line by rule 7, rebuild, and run `python claims.py issue` again. It prints a
-   message only for a name with no row.
-
-What the claim protects and what it does not:
-- It marks a device. A lost or shared device holds the name until someone reissues it, and only Z can (KNOWN BUGS 6).
-- A code is 16 characters of 31, about 79 bits, and the right code is never turned away. Five wrong codes in a row
-  turn wrong guesses away for ten minutes, so nobody can lock a name by guessing at it.
-- Anyone who can push to `main` can read the key at build time, and whoever controls `api/claim.js` can mint any
-  member's identity: sign-in trust is as strong as write access to this repository. Add a collaborator only if you
-  would give them the key, keep the variables to the Production environment, and if you can, protect `main` (require a
-  review; CODEOWNERS on `api/`, `build.py`, `vercel.json`, `claims.py` and `claims.sql`). That slows the browser-edit
-  flow in "A second editor", which is the trade.
-- The den's scripts share this address's browser storage with the token; see "One address" for what stands between them.
-  The messages `claims.py` prints link https://febu-assembly.vercel.app/febu-assembly.html.
-- Losing the claims table costs seven reissued codes and nothing else. The record's own durable copies are the exported
-  SEEN lines in `ledger.txt`, the git history, the daily Internet Archive capture and the Bitcoin timestamps.
-- The site sends a strict content-security policy (`vercel.json`): its own scripts and styles only, no connections
-  elsewhere, no framing. The token lives in the browser, so that policy is what protects it from a page script.
-- A daily request to `/api/claim` (`vercel.json`) keeps a free Supabase project from pausing after a week.
-
-`node test_api.js` runs the endpoint against a fake database.
-
-### The live record
-
-Members second an entry or post a check from the ledger page; a stranger may post a check. Seconds and checks go to two
-tables (`live.sql`) through `api/entries.js`; the entries, their writers, due dates and the Member line are read from
-`ledger.txt` as deployed, so nothing is copied and a new entry is there as soon as the site is. The rules (rules 3 and
-4, a second before any check, the limits below) are `api/_record.js`, a pure file with no database in it.
-`node test_entries.js` runs them and the function against a fake database; with python on the path it also checks that
-this reader and `build.py`'s read `ledger.txt` and the banned notation the same way.
-
-**Who is posting.** A member sends the token the name claim left on the device (`Authorization: Bearer`); the name
-comes from `assembly_claims`, not from what was typed. A token the table does not know is a 401. It is never treated as a
-stranger, and neither is a claim table that does not answer (502).
-
-**The stranger lane. Off for now.** The record is an internal tool for the seven members until the abuse question is
-settled: a stranger's words would be kept for good (rule 2) and nobody could remove them. Do not set `ASSEMBLY_STRANGERS`
-in either Vercel project. With `ASSEMBLY_STRANGERS=1` and `ASSEMBLY_SALT` both set, a post with no `Authorization` header
-may be a check, never a second, under a name that is not a member's and holds none as a word (plain ASCII, however spaced or capitalised it is
-written). Rule 3 already says what that is worth: two people, member or not, posting the other result reopen a closed
-entry or split an open one, and only two members close one. The row keeps a salted hash of the poster's address
-(`x-forwarded-for`), never shows it, and takes one check per source per entry, five per source per day and six from
-outside the seven per entry. Without the salt the lane stays off: an unsalted hash of an address can be undone by trying
-every address. A person with several addresses gets past all of this; the ledger lists that under RISKS WE ACCEPT.
-
-**Rule 2.** The two tables refuse UPDATE and DELETE with triggers (`live.sql`), so a result stays once written. That
-includes "[removed]" for personal information, until someone needs it. Two posts at the same moment cannot both land on
-one place: each check takes the next place number, the table takes each place once, and the second poster is told to
-post again.
-
-Setup, after the claim's own (same project, same two environment variables); every step is Z's:
-
-1. In the same Supabase project, run `live.sql` once in the SQL editor: two tables, row-level security on, no policies,
-   nothing granted to the public roles, and the two triggers.
-2. Nothing else switches the record on: with the table there and `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` set (the
-   claim's), `GET /api/entries` answers. Members can post as soon as they have claimed a name.
-3. Leave this step undone for now (see "The stranger lane"). To let strangers post checks too, set both `ASSEMBLY_STRANGERS` to `1` and `ASSEMBLY_SALT` to a long random string
-   (for example `python -c "import secrets; print(secrets.token_hex(24))"`; never in this repository) for Production
-   only, and redeploy. Change or unset either to close the lane. Changing the salt makes earlier sources unrelated to
-   later ones, which resets the per-day limit and nothing else.
-4. The ledger page does not load `live/live.js` and `live/live.css` yet. Add the two tags the local server adds (`LIVE_HEAD`
-   in `live/server.py`) to the page `build.py` writes, rebuild, and push. Until then the function is reachable and nothing
-   on the site calls it.
-
-Not done on the site: the export of the record's SECONDED and SEEN lines into `ledger.txt` (`python live/server.py
-export`) reads the local SQLite file, not these tables. Until it is ported, a check posted on the site shows on the ledger
-page and in `GET /api/entries`, and goes into `ledger.txt` by hand, the way the weekly turn adds a SEEN line.
-
-`live/server.py` is the same record on one machine, with SQLite and no sign-in unless `ASSEMBLY_CLAIMS_URL` is set to the
-site's `/api/claim` (then it also takes `ASSEMBLY_STRANGERS=1`, with a salt kept in `live/salt`, not in git); `python
-live/test_live.py` tests it. The two keep the same rules; change one and change the other.
+A result, a second or a vote reaches the ledger one way: a post in the chat, which the weekly turn copies into
+`ledger.txt` (rules 3, 6 and 7). The site reads and prepares posts; it stores nothing and signs nobody in. A sign-in
+(a one-time name claim) and a live record of seconds and checks were built for a second way and removed on 2026-10-15
+before any rule came to depend on them: nothing on the site called the record, and the ledger counts only what the
+chat shows. A second way to write would have given rule 8 a second thing only one person could run. The code is in git:
+`git log --diff-filter=D -- api/claim.js` finds the commit that removed it.

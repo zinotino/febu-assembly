@@ -383,8 +383,4 @@ pre.unread{max-height:22rem;overflow:auto;white-space:pre}
 .claim{margin:0 0 .9rem;padding:.6rem .8rem .7rem;background:#fff;border:2px solid;border-color:var(--down)}
 .claim h3{margin:0 0 .35rem}
 .claim p{margin:0 0 .4rem}
-.claim .f{display:block;margin:.3rem 0 .5rem}
-.claim .code{display:block;width:100%;max-width:18rem;margin-top:.25rem;padding:6px 8px;font:1rem var(--mono);letter-spacing:.06em}
-.claim .claim-msg:empty{display:none}
-.claim .claim-msg{color:#7a0000}
 .claim .hint{margin:.3rem 0 0}

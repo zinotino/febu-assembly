@@ -1027,7 +1027,7 @@ def next_number(items):
 
 
 def next_move(members, todo, votes, start, posted, remind):
-    """Pick your name, claim it once by the code you were sent (api/claim.js), see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
+    """Pick your name, see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
     of yours yet), vote (what is open, with its closing date), the weekly turn (yours when the order reaches you) and
     write. One panel per name, written here; claims.js shows the one picked, counts the days to each date and works
     out the turns from the device's date. The device remembers the name (claims.js), and #me=Name in the address
@@ -1085,16 +1085,8 @@ def next_move(members, todo, votes, start, posted, remind):
             '<p class="mylink">Your link, for a bookmark or your DM thread: <a href="#me=%s">%s#me=%s</a> '
             '<button type="button" class="btn copy" data-copy="%s#me=%s">Copy your link</button></p>'
             % (quote(name), FRONT.split("//")[1], quote(name), FRONT, quote(name)))
-        claim = "" if name == "*" else (
-            '<div class="claim" data-name="%s"><h3>Your name</h3><p class="claim-state">Checking whether this name is '
-            'claimed&hellip;</p><div class="claim-form" hidden><label class="f">The claim code you were sent'
-            '<input type="text" class="code" autocomplete="off" spellcheck="false" placeholder="xxxx-xxxx-xxxx-xxxx">'
-            '</label><p class="acts"><button type="button" class="btn primary claim-go">Claim this name</button></p>'
-            '</div><p class="claim-msg" role="status"></p><p class="hint">One claim per name, by a code Z sends once '
-            '(<a href="ledger.html#bug-6">known bug 6</a>). It marks this device as the name\'s holder; it proves '
-            'nothing about a post in the chat.</p></div>' % html.escape(name))
-        return ('<div class="moves" data-who="%s" hidden>%s<ol class="steps">%s%s%s%s</ol>%s</div>'
-                % (html.escape(name), claim, step(1, "Check", c, check), step(2, "Vote", v, vote),
+        return ('<div class="moves" data-who="%s" hidden><ol class="steps">%s%s%s%s</ol>%s</div>'
+                % (html.escape(name), step(1, "Check", c, check), step(2, "Vote", v, vote),
                    step(3, "Weekly turn", t, turn), step(4, "Write", chip("any time"), write), link))
 
     chips = "".join('<label class="name"><input type="radio" name="me" value="%s"><span>%s</span></label>'
@@ -1234,8 +1226,8 @@ def assembly_page(title, secs, steps_num, how_secs):
                 "and check it.%s" % (len(rows), "%d checked so far." % done if done else "None checked yet.",
                                      " Proposed, not yet adopted." if proposed else ""),
                 foot='This site and the ledger file are run by Z for now (<a href="ledger.html#bug-1">known bug 1</a>). '
-                'This page keeps your name and unfinished posts on your device only, asks this site\'s own server one '
-                'question (whether a name is claimed), and loads nothing from other sites. Nothing is counted.')
+                'This page keeps your name and unfinished posts on your device only, and loads nothing from other '
+                'sites. Nothing is counted.')
 
 
 def people_page(secs):
