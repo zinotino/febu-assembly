@@ -18,6 +18,7 @@ findings).
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
+| `audit/` | A dated review of a release, each finding marked RAN, READ or NOT CHECKED, and the chat post it recommended. Reading, not the experiment; it adds no rule. Like everything in the root it is served as a static file; no page links to it. |
 | `build.py`, `findings_html.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
@@ -145,6 +146,7 @@ is not a Saw.
 | `python checks/resolve.py door2` | Fact 8's other way out: every transaction on pump's creator vault in the window | about 3 minutes |
 | `python checks/resolve.py test9` | Fact 9 on the real transaction, then on one-change copies and four lazy versions it must catch | seconds |
 | `python checks/resolve.py claimsim` | Whether a stranger can send the fee claim: a dry run the node simulates, nothing sent | seconds |
+| `python checks/release.py --posted 847a7347` | The release: the served `ledger.txt` against this checkout and git, the hash a post names (and which archived version it is, if not the served file), the headers, the Internet Archive's captures, and whether each timestamp proof is pending or in a block. CAN'T TELL when a read is incomplete | seconds |
 
 - The chain checks ask the public node https://api.mainnet-beta.solana.com. To ask another, your own for example,
   set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast

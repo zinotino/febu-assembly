@@ -1,0 +1,71 @@
+DRAFT for Z to post in the Assembly chat on 2026-10-15. Edit freely. It replaces docs/assembly/posts/ASSEMBLY_POST_20261014_V3.txt
+(in the dossier), which names the first version-3 hash and a 10-21 deadline; both are out of date. ledger.txt says the 10-22 date
+holds only if the post that shows this text is made on 2026-10-15.
+
+Before posting: run  python checks/release.py --posted 847a7347  from a network that can reach the site. No line should say FAIL.
+If ledger.txt changes after this draft, change the hash and section 3 too. Lines marked [Z] need your decision (see audit F2, F6).
+
+------------------------------------------------------------------------------------------------------------
+
+Ledger version 3, for a vote. And a one-week dry run.
+
+Vote by 2026-10-22: "yes" or "object" on version 3, on the Saw line, and on the stop rule (process.md, sections 5 and 7).
+The file: https://febu-ledger.vercel.app/ledger.txt
+SHA-256 847a73470d540d0dbd234e6626b6fe6c5b4757124f248f5987a36441c77e57f0
+The whole system on one page, with a picture: https://febu-ledger.vercel.app/how.html
+
+A yes counts for the text whose hash it names. Please write it as:
+  VOTE YES · version 3 · 847a7347 · <your name> · <date>
+[Z: this adds the hash to the template and makes a yes written on the 10-14 text ask again. Drop this paragraph and the template
+change if you would rather keep the old rule.]
+
+1. What changed since the first version-3 post.
+That post gave SHA-256 87ddd678... and a vote by 10-21. That file is kept word for word in archive/08_CLAIMS_LEDGER_v3.txt. The
+text in the link above is not that file. Every change was made before any entry was checked, and each is dated in the file under
+CHANGES.
+- Rule 1: a forecast of what nobody here does ("the sun will rise tomorrow") is neither a fact nor a promise.
+- Bond: the promiser picks the amount, with no minimum; a fact never has a bond; no contract holds it. After a promise closes
+  BROKEN the promiser pays the bond from their own wallet to the incinerator within 7 days, or the entry says UNPAID, and whoever
+  owes a bond posts no new promise until it is paid. Nothing burns it for them.
+- Rule 3: an entry in the group's name has a writer, the member who proposed it. A line that covers many items counts toward
+  HOLDS only if it was tested over all of them; a sample stays a SEEN line.
+- Rule 6: a weekly turn not done by the end of its week passes to the next member. The weekly hash goes in the chat and in one
+  public place outside it, named, and the chat post sets the order.
+- Facts 2, 6 and 8 now end at 2026-10-14 where they said "now", because anyone can send the fee claim or a dust transfer and make
+  the old lines true later. The writer may change a WRONG IF line with a dated CHANGED line until the first SEEN line.
+- KNOWN BUGS 6 (only Z can reissue a name-claim code) and 7 (a non-member has nowhere to reopen an entry), each dated.
+- PROMISE 7 now counts three entries other than itself.
+The vote's 7 days count from this post because the rule text changed.
+
+2. What the four reviews found, in one breath.
+Rule 3 as first written let one post from anyone hold every entry open, so reopening and disagreeing now need two people. A fee
+takeover or a vault is not available without making the group febu's paid heir, so there is no vault, no pay and no takeover.
+Everything that pays checkers needs money held somewhere, and every group in the survey that held money spent itself governing it.
+What is new in the ledger is narrow: WRONG IF fixed before checking, results that say what was seen, one-person steps listed as
+dated bugs, and a failure test written into the rules. The reviews are in my repository and I will share them. They are model
+output; the chain numbers in them were read from the public RPC, and the ones they could not confirm are listed in the reviews.
+
+3. This week, before anything is adopted. The three cheapest entries to check are 1, 3 and 9. Each is one link.
+- FACT 1: open the creator wallet's $FEBU transfers (the link in the entry) and look for any swap that got it $FEBU between
+  2026-09-29 and 2026-10-09.
+- FACT 3: open the archived script (the link in the entry) and search the page for "ubef wins".
+- FACT 9: open the one transaction in the entry; read its signer and its program logs.
+Post what you saw, which WRONG IF lines you tested, one thing on the page that is not already written, your result, and how many
+minutes it took. The minutes are the point: they are the number every later decision about pay depends on, and nobody has one yet.
+(Fact 8 is cheap only by script; checks/resolve.py fact8 does it in about a minute.)
+
+4. The money answer, for Witness.
+A claim costs a WRONG IF line and a link, and may name a bond in $FEBU. A check costs a click. A broken promise's bond is paid by
+its promiser to the incinerator, where nobody can spend it, or the entry says UNPAID. The group holds nothing and pays nobody. What
+this does not solve: the multipolar trap, which Bitcoin did not solve either, and paying anyone to look. Thirty days will tell
+whether seven named people look unpaid. If they do not, a reward layer is back on the table with real numbers.
+No entry or post in the group's name says or implies a price, demand or supply for $FEBU. Every $FEBU trade pays a fee to the
+wallet that sold (KNOWN BUGS 5), so a post that asks anyone to trade it says so.
+
+5. What I am asking.
+"yes" or "object" by 2026-10-22, written as above. And one question for each of you: which of the rule changes in section 1 is
+wrong, and what would change your mind.
+
+Witness: your marketing budget, if it stands, would be PROMISE 10. Amount, date, what the money is spent on, and the link anyone
+will open then. It would also be our first test of whether anyone outside the seven wants this. Zero strangers in 30 days is a
+result too.
