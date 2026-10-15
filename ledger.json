@@ -1,0 +1,164 @@
+{
+ "about": "A read-only index of ledger.txt, written by build.py. ledger.txt is the record and wins where they differ. Links are not here, and an address is cut to its first 7 characters: read ledger.txt for them.",
+ "ledger": {
+  "url": "https://febu-assembly.vercel.app/ledger.txt",
+  "sha256": "d3e1765863039f24a8c38ddcdd72f1034cb0252b1302d2214e154eef002984f7",
+  "bytes": 28055
+ },
+ "proposed": true,
+ "members": [
+  "CrypticK",
+  "Crypto Fish",
+  "Ksizzle",
+  "Laura",
+  "Merc",
+  "WitnesstoFebu",
+  "Zurandol"
+ ],
+ "entries": [
+  {
+   "kind": "FACT",
+   "num": 1,
+   "writer": "Zurandol",
+   "lines": 3,
+   "empty": true,
+   "results": [],
+   "says": "Between 2026-09-29 and 2026-10-09 the wallet that created $FEBU bought no $FEBU: it made no swap that got it $FEBU.",
+   "wrong_if": [
+    "that transaction does not create $FEBU",
+    "ApWpkd8 did not sign it",
+    "the wallet shows a swap between those dates in which it gets $FEBU"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-1"
+  },
+  {
+   "kind": "FACT",
+   "num": 2,
+   "writer": "Zurandol",
+   "lines": 3,
+   "empty": true,
+   "results": [],
+   "says": "On 2026-09-22 the wallet that created $FEBU sold all of its $FEBU, 23,843,803.61 tokens, in one transaction, and received no $FEBU after it through 2026-10-14.",
+   "wrong_if": [
+    "the sale moves a different amount of $FEBU",
+    "leaves the wallet holding any $FEBU",
+    "the wallet's transfers (fact 1's link, filtered to $FEBU) show $FEBU coming in after the sale and before the end of 2026-10-14 (UTC)"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-2"
+  },
+  {
+   "kind": "FACT",
+   "num": 3,
+   "writer": "Zurandol",
+   "lines": 2,
+   "empty": true,
+   "results": [],
+   "says": "The dialogue where febu says \"ubef wins every argument\" was already on theinterlocution.com before febu's first tweet about UBEF.",
+   "wrong_if": [
+    "the phrase is not in that copy",
+    "a febu tweet naming UBEF from before 2026-07-09 01:43 UTC turns up"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-3"
+  },
+  {
+   "kind": "FACT",
+   "num": 4,
+   "writer": "Zurandol",
+   "lines": 1,
+   "empty": true,
+   "results": [],
+   "says": "In the copy Z saved, the eight books rotate every four pages with no exception: pages 1-4 THE SPILL, 5-8 THE ASSEMBLER, 9-12 THE MEATSPACE, 13-16 THE INFINITE ROOM, 17-20 THE COMMANDMENTS, 21-24 THE PARABLES, 25-28 THE RENT, 29-32 THE LITURGY, then round again, on all 164 pages.",
+   "wrong_if": [
+    "any page sits in a book the rotation does not predict"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-4"
+  },
+  {
+   "kind": "FACT",
+   "num": 5,
+   "writer": "Zurandol",
+   "lines": 2,
+   "empty": true,
+   "results": [],
+   "says": "In the copy Z saved, none of the words jest, hollow, false, mock, laugh, theater, spectacle or debt appears on scripture pages 1-24, and jest, hollow and laugh each appear on at least 40 of pages 25-164.",
+   "wrong_if": [
+    "any of the eight words is on pages 1-24",
+    "jest, hollow or laugh is on fewer than 40 of pages 25-164"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-5"
+  },
+  {
+   "kind": "FACT",
+   "num": 6,
+   "writer": "Zurandol",
+   "lines": 4,
+   "empty": true,
+   "results": [],
+   "says": "The wallet that created $FEBU received 2,939.10 SOL from its creator-fee account in 44 payments between 2026-07-09 and 2026-09-14, and had received nothing from it by the end of 2026-10-14. Trades on the main $FEBU pool pay into that account.",
+   "wrong_if": [
+    "a $FEBU trade shows nothing paid into the fee account",
+    "a payment you open goes somewhere other than ApWpkd8… or a token account it owns",
+    "the fee account shows a payment out between 2026-09-15 and the end of 2026-10-14 (UTC)",
+    "the 44 amounts do not add up to 2,939.10"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-6"
+  },
+  {
+   "kind": "PROMISE",
+   "num": 7,
+   "writer": "Zurandol",
+   "lines": 0,
+   "empty": true,
+   "results": [],
+   "says": "Close at least three entries other than this one under rule 3, at least one of them written by someone other than Zurandol.",
+   "wrong_if": [],
+   "url": "https://febu-assembly.vercel.app/ledger.html#promise-7"
+  },
+  {
+   "kind": "FACT",
+   "num": 8,
+   "writer": "Zurandol",
+   "lines": 3,
+   "empty": true,
+   "results": [],
+   "says": "The $FEBU creator-fee account from fact 6 paid nothing out from 2026-09-15 to the end of 2026-10-14, held 11.125 SOL on 2026-10-14, and held about 3.87 SOL at 00:00 UTC on 2026-09-22.",
+   "wrong_if": [
+    "a payment out between 2026-09-15 and the end of 2026-10-14 (UTC) shows",
+    "the balance on the day you look is below 11.12 SOL and no payment out explains it",
+    "the balance at 00:00 UTC on 2026-09-22 was not between 3.8 and 4.1 SOL"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-8"
+  },
+  {
+   "kind": "FACT",
+   "num": 9,
+   "writer": "Zurandol",
+   "lines": 4,
+   "empty": true,
+   "results": [],
+   "says": "Fact 6's row 20 (2026-07-22, 66.44 SOL) was run by a Squads multisig, not by the febu wallet, and in the same transaction that multisig set a new creator on another coin.",
+   "wrong_if": [
+    "the transaction's signer is not F2fRg5Et...",
+    "its logs show no AdminSetCreator",
+    "UqN2p5bA... is not among its accounts",
+    "the transaction failed"
+   ],
+   "url": "https://febu-assembly.vercel.app/ledger.html#fact-9"
+  }
+ ],
+ "next": 10,
+ "votes": [
+  {
+   "subject": "version 3",
+   "by": "2026-10-22"
+  },
+  {
+   "subject": "the Saw line",
+   "by": "2026-10-22"
+  },
+  {
+   "subject": "the stop rule",
+   "by": "2026-10-22"
+  }
+ ]
+}

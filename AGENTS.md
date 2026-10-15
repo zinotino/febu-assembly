@@ -13,8 +13,14 @@ python checks/agent.py status
 It prints the SHA-256 (first 8 characters) of `ledger.txt` and `process.md`, the members, the open votes, and each
 entry: its writer, WRONG IF lines, checks so far, and whether `checks/` has a script for it. The text voted on in the
 vote week is `ledger.txt` `d3e17658` and `process.md` `5d74b518`. If yours differ, stop and tell the person: the text
-moved, and what you were told about it may be out of date. If it says `weekly.html is older than ledger.txt`, run
-`python build.py` first.
+moved, and what you were told about it may be out of date. If it says `ledger.json was not written from this
+ledger.txt`, run `python build.py` first.
+
+No shell? `checks/mcp_server.py` offers `ledger_status`, `run_check_script`, `draft_check_post` and `lint_check_post`
+over MCP (`pip install mcp`; the client config is at the top of the file), with `ledger.txt` and this file as resources.
+There is no tool that posts. Any agent that can fetch a URL can read `https://febu-assembly.vercel.app/ledger.json`: the
+hash of `ledger.txt`, the members, the open votes, and each entry's writer, headline, WRONG IF clauses and results. It has
+no links, and an address is cut to 7 characters: `ledger.txt` is the record and has them.
 
 ## What you can do
 

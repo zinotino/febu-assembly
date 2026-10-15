@@ -137,3 +137,31 @@ def test_agent_draft_waits_for_a_person():
     assert agent.lint(done, data, "2026-10-16") == []
     assert agent.lint(done.replace("Saw: none", "Saw:"), data, "2026-10-16")          # a Saw: left empty
     assert agent.lint(done.replace("| Ann |", "| Zed |"), data, "2026-10-16")         # nobody checks their own entry
+
+
+def test_ledger_json_is_written_from_this_ledger():
+    """ledger.json is the committed index of ledger.txt: a ledger.txt edited without python build.py fails here."""
+    import re
+    import agent
+    data = agent.ledger_data()   # refuses when the hash inside is not ledger.txt's
+    assert [e["num"] for e in data["entries"]] == [int(n) for n in re.findall(r"^  (?:FACT|PROMISE) (\d+)\.", text("ledger.txt"), re.M)]
+    assert all(e["says"] and len(e["wrong_if"]) == e["lines"] for e in data["entries"] if e["kind"] == "FACT")
+
+
+def test_mcp_server_only_helps():
+    """The MCP server offers the four helper commands and nothing that posts, and a refusal comes back as a tool error."""
+    import asyncio
+    import pytest
+    pytest.importorskip("mcp")
+    import mcp_server
+    from mcp.shared.memory import create_connected_server_and_client_session as connect
+
+    async def go():
+        async with connect(mcp_server.mcp._mcp_server) as c:
+            return ({t.name for t in (await c.list_tools()).tools}, await c.call_tool("ledger_status", {}),
+                    await c.call_tool("lint_check_post", {"post": "hello"}), await c.call_tool("run_check_script", {"entry": 7}))
+    names, status, bad, nope = asyncio.run(go())
+    assert names == {"ledger_status", "run_check_script", "draft_check_post", "lint_check_post"}
+    assert not status.isError and "ledger.txt" in status.content[0].text
+    assert "no CHECK line" in bad.content[0].text
+    assert nope.isError and "no script" in nope.content[0].text

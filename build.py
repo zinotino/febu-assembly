@@ -15,6 +15,8 @@
   tests.html    tests.txt as a page       (background: no tab, and nothing on the front page links it)
   people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
                 (reached from the front page's "who" window, not a tab)
+  ledger.json   not a page: the ledger's state as data for an agent (ledger_json): the text's hash, the members, the
+                votes, each entry's writer, headline, WRONG IF clauses and results; addresses cut, no links
 
 ledger.txt and archive/ are served as they are; ledger.html prints their SHA-256 (rule 6 relies on that hash).
 The pages follow the texts' headings, not their line numbers: reword the texts and re-run.
@@ -1315,17 +1317,43 @@ def people_page(secs):
 GITHUB_EDIT = "https://github.com/zinotino/febu-assembly/edit/main/ledger.txt"
 
 
-def ledger_data(title, secs):
-    """What the weekly page needs from ledger.txt, as JSON in the page: the members in order, each entry's writer,
-    WRONG IF line count and SEEN items, the open votes and the next entry number. No addresses."""
+def clip(s):
+    """An address cut to its first 7 characters: they belong on the ledger page and in ledger.txt only."""
+    return ADDRESS.sub(lambda m: m.group()[:7] + "…", s)
+
+
+def ledger_dict(title, secs, more=False):
+    """What the weekly page needs from ledger.txt: the members in order, each entry's writer, WRONG IF line count and
+    SEEN items, the open votes and the next entry number. No addresses. more=True adds each entry's headline, WRONG IF
+    clauses and page address (ledger.json)."""
     names = member_names(secs)
     items = entries(entries_section(secs)[1])
-    ents = [{"kind": k, "num": int(n), "writer": writer(w, f, names), "lines": len(wrong_if(f)), "empty": not checked(f),
+    ents = []
+    for _, k, n, w, f in (it for it in items if it[0] == "entry"):
+        e = {"kind": k, "num": int(n), "writer": writer(w, f, names), "lines": len(wrong_if(f)), "empty": not checked(f),
              "results": [[a, d, r, list(ls)] for a, d, r, ls in results(f)]}
-            for _, k, n, w, f in (it for it in items if it[0] == "entry")]
-    data = {"members": names, "entries": ents, "next": next_number(items),
+        if more:
+            e.update(says=clip(text_of(f, HEADLINE[k])), wrong_if=[clip(c) for c in wrong_if(f)],
+                     url="%s/ledger.html#%s" % (SITE, anchor(k, n)))
+        ents.append(e)
+    return {"members": names, "entries": ents, "next": next_number(items),
             "votes": [{"subject": v, "by": by} for v, by in open_votes(title, secs)]}
-    return '<script type="application/json" id="ledger-data">%s</script>' % json.dumps(data).replace("</", "<\\/")
+
+
+def ledger_data(title, secs):
+    """ledger_dict as JSON in the weekly page."""
+    return ('<script type="application/json" id="ledger-data">%s</script>'
+            % json.dumps(ledger_dict(title, secs)).replace("</", "<\\/"))
+
+
+def ledger_json(title, secs, raw):
+    """ledger.json: the same state for an agent that reads data and not pages, with the hash of the text it came from.
+    Links and addresses stay in ledger.txt, which wins wherever the two differ. Nothing can be posted back."""
+    out = {"about": "A read-only index of ledger.txt, written by build.py. ledger.txt is the record and wins where they "
+                    "differ. Links are not here, and an address is cut to its first 7 characters: read ledger.txt for them.",
+           "ledger": {"url": SITE + "/ledger.txt", "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)},
+           "proposed": status(secs)[1], **ledger_dict(title, secs, more=True)}
+    return vetted("ledger.json", json.dumps(out, indent=1, ensure_ascii=False) + "\n")
 
 
 def step(n, key, head, inner, hidden=False):
@@ -1450,11 +1478,12 @@ def main():
         LEDGER.write_bytes(raw)
     for name, out in pages.items():
         (ROOT / name).write_text(out, encoding="utf-8", newline="\n")
+    (ROOT / "ledger.json").write_text(ledger_json(title, secs, raw), encoding="utf-8", newline="\n")
     (ROOT / "assembly.ics").write_bytes(calendar_ics(open_votes(title, secs), member_names(secs), turn_start(secs),
                                                      secs).encode("utf-8"))
     print("ledger.txt sha256 %s (%d bytes); %s; wrote %s" % (
         hashlib.sha256(raw).hexdigest(), len(raw), ", ".join("%s sha256 %s" % (p, d[:16]) for p, _, d in archives),
-        ", ".join(pages)))
+        ", ".join([*pages, "ledger.json"])))
 
 
 if __name__ == "__main__":

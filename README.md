@@ -13,7 +13,8 @@ turns them into the Assembly's pages on https://febu-assembly.vercel.app (assemb
 | `archive/` | Empty at the clean start of 2026-10-15. Each later change to `ledger.txt` puts the text before it here, word for word. Add to it; never edit or delete. |
 | `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. One so far, for the current `ledger.txt`; the archive files have none (see "Records outside the group"). |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
-| `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. |
+| `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. `agent.py` and `mcp_server.py` let a member's AI run them and draft a check post (see `AGENTS.md`). |
+| `ledger.json` | Written by `build.py`: a read-only index of `ledger.txt` for an agent (its hash, the members, the open votes, each entry's writer, WRONG IF clauses and results). No links, addresses cut to 7 characters; `ledger.txt` wins. |
 | `build.py` | Write the pages from the texts. `test_build.py` tests the people page and how the build reads SEEN lines (rule 3). |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
@@ -126,7 +127,8 @@ them. The site does not lag, because Vercel builds its own.
 
 ## Rerunnable checks
 
-`checks/` re-reads the facts a machine can read, with Python 3 and nothing else: no packages, no account, no key.
+`checks/` re-reads the facts a machine can read, with Python 3 and nothing else: no packages, no account, no key. (Two
+helpers for a member's AI need more: `agent.py lint` needs node, and `mcp_server.py` needs `pip install mcp`. Neither posts.)
 Each takes its addresses and transactions from `ledger.txt` and `fact-6-steps.txt`, so it tests what the ledger
 says, and prints what it saw. `resolve.py` also names which WRONG IF lines tripped. None of them posts anything:
 a person reads the output, compares it with the entry's WRONG IF lines, opens a link by hand, and posts (HOW TO

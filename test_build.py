@@ -92,6 +92,29 @@ class Votes(unittest.TestCase):
         self.assertEqual(build.open_votes("TEST LEDGER (version 0)", secs), [("version 0", None)])
 
 
+class LedgerJson(unittest.TestCase):
+    """ledger.json is an index of ledger.txt for an agent: the text's hash, the entries' state, no address in full."""
+
+    def test_index(self):
+        import hashlib, json
+        raw = LEDGER.encode("utf-8")
+        title, secs = build.sections(LEDGER)
+        out = json.loads(build.ledger_json(title, secs, raw))
+        self.assertEqual(out["ledger"], {"url": build.SITE + "/ledger.txt", "sha256": hashlib.sha256(raw).hexdigest(),
+                                         "bytes": len(raw)})
+        self.assertTrue(out["proposed"])
+        self.assertEqual(out["members"], ["Ann", "Bo Cat", "Zed"])
+        one, two = out["entries"]
+        self.assertEqual((one["kind"], one["num"], one["writer"], one["says"]), ("FACT", 1, "Zed", "One thing."))
+        self.assertEqual(one["url"], build.SITE + "/ledger.html#fact-1")
+        self.assertEqual((one["results"], one["empty"]), ([], False))   # a SEEN line in another form is a person's to read
+        self.assertEqual((two["writer"], two["empty"]), ("Outsider", True))
+
+    def test_an_address_is_cut(self):
+        wallet = "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG"
+        self.assertEqual(build.clip("signed by %s and by ApWpkd8" % wallet), "signed by ApWpkd8… and by ApWpkd8")
+
+
 class ProcessTables(unittest.TestCase):
     def test_data_th(self):
         out = build.md_tables("<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr>"
