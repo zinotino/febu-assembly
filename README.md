@@ -217,16 +217,45 @@ holds a token, and the panel says "Claimed <date>, on this device". It marks a d
 by the weekly turn, still decides who posted what (KNOWN BUGS 6). Without the setup below the panel says claims are
 not switched on and everything else works as before.
 
-1. In the febu-host Supabase project, run `claims.sql` once in the SQL editor (one table, row-level security on,
-   no policies: only the service key reaches it).
-2. In the febu-ledger Vercel project, set two environment variables: `SUPABASE_URL` (the project URL) and
-   `SUPABASE_SERVICE_KEY` (the service role key; never the publishable one, and never in this repo). Redeploy.
-3. On your machine, with the same two variables in the shell for that one session, run `python claims.py issue`.
-   It prints one code per member once and stores only their hashes. DM each member their code.
-4. `python claims.py list` shows who has claimed. `python claims.py reissue Laura` clears a claim and prints a new
-   code, for a lost device or a name locked by five wrong codes.
+### Switching it on
 
-5. `python claims.py status` asks the live site and names the step still missing (it needs no key).
+Nothing below is done yet, and each step is Z's: they need the service key. `python claims.py status` reads the live
+endpoint, needs no key, and names the first step still missing.
+
+Use a Supabase project of the Assembly's own (the free plan allows two), not febu-host's. The service key sits in the
+build environment of a public repository, so whoever can push to `main` can read it, and on febu-host's project it
+would open the community's posts and uploads too.
+
+1. Create the project. In its SQL editor run `claims.sql` once: one table, row-level security on, no policies, and
+   nothing granted to the public roles.
+2. In the febu-ledger Vercel project set `SUPABASE_URL` (the project URL) and `SUPABASE_SERVICE_KEY` (the service role
+   key: never the publishable one, never in this repository) for Production only, so a preview deployment never sees
+   them. Redeploy. `python claims.py status` should now say "ON, no codes yet".
+3. On your machine, with the same two variables in the shell for that one session, run `python claims.py issue`. It
+   prints one message per member, with their code and their own link, once; only hashes are stored. DM each member
+   their message. The codes are not written to a file.
+4. `python claims.py list` shows who has claimed and how many wrong codes were tried. `python claims.py reissue Laura`
+   clears a claim and prints a new message, for a lost device.
+5. Adding a member: change the Member line by rule 7, rebuild, and run `python claims.py issue` again. It prints a
+   message only for a name with no row.
+
+What the claim protects and what it does not:
+- It marks a device. A lost or shared device holds the name until someone reissues it, and only Z can (KNOWN BUGS 6).
+- A code is 16 characters of 31, about 79 bits, and the right code is never turned away. Five wrong codes in a row
+  turn wrong guesses away for ten minutes, so nobody can lock a name by guessing at it.
+- Anyone who can push to `main` can read the key at build time, and whoever controls `api/claim.js` can mint any
+  member's identity: sign-in trust is as strong as write access to this repository. Add a collaborator only if you
+  would give them the key, keep the variables to the Production environment, and if you can, protect `main` (require a
+  review; CODEOWNERS on `api/`, `build.py`, `vercel.json`, `claims.py` and `claims.sql`). That slows the browser-edit
+  flow in "A second editor", which is the trade.
+- Claim on https://febu-ledger.vercel.app, never on febu-assembly.vercel.app. The second is the community site's
+  address: it forwards the pages but not `/api/claim`, and its own scripts share its browser storage, so a token kept
+  there would sit beside them. The messages `claims.py` prints use the first.
+- Losing the claims table costs seven reissued codes and nothing else. The record's own durable copies are the exported
+  SEEN lines in `ledger.txt`, the git history, the daily Internet Archive capture and the Bitcoin timestamps.
+- The site sends a strict content-security policy (`vercel.json`): its own scripts and styles only, no connections
+  elsewhere, no framing. The token lives in the browser, so that policy is what protects it from a page script.
+- A daily request to `/api/claim` (`vercel.json`) keeps a free Supabase project from pausing after a week.
 
 `node test_api.js` runs the endpoint against a fake database.
 
@@ -239,7 +268,7 @@ endpoint's answer, not from what was typed. Without it the name is typed, which 
 else. Not deployed: the record runs on this machine only.
 
 **The stranger lane.** With `ASSEMBLY_STRANGERS=1` as well, a device with no claim may post a check, never a second,
-under a name that is not a member's (plain ASCII, however spaced or capitalised it is written). Rule 3 already says
+under a name that is not a member's and holds none as a word (plain ASCII, however spaced or capitalised it is written). Rule 3 already says
 what that is worth: two people, member or not, posting the other result reopen a closed entry or split an open one, and
 only two members close one. The record keeps a salted hash of the poster's address (`live/salt`, not in git), never
 shows it, and takes one check per source per entry, five per source per day and six from outside the seven per entry.

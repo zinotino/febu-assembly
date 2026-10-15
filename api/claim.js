@@ -4,7 +4,7 @@
 //
 //   GET  /api/claim?name=Laura            {name, claimed_at}            is this name claimed, and when
 //   GET  /api/claim  Authorization: Bearer <token>   {name, claimed_at, mine}   whose device this is
-//   POST /api/claim  {name, code}         200 {name, token} | 401 wrong code (left) | 409 claimed | 423 locked
+//   POST /api/claim  {name, code}         200 {name, token} | 401 wrong code (left) | 409 claimed | 429 slow down
 'use strict';
 const { hash, attempt } = require('./_claims');
 
@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const name = String(body.name || ''), code = String(body.code || '');
     if (!NAME.test(name) || code.length > 64) return res.status(400).json({ error: 'bad request' });
-    const rows = await db('?name=eq.' + q(name) + '&select=name,code_hash,claimed_at,failed');
+    const rows = await db('?name=eq.' + q(name) + '&select=name,code_hash,claimed_at,failed,failed_at');
     const out = attempt(rows[0], code);
     if (out.patch) {
       const patch = Object.assign({}, out.patch, out.patch.claimed_at ? { claimed_at: new Date().toISOString() } : {});
@@ -54,6 +54,7 @@ module.exports = async (req, res) => {
     }
     return res.status(out.status).json(out.body);
   } catch (e) {
+    console.error('claim', req.method, e.message);                // "db 404" and the like; no names, codes or tokens
     return res.status(502).json({ error: 'the record did not answer' });
   }
 };

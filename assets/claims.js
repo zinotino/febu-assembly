@@ -456,8 +456,10 @@
       if (tok) h.Authorization = 'Bearer ' + tok;
       return fetch('/api/claim' + (path || ''), { method: method, headers: h, cache: 'no-store',
                                                   body: body ? JSON.stringify(body) : undefined })
-        .then(function (r) { return r.json().then(function (b) { return { status: r.status, body: b }; },
-                                                  function () { return { status: r.status, body: {} }; }); });
+        .then(function (r) {   // an answer that is not JSON came from some other app on this address: no claims here
+          return r.json().then(function (b) { return { status: r.status, body: b }; },
+                               function () { return { status: 501, body: {} }; });
+        });
     };
     var day = function (t) { return String(t || '').slice(0, 10); };
     var boxOf = function (name) {
@@ -490,9 +492,9 @@
       b.disabled = true;
       api('POST', '', { name: box.dataset.name, code: code }).then(function (r) {
         b.disabled = false;
-        if (r.status === 200) { store.set('token', r.body.token); msg.textContent = ''; showClaim(box.dataset.name); return; }
-        msg.textContent = r.status === 401 ? 'Wrong code. ' + (r.body.left > 0 ? r.body.left + ' tr' + (r.body.left === 1 ? 'y' : 'ies') + ' left.' : 'The name is now locked: ask Z for a new code.')
-          : r.status === 423 ? 'This name is locked after five wrong codes. Ask Z for a new one.'
+        if (r.status === 200 && typeof r.body.token === 'string') { store.set('token', r.body.token); msg.textContent = ''; showClaim(box.dataset.name); return; }
+        msg.textContent = r.status === 401 ? 'Wrong code. ' + (r.body.left > 0 ? r.body.left + ' tr' + (r.body.left === 1 ? 'y' : 'ies') + ' left before a short wait.' : 'Wait a few minutes, then type it again.')
+          : r.status === 429 ? 'Too many wrong codes just now. Wait ' + Math.max(1, Math.ceil((r.body.retry_after || 60) / 60)) + ' minutes, then type it again. The right code always works.'
           : r.status === 409 ? 'Someone claimed this name on ' + day(r.body.claimed_at) + '. If that was not you, tell the group.'
           : r.status === 503 || r.status === 404 || r.status === 501 ? OFF : DOWN;
       }, function () { b.disabled = false; msg.textContent = DOWN; });

@@ -18,6 +18,7 @@ import urllib.request
 import build
 
 SITE = "https://febu-ledger.vercel.app/api/claim"
+HOME = "https://febu-ledger.vercel.app/"       # the ledger's own origin: the community site shares febu-assembly's
 ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"                  # no 0, o, 1, l or i: the code is read out of a DM
 TABLE = "/rest/v1/assembly_claims"
 
@@ -50,6 +51,13 @@ def members():
     return build.member_names(build.sections(text)[1])
 
 
+def dm(name, c):
+    """The message to send one member, ready to paste. The page's #me= link opens on their name."""
+    return ("Hi %s. Your Assembly claim code is %s\nOpen %s#me=%s, press the claim button and paste it. It works once, "
+            "and the name is then yours on that device. Keep it private. If someone else claims your name first, tell the group."
+            % (name, c, HOME, urllib.parse.quote(name)))
+
+
 def issue(names):
     have = {r["name"] for r in db("?select=name")}
     for n in names:
@@ -58,16 +66,16 @@ def issue(names):
             continue
         c = code()
         db("", "POST", {"name": n, "code_hash": hsh(norm(c))})
-        print("%-16s %s" % (n, c))
+        print(dm(n, c) + "\n")
 
 
 def reissue(name):
     c = code()
     rows = db("?name=eq." + urllib.parse.quote(name), "PATCH",
-              {"code_hash": hsh(norm(c)), "token_hash": None, "claimed_at": None, "failed": 0})
+              {"code_hash": hsh(norm(c)), "token_hash": None, "claimed_at": None, "failed": 0, "failed_at": None})
     if not rows:
         sys.exit("no row for %s; issue first" % name)
-    print("%-16s %s   (the old claim is cleared)" % (name, c))
+    print(dm(name, c) + "\n(the old claim is cleared)")
 
 
 def listing():
@@ -102,6 +110,7 @@ def selfcheck():
     c = code()
     assert len(c) == 19 and c.count("-") == 3 and set(norm(c)) <= set(ALPHABET), c
     assert norm("AB12-CD34") == "ab12cd34" and len(hsh("x")) == 64
+    assert "XXXX" in dm("Laura", "XXXX") and "#me=Laura" in dm("Laura", "XXXX") and "Crypto%20Fish" in dm("Crypto Fish", "x")
     assert diagnose(503).startswith("OFF") and diagnose(502).startswith("ON, but") and diagnose(999).startswith("Unexpected")
 
 

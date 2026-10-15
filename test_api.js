@@ -2,17 +2,24 @@
 // (api/claim.js) against a fake database that answers like PostgREST.
 'use strict';
 const assert = require('assert');
-const { hash, norm, attempt, LOCK } = require('./api/_claims.js');
+const { hash, norm, attempt, LOCK, PAUSE } = require('./api/_claims.js');
 
 const row = (over) => Object.assign({ name: 'Laura', code_hash: hash(norm('ab12-cd34-ef56-gh78')), claimed_at: null, failed: 0 }, over);
 
 assert.equal(attempt(undefined, 'x').status, 404);
 assert.equal(attempt(row({ claimed_at: '2026-10-16T10:00:00Z' }), 'ab12-cd34-ef56-gh78').status, 409);
-assert.equal(attempt(row({ failed: LOCK }), 'ab12-cd34-ef56-gh78').status, 423);
-const wrong = attempt(row(), 'nope');
+const T = Date.parse('2026-10-16T10:00:00Z'), at = (ms) => new Date(T - ms).toISOString();
+const wrong = attempt(row(), 'nope', T);
 assert.equal(wrong.status, 401);
-assert.deepEqual(wrong.patch, { failed: 1 });
+assert.deepEqual(wrong.patch, { failed: 1, failed_at: new Date(T).toISOString() });
 assert.equal(wrong.body.left, LOCK - 1);
+// a run of wrong codes turns wrong guesses away without a write, but never the right code (nobody can lock a name)
+const paused = row({ failed: LOCK, failed_at: at(60 * 1000) });
+const slow = attempt(paused, 'nope', T);
+assert.deepEqual([slow.status, slow.patch, slow.body.retry_after], [429, undefined, (PAUSE - 60 * 1000) / 1000]);
+assert.equal(attempt(paused, 'ab12-cd34-ef56-gh78', T).status, 200);
+assert.equal(attempt(row({ failed: LOCK, failed_at: at(PAUSE + 1) }), 'nope', T).status, 401);   // a quiet stretch clears the run
+assert.equal(attempt(row({ failed: LOCK, failed_at: at(PAUSE + 1) }), 'nope', T).body.left, LOCK - 1);
 const ok = attempt(row(), 'AB12 CD34 EF56 GH78');           // case and separators do not matter
 assert.equal(ok.status, 200);
 assert.equal(ok.patch.token_hash, hash(ok.body.token));

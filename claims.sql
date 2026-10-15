@@ -6,7 +6,11 @@ create table if not exists public.assembly_claims (
   code_hash   text not null,                    -- sha256 of the invite code, issued by claims.py
   token_hash  text,                             -- sha256 of the device token, once claimed
   claimed_at  timestamptz,                      -- null until the code is entered on the site
-  failed      integer not null default 0,       -- wrong codes since issue; five lock the name until reissued
+  failed      integer not null default 0,       -- wrong codes in the current run; five turn wrong guesses away for ten minutes
+  failed_at   timestamptz,                      -- when the latest wrong code came; the right code is never turned away
   issued_at   timestamptz not null default now()
 );
+alter table public.assembly_claims add column if not exists failed_at timestamptz;
 alter table public.assembly_claims enable row level security;
+-- The two public roles get nothing, so a later policy or a switched-off RLS cannot open the table by itself.
+revoke all on public.assembly_claims from anon, authenticated;
