@@ -552,10 +552,11 @@ SHELL = """<!doctype html>
 </html>
 """
 
-TABS = (("febu-assembly.html", "assembly"), ("how.html", "how it works"), ("process.html", "the process"),
+TABS = (("/", "febu archive"), ("febu-assembly.html", "assembly"),   # "/" is the den: the archive is the home page
+        ("how.html", "how it works"), ("process.html", "the process"),
         ("ledger.html", "the ledger"))
 QUIET = "Nothing on this page is stored or counted, and it loads nothing from other sites."
-BAR = '<div class="archive-bar">unverified: %s &middot; [ <a href="/febu-assembly.html">home</a> ]</div>'
+BAR = '<div class="archive-bar">unverified: %s &middot; [ <a href="/">home</a> ] [ <a href="/febu-assembly.html">assembly</a> ]</div>'
 
 
 SITE = "https://febu-assembly.vercel.app"               # the card image's address must be absolute for a chat to fetch it

@@ -93,7 +93,7 @@ def test():
 
     # the old domain serves nothing: every path is a 308 to the same path on the one address
     ONE = "https://" + DEN
-    assert serve(LEDGER, "/")[0] == ("redirect", 308, ONE + "/febu-assembly.html")
+    assert serve(LEDGER, "/")[0] == ("redirect", 308, ONE + "/")   # the old home lands on the archive, the new home
     for p in pages + ["api/archive", "archive/08_CLAIMS_LEDGER_v3.txt", "assets/claims.js", "nope"]:
         assert serve(LEDGER, "/" + p)[0] == ("redirect", 308, ONE + "/" + p), p
     assert not any("febu-ledger" in str(x) for x in serve(DEN, "/")[0])
