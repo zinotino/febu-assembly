@@ -2,7 +2,7 @@
   "buildCommand": "python3 build.py",
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/(?:(?:febu-assembly|how|people|process|weekly|write|ledger|tests|findings)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|z/?|start(?:\\.html)?|api/(?!keepalive).+|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
       "headers": {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
@@ -24,6 +24,16 @@
       "dest": "/api/entries?num=$1&act=$2"
     },
     {
+      "src": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "febu-ledger\\.vercel\\.app"
+        }
+      ],
+      "dest": "/febu-assembly.html"
+    },
+    {
       "handle": "filesystem"
     },
     {
@@ -31,8 +41,14 @@
       "dest": "/findings.html"
     },
     {
-      "src": "/",
-      "dest": "/febu-assembly.html"
+      "src": "/(.*)",
+      "missing": [
+        {
+          "type": "host",
+          "value": "febu-ledger\\.vercel\\.app"
+        }
+      ],
+      "dest": "/index.html"
     }
   ],
   "functions": {
@@ -48,6 +64,10 @@
     {
       "path": "/api/claim?name=Zurandol",
       "schedule": "17 5 * * *"
+    },
+    {
+      "path": "/api/keepalive",
+      "schedule": "17 6 * * *"
     }
   ],
   "outputDirectory": "."

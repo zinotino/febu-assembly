@@ -23,6 +23,21 @@ findings).
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
 | `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `findings.html`, `people.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
 
+
+## One project
+
+This repo is the whole of https://febu-assembly.vercel.app: the Assembly's pages, the ledger, the claim and record API, and the unofficial archive of imfebu.com (the "den") that used to live in the private repo `febu-host`. One Vercel project, one Supabase project (`febu-host`, ref `tytebptpuiiemuxlaeab`).
+
+| Path | What it is |
+|---|---|
+| `/` , `index.html`, `assets/index-*.js`, `assets/index-reconstructed.css`, `assets/shim.js`, `assets/community.json`, `assets/scripture.json`, `assets/pfp/` | The den: the 2026-08-14 imfebu front end, patched to talk to our Supabase. Its app routes (`/library/scripture` and the rest) fall back to `index.html`. See `DEN.md`. |
+| `scripture.html`, `members.html` | Plain-text scripture reader; the Assembly's members. |
+| `api/keepalive.js` | A daily read so the free Supabase project is not paused. |
+| `test_routes.py` | Checks `vercel.json`: the Assembly's security headers sit on the Assembly's files only (the den needs inline styles and Supabase), `/` is the den here and the front page on the old domain, unknown paths reach the den. |
+
+`febu-ledger.vercel.app` is the same repo under its old project name. `ledger.txt`'s own lines and the daily Internet Archive capture cite it, so it keeps serving the same bytes until the ledger says otherwise. Its `/` still shows the front page; unknown paths still 404.
+
+Environment variables the project needs (set in Vercel, never in the repo): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `ASSEMBLY_SALT` (keep the same value on every project, or stranger hashes stop matching), `ASSEMBLY_STRANGERS`, `CRON_SECRET`.
 ## Member flows
 
 Each turns one job into one page and one message for the chat. None of them posts, stores or sends anything.
