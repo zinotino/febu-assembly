@@ -72,14 +72,15 @@ THE FOUR PARTS
   another only by their own promise.
 
 WHAT IT RUNS ON
-  GitHub for the history (Z's repository), Vercel for the pages and a few small functions, a
-  small free database for name claims, a public Solana RPC and explorer links for chain facts,
-  web.archive.org for the daily capture, and the group chat for posts. It runs on free tiers. If
-  Vercel or GitHub vanish, the file survives in every copy anyone made. If the Internet Archive
-  vanishes, a Bitcoin timestamp would still show the file existed (none is made yet). If the chat
-  vanishes, the posts move; the ledger does not.
+  GitHub for the history (Z's repository), Vercel for the pages and two small daily jobs (the
+  Internet Archive save, and a read that keeps the den's free database awake), a public Solana
+  RPC and explorer links for chain facts, web.archive.org for the daily capture, and the group
+  chat for posts. It runs on free tiers. If Vercel or GitHub vanish, the file survives in every
+  copy anyone made. If the Internet Archive vanishes, a Bitcoin timestamp still shows the file
+  existed (timestamps/ holds one for the current version). If the chat vanishes, the posts move;
+  the ledger does not.
 
-  Bitcoin is planned for one thing: a timestamp no member could have forged. Not for money, not
+  Bitcoin is used for one thing: a timestamp no member could have forged. Not for money, not
   for agreement, not for identity. That is the whole lean.
 
 WHAT IT CANNOT DO

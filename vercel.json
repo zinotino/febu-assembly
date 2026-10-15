@@ -46,6 +46,13 @@
       "continue": true
     },
     {
+      "src": "/timestamps/.+\\.ots",
+      "headers": {
+        "Content-Type": "application/octet-stream"
+      },
+      "continue": true
+    },
+    {
       "src": "/start(\\.html)?",
       "status": 308,
       "headers": {
