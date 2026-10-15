@@ -3,7 +3,7 @@ FOUR TESTS (for Witness to pick apart; rewritten 2026-10-14 by Z for ledger vers
 THE QUESTION
   Witness asked what the answer to febu would look like if we approached it the way Satoshi
   approached money, and named what Satoshi was answering: gains kept private, losses passed
-  down, bailouts, and decisions made at the top. Those four are the tests. The ledger (08) is
+  down, bailouts, and decisions made at the top. Those four are the tests. The ledger is
   our answer so far. Nothing in it has been checked by anyone but Z.
 
 THE FOUR TESTS
