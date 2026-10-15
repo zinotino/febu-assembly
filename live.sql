@@ -34,6 +34,8 @@ alter table public.assembly_seconds enable row level security;
 alter table public.assembly_checks  enable row level security;
 -- The two public roles get nothing, so a later policy or a switched-off RLS cannot open these by itself.
 revoke all on public.assembly_seconds, public.assembly_checks from anon, authenticated;
+-- Likewise the service key's role (see claims.sql): without this the project answers 403 and the record does not answer.
+grant all on public.assembly_seconds, public.assembly_checks to service_role;
 
 -- Rule 2: nothing in the record is rewritten or removed. The database refuses it, whoever asks.
 -- ponytail: rule 2 lets personal information become "[removed]"; this refuses that too, until someone needs it. Whoever
