@@ -122,7 +122,9 @@ def read_ledger(text):
         if item[0] != "entry":
             continue
         _, kind, num, who, fields = item
-        f = {label: " ".join(ln.txt for ln in lines if ln.txt) for label, lines in fields}
+        f = {}
+        for label, lines in fields:                         # a label can repeat (CHANGED, SEEN): keep all
+            f[label] = (f[label] + " " if f.get(label) else "") + " ".join(ln.txt for ln in lines if ln.txt)
         writer = who.split(",")[0].strip()
         if writer == "the group":                           # rule 3: such an entry's writer is who proposed it
             m = re.search(r"(\w+) proposed it", f.get("CHANGED", ""))

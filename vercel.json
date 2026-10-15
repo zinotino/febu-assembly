@@ -20,6 +20,10 @@
       }
     },
     {
+      "src": "/api/entries/(\\d+)/(second|check)",
+      "dest": "/api/entries?num=$1&act=$2"
+    },
+    {
       "handle": "filesystem"
     },
     {
@@ -31,6 +35,11 @@
       "dest": "/febu-assembly.html"
     }
   ],
+  "functions": {
+    "api/entries.js": {
+      "includeFiles": "ledger.txt"
+    }
+  },
   "crons": [
     {
       "path": "/api/archive",
