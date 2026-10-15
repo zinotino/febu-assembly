@@ -25,6 +25,7 @@ run; the version anyone else can reach sets it. A token proves a device holds th
 import datetime as dt
 import hashlib
 import http.server
+import ipaddress
 import json
 import os
 import re
@@ -33,6 +34,7 @@ import sqlite3
 import sys
 import textwrap
 import urllib.error
+import urllib.parse
 import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
@@ -49,6 +51,8 @@ HANDLE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._'-]{1,39}")   # a stranger's name:
 STRANGER_PER_ENTRY = 6                                      # checks from outside the seven one entry takes in all
 STRANGER_PER_DAY = 5                                        # checks one source may post in 24 hours
 SALT = HERE / "salt"
+NOTATION = "That has notation the ledger keeps off its pages. Say it in words."
+SERVED = {".html", ".css", ".js", ".txt", ".svg", ".png", ".ico", ".ics"}   # what the page needs, nothing else
 CANT_TELL_DAYS = 30                                         # rule 4
 RESULTS = {"FACT": ("HOLDS", "DOESN'T HOLD"), "PROMISE": ("KEPT", "BROKEN")}
 NAME = re.compile(r"[A-Za-z0-9][\w .'-]{0,39}")
@@ -213,12 +217,22 @@ def export_text(conn, text):
     return "\n".join(out)
 
 
+def refuse_banned(text):
+    """Stop before writing what the build would refuse: a post that got past the filters would otherwise fail every
+    deploy, and the record cannot take it back (rule 2)."""
+    hit = build.BANNED.search(text)
+    if hit:
+        sys.exit("export stopped: %r in the record's text is notation the ledger keeps off its pages. Nothing was written; "
+                 "find the post and let the weekly turn put '[removed]' there by hand (rule 2)." % hit.group())
+
+
 def export():
     raw = build.raw_text(build.LEDGER).decode("utf-8")
     conn = connect()
     seed(conn, read_ledger(raw.rstrip("\n"))[1])
     new = export_text(conn, raw)
     conn.close()
+    refuse_banned(new)
     if new != raw:
         build.LEDGER.write_bytes(new.encode("utf-8"))
     print("export: ledger.txt %s" % ("rewritten from the record" if new != raw else "already matches the record"))
@@ -281,6 +295,8 @@ def name(body, members):
     who = " ".join(str(body.get("who") or "").split())
     if not NAME.fullmatch(who):
         raise Refused("Type your name: letters and numbers, at most 40 characters.")
+    if build.BANNED.search(who):
+        raise Refused(NOTATION)
     return next((m for m in members if m.lower() == who.lower()), who)
 
 
@@ -288,18 +304,34 @@ def fold(s):
     return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
+def words(s):
+    return re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+
+
 def stranger_name(body, members):
     """The name a stranger posts under: plain ASCII, and not any member's, however it is spaced or capitalised."""
     who = " ".join(str(body.get("who") or "").split())
     if not HANDLE.fullmatch(who):
         raise Refused("Pick a name to post under: 2 to 40 letters (A to Z), numbers, spaces or . _ ' -")
-    if fold(who) in {fold(m) for m in members}:
-        raise Refused("That is a member's name. Members post from the device that claimed it. Pick another name.")
+    if build.BANNED.search(who):
+        raise Refused(NOTATION)
+    mine = words(who)
+    if fold(who) in {fold(m) for m in members} or any(
+            re.search("(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(words(m)), mine) for m in members):
+        raise Refused("That name is, or holds, a member's name. Members post from the device that claimed it. "
+                      "Pick another name.")
     return who
 
 
 def source_of(address):
-    """A salted hash of where a post came from: enough to tell two posts came from one place, not to find the place."""
+    """A salted hash of where a post came from: enough to tell two posts came from one place, not to find the place.
+    An IPv6 address counts as its /64, the size one customer is given, so one household is one source."""
+    try:
+        ip = ipaddress.ip_address(address.split("%")[0])
+        if ip.version == 6:
+            address = str(ipaddress.ip_network((ip, 64), strict=False))
+    except ValueError:
+        pass
     if not SALT.exists():
         SALT.write_text(secrets.token_hex(16))
     return hashlib.sha256((SALT.read_text() + address).encode()).hexdigest()[:16]
@@ -424,7 +456,26 @@ def ledger_page():
     return page.replace("</head>", LIVE_HEAD, 1)
 
 
+def servable(path):
+    """Whether the record's server may hand this path out: a page or what it loads, never the salt, the database, the
+    source or anything hidden. The check is on the decoded path, so %-escapes and .. get no further."""
+    p = urllib.parse.unquote(path.split("?")[0].split("#")[0])
+    parts = [x for x in p.split("/") if x]
+    if chr(92) in p or any(x.startswith(".") for x in parts):
+        return False
+    if parts[:1] == ["live"]:
+        return p in ("/live/live.js", "/live/live.css")
+    return Path(p).suffix.lower() in SERVED
+
+
+def host_ok(host):
+    """Only this machine's own name, so a page on another site cannot reach the record by rebinding its address."""
+    return host in ("127.0.0.1:%d" % PORT, "localhost:%d" % PORT)
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
+    timeout = 15                                            # a connection that stalls is dropped, not held
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(build.ROOT), **kwargs)
 
@@ -440,6 +491,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send(code, json.dumps(data).encode("utf-8"), "application/json; charset=utf-8")
 
     def do_GET(self):
+        if not host_ok(self.headers.get("Host")):
+            return self.json(403, {"error": "This record answers on this machine only."})
         path = self.path.split("?")[0]
         if path == "/":
             self.send_response(302)
@@ -449,10 +502,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send(200, ledger_page().encode("utf-8"), "text/html; charset=utf-8")
         elif path == "/api/entries":
             self.json(200, with_record(lambda conn, members: listing(conn, members, now())))
-        else:
+        elif servable(path):
             super().do_GET()
+        else:
+            self.json(404, {"error": "Nothing is served at that address."})
 
     def do_POST(self):
+        if not host_ok(self.headers.get("Host")):
+            return self.json(403, {"error": "This record answers on this machine only."})
         m = re.fullmatch(r"/api/entries/(\d+)/(second|check)", self.path)
         if not m:
             return self.json(404, {"error": "Nothing is posted at that address."})
@@ -485,6 +542,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def main():
     if sys.argv[1:] == ["export"]:
         return export()
+    if STRANGERS and not CLAIMS:
+        sys.exit("ASSEMBLY_STRANGERS needs ASSEMBLY_CLAIMS_URL: without sign-in every post is a typed name.")
+    if not CLAIMS:
+        print("note: no ASSEMBLY_CLAIMS_URL, so names are typed and anyone can post as anyone (this machine only)", flush=True)
     server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     print("the live ledger: http://127.0.0.1:%d/ledger.html (record: %s)" % (PORT, DB), flush=True)
     server.serve_forever()

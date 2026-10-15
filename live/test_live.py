@@ -176,6 +176,27 @@ class Strangers(Record):
             with self.subTest(who), self.assertRaises(Refused):
                 self.stranger(3, who, "a")
 
+    def test_a_name_the_build_would_refuse_is_refused(self):
+        self.second(3, "Laura")
+        for n, who in enumerate(("Trit", "Rook -1")):
+            with self.subTest(who), self.assertRaises(Refused):
+                self.stranger(3, who, "a" + str(n))
+        with self.assertRaises(Refused):                            # the typed-name mode has the same door
+            self.check(3, "Trit")
+
+    def test_a_name_that_holds_a_members_name_is_refused(self):
+        self.second(3, "Laura")
+        for n, who in enumerate(("Laura B", "Merc Hunter", "the Crypto Fish", "Crypto-Fish Jr")):
+            with self.subTest(who), self.assertRaises(Refused):
+                self.stranger(3, who, "a" + str(n))
+        self.stranger(3, "Mercedes", "m")                           # only a whole word counts
+        self.stranger(3, "Laurana", "l")
+
+    def test_the_export_stops_before_writing_what_the_build_refuses(self):
+        with self.assertRaises(SystemExit):
+            server.refuse_banned("    SEEN      - Trit, 2026-10-15: HOLDS.")
+        server.refuse_banned(self.raw)                              # the ledger as it stands is fine
+
     def test_one_source_posts_once_per_entry(self):
         self.second(3, "Laura")
         self.stranger(3, "Rook", "a")
@@ -215,6 +236,40 @@ class Strangers(Record):
         self.assertEqual(len(a), 16)
         self.assertNotEqual(a, b)
         self.assertNotIn("203.0.113", a)
+
+
+class Serving(unittest.TestCase):
+    """The record's own server shows pages, never its salt, its database or its source."""
+
+    def test_only_pages_and_their_assets_are_served(self):
+        for path in ("/ledger.html", "/assets/ledger.css", "/assets/claims.js", "/live/live.js", "/live/live.css", "/ledger.txt"):
+            with self.subTest(path):
+                self.assertTrue(server.servable(path))
+        for path in ("/live/salt", "/live/record.db", "/live/server.py", "/live/%73alt", "/.git/config", "/claims.py",
+                     "/claims.sql", "/%2e%2e/x.html", "/live/../live/salt", "/live/"):
+            with self.subTest(path):
+                self.assertFalse(server.servable(path))
+
+    def test_only_this_machine_may_be_the_host(self):
+        for host in ("127.0.0.1:%d" % server.PORT, "localhost:%d" % server.PORT):
+            self.assertTrue(server.host_ok(host))
+        for host in (None, "", "evil.example", "127.0.0.1", "evil.example:%d" % server.PORT, "127.0.0.1:1"):
+            self.assertFalse(server.host_ok(host))
+
+
+class SourceHash(unittest.TestCase):
+    def setUp(self):
+        self.old, server.SALT = server.SALT, Path(__file__).resolve().parent / "test-salt.tmp"
+
+    def tearDown(self):
+        server.SALT.unlink(missing_ok=True)
+        server.SALT = self.old
+
+    def test_an_ipv6_network_is_one_source(self):
+        a, b = server.source_of("2001:db8:1:2::1"), server.source_of("2001:db8:1:2:ffff:ffff:ffff:ffff")
+        self.assertEqual(a, b)                                      # one /64 is one connection, not 2^64
+        self.assertNotEqual(a, server.source_of("2001:db8:1:3::1"))
+        self.assertNotEqual(server.source_of("203.0.113.5"), server.source_of("203.0.113.6"))
 
 
 class SignIn(unittest.TestCase):
