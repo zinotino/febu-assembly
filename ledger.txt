@@ -246,6 +246,10 @@ THE ENTRIES
     CHANGED   2026-10-15, before any check: the Internet Archive listing named
               febu-ledger.vercel.app, which now only redirects here. It names
               febu-assembly.vercel.app, the one address the ledger is served from.
+    CHANGED   2026-10-15, before any check: a close counts on the day its second SEEN line is
+              posted in the chat, not the day the weekly turn copies it into the file, and
+              PROMISE 7 is read at the first weekly turn after day 30. SEEN lines posted before
+              this version is adopted are the dry run and do not count toward it.
     SEEN      nobody yet
 
   FACT 8. (Zurandol, 2026-10-14)
@@ -381,3 +385,10 @@ CHANGES TO THE RULES
   No rule changed. The text before this change is kept word for word in
   archive/08_CLAIMS_LEDGER_v3-clean-start.txt SHA-256
   90e674d37f1a1f26b66db28d556415202e6cef4adb3b97a7a35e36e9ef2635d5
+  2026-10-15. PROMISE 7 counted by the day of the second post, before any entry was checked. A
+  close counts on the day its second SEEN line is posted in the chat, not the day the weekly
+  turn copies it into the file; PROMISE 7 is read at the first weekly turn after day 30; SEEN
+  lines posted before this version is adopted are the dry run and do not count toward it. No
+  other rule changed. The text before this change is kept word for word in
+  archive/08_CLAIMS_LEDGER_v3-one-address.txt SHA-256
+  5480125f79a4c9523f0fdb57c9a90199f00dbbae115e366d5b59888f375ad403

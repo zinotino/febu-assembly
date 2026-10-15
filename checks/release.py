@@ -1,7 +1,7 @@
 """Is the file the site serves the file the post names? Anyone can run this; it needs no key and posts nothing.
 
     python checks/release.py                          the live site against this repo
-    python checks/release.py --posted 90e674d3        also: does the hash in a post match what is served?
+    python checks/release.py --posted d3e17658        also: does the hash in a post match what is served?
     python checks/release.py --site http://127.0.0.1:8000 --no-archive
     python checks/release.py --test                   offline checks of the pure parts
 

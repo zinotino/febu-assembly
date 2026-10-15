@@ -102,8 +102,11 @@ def test_release_against_a_local_site():
         site = "http://127.0.0.1:%d" % srv.server_address[1]
         assert not [w for s, w in run(site, "", archive=False) if s == FAIL]
         current = sha256((ROOT / "ledger.txt").read_bytes())
-        older = next((h, n) for h, n in archive_hashes().items() if h != current)
-        rows = run(site, older[0][:8], archive=False)
-        assert any(s == FAIL and older[1] in w and "earlier version" in w for s, w in rows), rows
+        older = next(((h, n) for h, n in archive_hashes().items() if h != current), None)
+        if older:  # archive/ holds an earlier version: the post is told which one
+            rows = run(site, older[0][:8], archive=False)
+            assert any(s == FAIL and older[1] in w and "earlier version" in w for s, w in rows), rows
+        rows = run(site, "00000000", archive=False)  # a hash that is no version at all
+        assert any(s == FAIL and "matches no archived version" in w for s, w in rows), rows
     finally:
         srv.shutdown()

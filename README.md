@@ -145,7 +145,7 @@ is not a Saw.
 | `python checks/resolve.py door2` | Fact 8's other way out: every transaction on pump's creator vault in the window | about 3 minutes |
 | `python checks/resolve.py test9` | Fact 9 on the real transaction, then on one-change copies and four lazy versions it must catch | seconds |
 | `python checks/resolve.py claimsim` | Whether a stranger can send the fee claim: a dry run the node simulates, nothing sent | seconds |
-| `python checks/release.py --posted 90e674d3` | The release: the served `ledger.txt` against this checkout and git, the hash a post names (and which archived version it is, if not the served file), the headers, the Internet Archive's captures, and whether each timestamp proof is pending or in a block. CAN'T TELL when a read is incomplete | seconds |
+| `python checks/release.py --posted d3e17658` | The release: the served `ledger.txt` against this checkout and git, the hash a post names (and which archived version it is, if not the served file), the headers, the Internet Archive's captures, and whether each timestamp proof is pending or in a block. CAN'T TELL when a read is incomplete | seconds |
 
 - The chain checks ask the public node https://api.mainnet-beta.solana.com. To ask another, your own for example,
   set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast

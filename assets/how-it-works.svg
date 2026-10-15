@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" role="img" aria-labelledby="t d">
   <title id="t">How the ledger works, and the step febu never ran</title>
-  <desc id="d">Top row: one entry moves through four steps: a claim with a link and a WRONG IF line; two people other than its writer open the link; a result that is HOLDS, DOESN'T HOLD, KEPT or BROKEN; and a record kept in a text file, every version archived, its hash posted outside the group, saved by the Internet Archive and stamped into a Bitcoin block. Bottom row: febu's pages take the same four slots: write, publish, no check, page N+1. The third slot is empty. Anyone may copy the file and run it their own way.</desc>
+  <desc id="d">Top row: one entry moves through four steps: a claim with a link and a WRONG IF line; two people other than its writer open the link; a result that is HOLDS, DOESN'T HOLD, KEPT or BROKEN; and a record kept in a text file, every change archived, its hash posted outside the group, saved daily by the Internet Archive (a Bitcoin stamp is to come). Bottom row: febu's pages take the same four slots: write, publish, no check, page N+1. The third slot is empty. Anyone may copy the file and run it their own way.</desc>
   <style>
     text{font-family:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;fill:#111}
     .h{font-size:15px;font-weight:700;fill:#1f1a8c}
@@ -35,7 +35,7 @@
   <text x="30" y="168" class="n">WRONG IF what would show</text>
   <text x="30" y="184" class="n">         it false, fixed</text>
   <text x="30" y="200" class="n">         before any check</text>
-  <text x="30" y="226" class="s">a promise adds BY and a bond</text>
+  <text x="30" y="226" class="s">a promise: WILL, BY, KNOWN BY</text>
 
   <path d="M240,160 L251,160" class="arrow"/>
 
@@ -67,11 +67,11 @@
   <rect x="719" y="86" width="220" height="24" class="silver"/>
   <text x="729" y="103" class="k">4  the record</text>
   <text x="729" y="132" class="n">one plain text file</text>
-  <text x="729" y="150" class="n">nothing removed, ever</text>
-  <text x="729" y="168" class="n">every version archived</text>
+  <text x="729" y="150" class="n">no removals since 10-15</text>
+  <text x="729" y="168" class="n">each change archived</text>
   <text x="729" y="186" class="n">its hash posted outside</text>
   <text x="729" y="210" class="s">Internet Archive, daily</text>
-  <text x="729" y="226" class="s">+ a Bitcoin block (OTS)</text>
+  <text x="729" y="226" class="s">+ Bitcoin stamp: to come</text>
 
   <path d="M829,236 L829,262 L130,262 L130,240" class="arrow"/>
   <rect x="290" y="250" width="380" height="24" class="box"/>
@@ -79,7 +79,7 @@
 
   <text x="20" y="306" class="h">WHAT HOLDS IT UP</text>
   <text x="20" y="328" class="n">no scores. no approver. nobody checks their own entry. an AI never posts a result. no pool, no treasury,</text>
-  <text x="20" y="346" class="n">no new token. a rule changes only after 7 days and four yeses. anything only one person can do is a listed bug.</text>
+  <text x="20" y="346" class="n">no new token. a rule changes only after 7 days, four yeses and at most one object. one-person jobs are listed bugs.</text>
   <text x="20" y="364" class="n">the group's own failure test is an entry (PROMISE 7). the file is whichever copy matches the last posted hash.</text>
 
   <!-- ===== FEBU ===== -->
