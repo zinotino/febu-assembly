@@ -37,11 +37,21 @@ CREATOR_RUN_ROW_19 = "3RctBzwYbFMxSTTtCUUxunF1ruFLeqb6pijVy3zKQLDWp4etD9znKSdSCo
 
 # ---------- fact 9: one transaction, four lines ----------
 
+def lacks(r, word):
+    """Does the transaction's log not name word? A log the node did not keep, or cut short ("Log truncated", over 10 kB)
+    before the word, cannot show it is absent: that stops the read with SystemExit, as an unknown transaction does."""
+    logs = r["meta"]["logMessages"]
+    if any(word in ln for ln in logs or []):
+        return False
+    if logs is None or "Log truncated" in logs:
+        raise SystemExit("the node did not keep the whole log of a transaction, so it cannot show that %s is absent" % word)
+    return True
+
+
 def lines9(r, signer, vault, word):
     """The tripped state of each WRONG IF line of fact 9, read from one parsed transaction."""
-    logs = " ".join(r["meta"]["logMessages"] or [])
     return {"signer is not %s" % c.short(signer): signer not in c.signers(r),
-            "logs show no %s" % word: word not in logs,
+            "logs show no %s" % word: lacks(r, word),
             "%s not among its accounts" % c.short(vault): vault not in c.keys(r),
             "the transaction failed": r["meta"]["err"] is not None}
 
@@ -96,7 +106,7 @@ def test9():
               "DOESN'T HOLD"),
              ("real: row 19, a creator-run claim", c.tx(CREATOR_RUN_ROW_19), signer, "DOESN'T HOLD")]
     cases += [("one change: " + n, m, signer, "DOESN'T HOLD") for n, m in mutants(r, signer, vault, word).items()]
-    print("Fact 9, read %s from %s\n" % (c.now(), c.RPC))
+    print("Fact 9, read %s from %s\n" % (c.now(), c.host_of(c.RPC)))
     print("%-48s %-13s %-13s %s" % ("control", "expected", "honest", "  ".join(LAZY)))
     caught = {n: 0 for n in LAZY}
     for name, tx, sg, want in cases:
@@ -170,16 +180,19 @@ def day(y, m, d, h=0):
 
 def sigs_since(account, t0):
     out, before = [], None
-    while True:
+    while True:   # newest first: each page goes back from the oldest signature of the one before
         page = c.rpc("getSignaturesForAddress", [account, {"limit": 1000, **({"before": before} if before else {})}])
-        out += [s for s in page if s["blockTime"] >= t0 and s["err"] is None]
+        if any(s["blockTime"] is None for s in page):
+            raise SystemExit("the node gave a transaction on %s no block time, so the window cannot be read" % c.short(account))
+        out +=[s for s in page if s["blockTime"] >= t0 and s["err"] is None]
         if not page or page[-1]["blockTime"] < t0:
             return out
         before = page[-1]["signature"]
 
 
 def fee_change(sig, account):
-    """(blockTime, balance before, balance after) of the account's WSOL in one transaction, or None if unread."""
+    """(blockTime, balance before, balance after) of the account's WSOL in one transaction, or None if unread. Before and
+    after are None when the transaction does not list the account's balance."""
     for _ in range(4):
         try:
             r = c.rpc("getTransaction", [sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 1}])
@@ -188,7 +201,7 @@ def fee_change(sig, account):
             continue
         if r:
             ch = [(a, b) for acct, _, m, a, b in c.token_changes(r) if acct == account]
-            return r["blockTime"], *(ch[0] if ch else (Decimal(0), Decimal(0)))
+            return r["blockTime"], *(ch[0] if ch else (None, None))
     return None
 
 
@@ -213,7 +226,7 @@ def fact8():
     ata = derive_ata(wallet, c.WSOL)
     r20 = c.tx(ROW_20)
     seen = [acct for acct, owner, m, a, b in c.token_changes(r20) if owner == wallet and m == c.WSOL and b > a]
-    print("Fact 8, read %s from %s" % (c.now(), c.RPC))
+    print("Fact 8, read %s from %s" % (c.now(), c.host_of(c.RPC)))
     print("CONTROL, the derived WSOL account of %s is %s; fact 6's row 20 paid into %s: %s"
           % (c.short(wallet), c.short(ata), c.short(seen[0]) if seen else "?", "match" if seen == [ata] else "NO MATCH"))
     now_bal = Decimal(c.rpc("getTokenAccountBalance", [fee])["value"]["uiAmountString"])
@@ -228,7 +241,7 @@ def fact8():
     print("CONTROL, the assumption: %d of fact 6's %d payments pass through that token account (%d unread)"
           % (thru.count(True), len(steps), thru.count(None)))
     missed = [s for s, g in zip(ends, got) if g is None]
-    out = sorted((g[0], g[1] - g[2], s) for s, g in zip(ends, got) if g and g[2] < g[1])
+    out = sorted((g[0], g[1] - g[2], s) for s, g in zip(ends, got) if g and g[1] is not None and g[2] < g[1])
     print("read %d, could not read %d, in %.0f s\n" % (len(ends) - len(missed), len(missed), time.time() - started))
     print("CONTROL, 09-14: expected exactly one payment out, fact 6 row 44 (6.868902687 SOL, 21:08)")
     for t, amt, s in out:
@@ -239,9 +252,11 @@ def fact8():
     for t, amt, s in since:
         print("  PAYMENT OUT %s: %s  %s  %s" % ("in the window" if t < t_end else "after 10-14, outside the window",
                                                dt.datetime.fromtimestamp(t, UTC).strftime("%m-%d %H:%M"), amt, s))
-    # The balance before 09-22's first transaction is its balance at 00:00 UTC.
+    # The balance before 09-22's first transaction is its balance at 00:00 UTC. The list is newest first.
     d22 = [s for s in fee_sigs if day(2026, 9, 22) <= s["blockTime"] < day(2026, 9, 23)]
-    first, last = fee_change(d22[-1]["signature"], fee), fee_change(d22[0]["signature"], fee)
+    first, last = (fee_change(d22[-1]["signature"], fee), fee_change(d22[0]["signature"], fee)) if d22 else (None, None)
+    if not (first and last and first[1] is not None and last[2] is not None):
+        raise SystemExit("09-22's first and last transactions on the fee account did not both read with its balance")
     lo, hi = first[1], last[2]
     print("\n09-22: %d transactions on the fee account; balance at 00:00 UTC %s, after the last %s" % (len(d22), lo, hi))
     lines = {"a payment out between 2026-09-15 and the end of 2026-10-14 shows": bool(after),
@@ -249,7 +264,11 @@ def fact8():
              "balance at 00:00 UTC on 2026-09-22 outside 3.8-4.1": not (Decimal("3.8") <= lo <= Decimal("4.1"))}
     for line, tripped in lines.items():
         print("  %-62s %s" % (line, "TRIPPED" if tripped else "not tripped"))
-    print("\nverdict:", verdict(lines) if not missed else "CAN'T TELL (%d transactions unread)" % len(missed))
+    # The verdict rests on the three CONTROL lines: the account read is row 20's, every payment passed through it, and 09-14
+    # shows row 44 alone. One that fails, or does not read, leaves nothing to stand on.
+    controls = seen == [ata] and thru.count(True) == len(steps) > 0 and [s for t, _, s in out if t < t_after] == steps[-1:]
+    print("\nverdict:", "CAN'T TELL (a CONTROL line above failed)" if not controls else
+          "CAN'T TELL (%d transactions unread)" % len(missed) if missed else verdict(lines))
 
 
 # ---------- fact 1: a wallet bought no $FEBU in a window ----------
@@ -267,11 +286,10 @@ def fact1():
     start, end = day(2026, 9, 29), day(2026, 10, 10)   # "between 2026-09-29 and 2026-10-09", both days whole
     started = time.time()
     r = c.tx(create)
-    logs = " ".join(r["meta"]["logMessages"])
     ata = derive_ata(wallet, mint, TOKEN_2022)
     sale = c.tx(c.find(r"solscan\.io/tx/(%s)" % c.B58, c.entry(2), "fact 2's sale"))
     seen = [a for a, owner, m, _, _ in c.token_changes(sale) if owner == wallet and m == mint]
-    print("Fact 1, read %s from %s" % (c.now(), c.RPC))
+    print("Fact 1, read %s from %s" % (c.now(), c.host_of(c.RPC)))
     print("CONTROL, the derived $FEBU account of %s is %s; fact 2's sale moved $FEBU out of %s: %s"
           % (c.short(wallet), c.short(ata), c.short(seen[0]) if seen else "?", "match" if seen == [ata] else "NO MATCH"))
     sigs = sigs_since(ata, day(2026, 7, 8))
@@ -285,21 +303,22 @@ def fact1():
         print("  %s  %+.2f $FEBU  %s" % (dt.datetime.fromtimestamp(t, UTC).strftime("%m-%d %H:%M"), d, c.short(s)))
     gets = lambda a, b: any(a <= t < b and d > 0 for t, d, _ in got)   # the window rule the claim's third line uses
     first_in = min(t for t, d, _ in got if d > 0 and t > day(2026, 7, 9))
+    rule = (gets(day(2026, 8, 13), day(2026, 8, 15)), gets(first_in, first_in + 60), not gets(first_in - 60, first_in))
     print("CONTROL, the window rule: a window holding the 08-14 inflows trips: %s; one starting at an inflow's own second "
-          "trips: %s; one ending at it does not: %s" % (gets(day(2026, 8, 13), day(2026, 8, 15)), gets(first_in, first_in + 60),
-                                                      not gets(first_in - 60, first_in)))
-    lines = {"that transaction does not create $FEBU": "InitializeMint" not in logs or mint not in c.keys(r),
+          "trips: %s; one ending at it does not: %s" % rule)
+    lines = {"that transaction does not create $FEBU": mint not in c.keys(r) or lacks(r, "InitializeMint"),
              "ApWpkd8 did not sign it": wallet not in c.signers(r),
              "the wallet shows a swap 09-29..10-09 in which it gets $FEBU": any(start <= t < end and d > 0 for t, d, _ in got)}
     for line, tripped in lines.items():
         print("  %-62s %s" % (line, "TRIPPED" if tripped else "not tripped"))
-    print("\nverdict:", verdict(lines))
+    print("\nverdict:", verdict(lines) if seen == [ata] and all(rule) else "CAN'T TELL (a CONTROL line above failed)")
 
 
 # ---------- facts 3 and 4: one archived file, one rule over the scripture copy ----------
 
 def get(url):
-    return urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "curl/8"}), timeout=90).read()
+    """The copy at url and no other: a redirect (the archive's answer for a stamp it has no copy of) is refused, not followed."""
+    return c.OPEN(urllib.request.Request(url, headers={"User-Agent": "curl/8"}), timeout=90).read()
 
 
 def fact3():
@@ -327,8 +346,8 @@ def fact4():
     f = " ".join(c.entry(4).split())
     link = c.find(r"(https://\S+/scripture\.html)", f, "fact 4's link")
     books = re.findall(r"\d+-\d+ (THE [A-Z ]+?)(?:,| then)", f)
-    pages = json.loads(get(link.replace("scripture.html", "assets/scripture.json")).decode("utf-8"))
-    sha = hashlib.sha256(get(link.replace("scripture.html", "assets/scripture.json"))).hexdigest()
+    raw = get(link.replace("scripture.html", "assets/scripture.json"))   # one download: the hash names the copy checked
+    pages, sha = json.loads(raw.decode("utf-8")), hashlib.sha256(raw).hexdigest()
     off = [(p["page_number"], p["book"]) for p in pages if p["book"].strip().upper() != books[((p["page_number"] - 1) // 4) % len(books)]]
     print("Fact 4, read %s; the copy: %d pages, SHA-256 %s" % (c.now(), len(pages), sha))
     print("the eight books, read from the ledger: %s" % ", ".join(books))
@@ -515,19 +534,20 @@ def door2():
     fee = c.find(r"solscan\.io/account/(%s)" % c.B58, c.entry(6), "fact 6's fee account")
     pcv, v2 = to_pump_v2(wallet, fee)
     word = "TransferCreatorFeesToPump"
-    # control: the same search finds the instruction in a dry run of it
-    assert any(word in ln for ln in simulate(payer(), [v2])[1]), "the search word is not in the dry run's log"
+    # control: a dry run of the call runs to the end and the same search finds it in the log. The name alone proves nothing:
+    # the program logs it before it checks the accounts, so a dry run on a wrong vault address names it too, then fails.
+    err, logs, _ = simulate(payer(), [v2])
+    if err is not None or not any(word in ln for ln in logs):
+        raise SystemExit("CONTROL failed: the dry run of the call did not run to the end and name %s (%s)" % (word, json.dumps(err)))
     # the window is fact 8's, typed in as of 2026-10-15: from 09-14 (a day early, to be safe) to the end of 2026-10-14
     sigs = [s for s in sigs_since(pcv, day(2026, 9, 14)) if s["blockTime"] < day(2026, 10, 15)]
     seen = hits = unread = 0
     for s in sigs:
         try:
-            logs = c.tx(s["signature"])["meta"].get("logMessages") or []
-        except SystemExit:
+            hits += not lacks(c.tx(s["signature"]), word)
+            seen += 1
+        except SystemExit:   # not on the node, or a log it did not keep whole
             unread += 1
-            continue
-        seen += 1
-        hits += any(word in ln for ln in logs)
     print("Door 2, read %s: pump's creator vault %s" % (c.now(), pcv))
     print("%d transactions on it from 2026-09-14 to the end of 2026-10-14 (newest %s), %d read, %d unread, %d name %s" % (
         len(sigs), c.when(sigs[0]["blockTime"]) if sigs else "none", seen, unread, hits, word))
@@ -563,6 +583,21 @@ def selftest():
     print("ok")
 
 
+COMMANDS = {"test9": test9, "fact8": fact8, "fact1": fact1, "fact3": fact3, "fact4": fact4, "claimsim": claimsim, "door2": door2}
+
+
+def main(cmd):
+    """One command, as typed. A read that fails, or comes back in a shape this file does not expect, ends the run with a
+    CAN'T TELL verdict line and exit status 1: never a traceback, never HOLDS. The reason is printed with the node's key cut."""
+    run = COMMANDS[cmd]
+    try:
+        run()
+    except (Exception, SystemExit) as err:
+        why = str(err) if isinstance(err, SystemExit) else "%s: %s" % (type(err).__name__, err)
+        print("\nverdict: CAN'T TELL (the run stopped: %s)" % c.redact(why, c.RPC), flush=True)
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
-    {"test9": test9, "fact8": fact8, "fact1": fact1, "fact3": fact3, "fact4": fact4, "claimsim": claimsim, "door2": door2,
-     "--test": selftest}[sys.argv[1] if len(sys.argv) > 1 else "--test"]()
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "--test"
+    selftest() if cmd == "--test" else main(cmd)
