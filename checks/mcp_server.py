@@ -6,6 +6,10 @@ it helps a person look and it posts nothing. There is no tool that posts, signs 
 
 In a client's config, with the path to your own copy of the repo:
     {"mcpServers": {"assembly": {"command": "python", "args": ["C:/path/to/febu-assembly/checks/mcp_server.py"]}}}
+
+To read through a Solana node of your own (a second source; the Script: line names its host), add to that entry
+    "env": {"SOLANA_RPC": "https://your-node"}
+There is no node argument on the tools on purpose: an address the model picks is not one the person chose.
 """
 import sys
 from pathlib import Path
@@ -51,9 +55,10 @@ async def draft_check_post(entry: int, member: str) -> str:
 
 @mcp.tool(annotations=READ)
 async def lint_check_post(post: str) -> str:
-    """Say why the weekly page would hold this post back, or 'ok'. It reads the post the way assets/claims.js does."""
-    why = await anyio.to_thread.run_sync(lambda: agent.lint(post, agent.ledger_data()))
-    return "\n".join(why) if why else "ok: the weekly page would take this post"
+    """Say why the weekly page would hold this post back, or 'ok'. It reads the post the way assets/claims.js does. Several
+    posts may be passed together: a note says where two members' results on one entry name the same source."""
+    why, notes = await anyio.to_thread.run_sync(lambda: agent.review(post, agent.ledger_data()))
+    return "\n".join((why or ["ok: the weekly page would take this post"]) + ["note: " + n for n in notes])
 
 
 @mcp.resource("assembly://ledger.txt")
