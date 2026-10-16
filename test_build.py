@@ -104,7 +104,9 @@ class Slots(unittest.TestCase):
                          [("Bo", "2026-10-24", "HOLDS", (), (0,), None)])
         self.assertEqual(self.read("- Bo, 2026-10-24: HOLDS on line 1. Saw: x. New: y."),   # an item from before the slots
                          [("Bo", "2026-10-24", "HOLDS", (1,), (), None)])
-        for odd in ("Items: twenty.", "Items: 20 of 164; most.", "Script: mine.py.", "Script: x by Bo, Cy."):
+        for odd in ("Items: twenty.", "Items: 20 of 164; most.", "Script: mine.py.", "Script: x by Bo, Cy.",
+                    "items: 20 of 164.", "Item: 20 of 164.", "ITEMS : 20 of 164.", " Items: 20 of 164.", "Items 20 of 164.",
+                    "Items: 20 of 164", "script: x by Bo."):
             self.assertEqual(self.read("- Bo, 2026-10-24: HOLDS on line 1. %s Saw: x." % odd), [], odd)   # lint I6
 
     def test_two_samples_of_fact_4_close_nothing(self):
@@ -120,6 +122,7 @@ class Slots(unittest.TestCase):
             return build.entry_states(build.sections(text)[1])["4"]["state"]
 
         self.assertEqual(fact4(" Items: line 1, 20 of 164."), "OPEN")
+        self.assertEqual(fact4(" items: line 1, 20 of 164."), "OPEN")   # misspelt: left to a person, not a full check
         self.assertEqual(fact4(" Items: line 1, all 164."), "HOLDS")
         self.assertEqual(fact4(""), "HOLDS")   # nothing says it was a sample: the text trusts the post
 

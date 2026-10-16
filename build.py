@@ -873,12 +873,13 @@ def cheapest(secs, items):
 RESULTS = {"FACT": ("HOLDS", "DOESN'T HOLD"), "PROMISE": ("KEPT", "BROKEN")}
 # A SEEN item as the weekly page writes it: "- Laura, 2026-10-16: HOLDS on lines 1, 2. Saw: ... New: ... 9 minutes.",
 # with two slots before Saw: when the post had them: "Items: line 1, 20 of 164." for a line over many items (rule 3),
-# and "Script: python checks/x.py by Ann via host." naming whose script ran. A slot written any other way leaves the
-# whole item to a person (lint I6), so a sample cannot pass for a full check by being misspelt.
+# and "Script: python checks/x.py by Ann via host." naming whose script ran. A slot word in that place written any
+# other way ("items:", "Item:", a count with no full stop) leaves the whole item to a person (lint I6), so a sample
+# cannot pass for a full check by being misspelt.
 ITEMS = r"(?:line \d+, )?(?:all \d+|\d+ of \d+)"
 SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\."
-                       r"(?: Items: (%s(?:; %s)*)\.|(?! Items:))" % (ITEMS, ITEMS) +
-                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.(?= Saw:)|(?! Script:))")
+                       r"(?: Items: (%s(?:; %s)*)\.|(?!\s*(?i:items?)\b))" % (ITEMS, ITEMS) +
+                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.(?= Saw:)|(?!\s*(?i:script)\b))")
 ITEM = re.compile(r"(?:line (\d+), )?(?:all (\d+)|(\d+) of (\d+))")
 CLAUSE = re.compile(r"[;,] or ")                            # "a, or b; or c": one WRONG IF line per clause
 DATE = re.compile(r"\b\d{4}-\d\d-\d\d\b")

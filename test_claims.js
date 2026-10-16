@@ -166,6 +166,8 @@ assert.ok(seenText(all.add[0].posts[1]).includes(' Items: all 164. Saw:'));
 const why = (t) => review(parse(t), many, '2026-10-25').held.map((h) => h.why);
 assert.ok(/write Items: all 164/.test(why(samples.replace('Items: 20 of 164', 'Items: twenty pages'))[0]));
 assert.ok(/write Items: all 164/.test(why(samples.replace('Items: 20 of 164', 'Items: 165 of 164'))[0]));
+assert.ok(/write Items: all 164/.test(why(samples.replace('Items: 20 of 164', 'Items: 20 of 99999999999999999999999'))[0]),
+  'a count JavaScript would print as 1e+23 cannot be read back from the file');
 assert.ok(/whose script/.test(why(samples.replace(' by Zurandol', ''))[0]), 'a Script: line names whose script it is');
 
 console.log('ok');
@@ -174,3 +176,7 @@ console.log('ok');
 const t0 = Date.now();
 parse('CHECK FACT 1 · HOLDS · lines 1' + ' '.repeat(200000) + 'x');
 assert(Date.now() - t0 < 300, "parse took " + (Date.now() - t0) + " ms on a 200k-space line");
+const dots = '.'.repeat(200000) + 'x', t1 = Date.now();   // nor a long run of full stops, in a Script: or a Saw: line
+review(parse('CHECK FACT 1 · HOLDS · line 1 · Ann · 2026-10-24\nSaw: a' + dots + '\nNew: b\nScript: a by ' + dots +
+  '\nI opened the link myself.'), many, '2026-10-25');
+assert(Date.now() - t1 < 300, "review took " + (Date.now() - t1) + " ms on 200k full stops");

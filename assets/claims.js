@@ -33,6 +33,8 @@
     return lines.concat(cur);
   }
 
+  // s without the trailing characters in set; a regex like /[.]+$/ is quadratic on a long pasted run of them
+  function chop(s, set) { var n = s.length; while (n && set.indexOf(s.charAt(n - 1)) >= 0) n--; return s.slice(0, n); }
   function stop(s) { s = String(s).trim(); return /[.!?]$/.test(s) ? s : s + '.'; }
 
   /* --- the weekly page's reading of a pasted chat ------------------------------------------------------------------
@@ -106,7 +108,7 @@
 
   // "Items: all 164" or "Items: 20 of 164", under the Line n: it counts for (rule 3: a sample never counts toward HOLDS)
   function itemsOf(line, text) {
-    var m = String(text).trim().match(/^(?:all\s+(\d+)|(\d+)\s+of\s+(\d+))\.?$/i);
+    var m = String(text).trim().match(/^(?:all\s+(\d{1,9})|(\d{1,9})\s+of\s+(\d{1,9}))\.?$/i);   // 9 digits: the count reads back as written
     return m && +(m[2] || m[1]) <= +(m[3] || m[1]) ? { line: line, n: +(m[2] || m[1]), of: +(m[3] || m[1]) }
       : { line: line, bad: String(text).trim() };
   }
@@ -121,9 +123,9 @@
     var s = String(text).trim(), by = s.indexOf(' by '), via = null;
     if (by < 1) return { bad: s };
     var who = s.slice(by + 4), v = who.lastIndexOf(' via ');
-    if (v >= 0) { via = who.slice(v + 5).replace(/\.+$/, ''); who = who.slice(0, v); }
+    if (v >= 0) { via = chop(who.slice(v + 5), '.'); who = who.slice(0, v); }
     if (who.indexOf(' said ') >= 0) who = who.slice(0, who.indexOf(' said '));
-    who = who.replace(/\.+$/, '').trim();
+    who = chop(who, '.').trim();
     if (!who || /[:;,]/.test(who) || (via !== null && !/^\S+$/.test(via))) return { bad: s };
     return { name: s.slice(0, by), by: who, via: via || null };
   }
@@ -162,7 +164,7 @@
 
   function seenText(c) {   // build.py reads this back (SEEN_ITEM): keep the part up to Saw: as it is
     var saw = c.saw.filter(function (s) { return s.text; }).map(function (s) {
-      return (s.line ? 'line ' + s.line + ', ' : '') + s.text.replace(/[\s.;]+$/, '');
+      return (s.line ? 'line ' + s.line + ', ' : '') + chop(s.text, ' .;');   // parse made all whitespace one space
     });
     var items = (c.items || []).filter(function (i) { return i.bad === undefined; }).map(function (i) {
       return (i.line ? 'line ' + i.line + ', ' : '') + (i.n === i.of ? 'all ' + i.of : i.n + ' of ' + i.of);
@@ -641,9 +643,12 @@
         } else {
           row.appendChild(document.createTextNode('stays open. ' + (st.groups.length ? 'So far: ' + st.groups.map(groupText).join('; ') +
             '. It closes when two members other than ' + e.writer + ' post the same result on the same WRONG IF lines.'
-            : 'No result from anyone other than ' + e.writer + ' yet.')));
+            : 'No result that counts from anyone other than ' + e.writer + ' yet.')));
         }
         out.appendChild(row);
+        var sample = a.posts.filter(function (c) { return c.word === 'HOLDS' && sampledOf(c).length; }).map(function (c) { return c.who; });
+        if (sample.length) para(out, 'Not counted toward HOLDS: ' + sample.join(', ') + ' (on a sample, "Items: n of m"; it stays a ' +
+          'SEEN line, rule 3).', 'hint');
         if (a.outsiders.length) para(out, 'Not counted toward closing: ' + a.outsiders.join(', ') + ' (not on the Member line).', 'hint');
       });
       if (!data.adopted) para(out, 'STATUS says Proposed: nothing closes yet, and these posts are the dry run. This ' +

@@ -224,13 +224,13 @@ a.alt{font-size:.88em;white-space:nowrap}
 .cc-set>legend,.res>legend,.names>legend{margin-bottom:.4rem}
 .f .q,legend .q{margin-left:.6rem;font-weight:400;font-size:.8rem;color:#333}
 .f b{margin-left:.5rem;padding:0 .4rem;font-size:.7rem;letter-spacing:.04em;color:#000;background:var(--note);border:1px solid #000}
-.f input,.f select,.f textarea,.saw,.wi-t,#chat{display:block;width:100%;margin-top:.3rem;padding:6px 8px;font:400 .92rem/1.4 var(--mono);
+.f input,.f select,.f textarea,.saw,.items,.wi-t,#chat{display:block;width:100%;margin-top:.3rem;padding:6px 8px;font:400 .92rem/1.4 var(--mono);
   color:#000;background:#fff;border:2px solid;border-color:var(--down);border-radius:0}
 .f select{padding:5px 6px;cursor:pointer}
 .f textarea{resize:vertical}
-.f input:focus-visible,.f select:focus-visible,.f textarea:focus-visible,.saw:focus-visible,.wi-t:focus-visible,#chat:focus-visible{
+.f input:focus-visible,.f select:focus-visible,.f textarea:focus-visible,.saw:focus-visible,.items:focus-visible,.wi-t:focus-visible,#chat:focus-visible{
   outline:2px solid var(--navy);outline-offset:1px}
-.f ::placeholder,.saw::placeholder,.wi-t::placeholder{color:#7a7a7a}
+.f ::placeholder,.saw::placeholder,.items::placeholder,.wi-t::placeholder{color:#7a7a7a}
 .cc-set,.res,.names{min-width:0;margin:0 0 .9rem;padding:0;border:0}
 input[type=checkbox]{width:1.15rem;height:1.15rem;margin:0;accent-color:var(--navy);flex:none;cursor:pointer}
 
@@ -247,7 +247,7 @@ input[type=checkbox]{width:1.15rem;height:1.15rem;margin:0;accent-color:var(--na
 .ln .n,.wi .n{display:grid;place-items:center;height:1.5rem;color:#fff;background:var(--hi);font-weight:700;font-size:.8rem;
   font-variant-numeric:tabular-nums;border:2px solid;border-color:var(--up)}
 .ln .t{text-wrap:pretty}
-.lns .saw{width:calc(100% - 3.95rem);margin:.45rem 0 .1rem 3.95rem}
+.lns .saw,.lns .items{width:calc(100% - 3.95rem);margin:.45rem 0 .1rem 3.95rem}
 .cc-pair{display:grid;grid-template-columns:minmax(8rem,11rem) 1fr;gap:0 .9rem;align-items:start}
 .res{display:flex;flex-wrap:wrap;gap:8px}
 .res>legend{float:left;width:100%}
@@ -335,8 +335,8 @@ pre.unread{max-height:22rem;overflow:auto;white-space:pre}
 @media (max-width:40rem){
   .cc-pair{grid-template-columns:1fr}
   .todo a{grid-template-columns:1fr}
-  .lns .saw{width:100%;margin-left:0}
-  .f input,.f select,.f textarea,.saw,.wi-t,#chat{font-size:16px}   /* no zoom on focus in iOS Safari */
+  .lns .saw,.lns .items{width:100%;margin-left:0}
+  .f input,.f select,.f textarea,.saw,.items,.wi-t,#chat{font-size:16px}   /* no zoom on focus in iOS Safari */
   .res .pill{flex:1 1 9rem}
   .res .pill span{width:100%}
   .wi{grid-template-columns:1.6rem 1fr auto}
