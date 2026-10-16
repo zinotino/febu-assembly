@@ -1,0 +1,123 @@
+{
+ "about": "Rules 3 and 4 as cases: an entry's results (name, date, result, WRONG IF lines) and the state they leave it in. build.py standing() and assets/claims.js standing() must both give `want`; test_build.py and test_claims.js read this file. `start` is the first day results count (the day after adoption, or later); null while none count. Members here are Ann, Bo, Cy, Di and Ed besides the writer, Zed; Pat and Quin are not members.",
+ "members": ["Ann", "Bo", "Cy", "Di", "Ed", "Zed"],
+ "writer": "Zed",
+ "cases": [
+  {"why": "two members other than the writer, the same result on the same lines: it closes on the day of the second post",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1, 2, 3]], ["Bo", "2026-10-25", "HOLDS", [1, 2, 3]]],
+   "want": {"state": "HOLDS", "lines": [1, 2, 3], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "the writer's post counts for nothing",
+   "start": "2026-10-23",
+   "results": [["Zed", "2026-10-24", "HOLDS", [1]], ["Ann", "2026-10-24", "HOLDS", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": null, "by": [], "both": [], "until": null}},
+
+  {"why": "different lines are a different result",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1, 2]], ["Bo", "2026-10-24", "HOLDS", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": null, "by": [], "both": [], "until": null}},
+
+  {"why": "two people who are not members never close it, and with nothing about to close there is nothing to dispute",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-24", "HOLDS", [1]], ["Quin", "2026-10-24", "HOLDS", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": null, "by": [], "both": [], "until": null}},
+
+  {"why": "the dry run: results dated before the first day count for nothing",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-16", "HOLDS", [1]], ["Bo", "2026-10-17", "HOLDS", [1]], ["Cy", "2026-10-24", "HOLDS", [1]],
+               ["Di", "2026-10-25", "HOLDS", [1]]],
+   "want": {"state": "HOLDS", "lines": [1], "since": "2026-10-25", "by": ["Cy", "Di"], "both": [], "until": null}},
+
+  {"why": "nothing counts while the rules are only proposed",
+   "start": null,
+   "results": [["Ann", "2026-10-24", "HOLDS", [1]], ["Bo", "2026-10-25", "HOLDS", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": null, "by": [], "both": [], "until": null}},
+
+  {"why": "a member posting twice is one person",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1]], ["Ann", "2026-10-25", "HOLDS", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": null, "by": [], "both": [], "until": null}},
+
+  {"why": "one person's different result is a NOTE: the entry stays as it was",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1]], ["Bo", "2026-10-25", "HOLDS", [1]],
+               ["Cy", "2026-10-26", "DOESN'T HOLD", [1]]],
+   "want": {"state": "HOLDS", "lines": [1], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "reopened: two people, member or not, post the same other result; it carries both, and the 30 days start",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1]], ["Bo", "2026-10-25", "HOLDS", [1]],
+               ["Pat", "2026-10-26", "DOESN'T HOLD", [2]], ["Cy", "2026-10-28", "DOESN'T HOLD", [2]]],
+   "want": {"state": "OPEN", "lines": [], "since": "2026-10-28", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": "2026-11-27"}},
+
+  {"why": "a reopen needs the same lines too: two different DOESN'T HOLD posts are two NOTEs",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1]], ["Bo", "2026-10-25", "HOLDS", [1]],
+               ["Pat", "2026-10-26", "DOESN'T HOLD", [1]], ["Quin", "2026-10-27", "DOESN'T HOLD", [2]]],
+   "want": {"state": "HOLDS", "lines": [1], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "a reopened entry closes again only on posts made after it reopened",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1]], ["Bo", "2026-10-25", "HOLDS", [1]],
+               ["Pat", "2026-10-26", "DOESN'T HOLD", [2]], ["Cy", "2026-10-28", "DOESN'T HOLD", [2]],
+               ["Ann", "2026-10-29", "HOLDS", [1]], ["Bo", "2026-10-30", "HOLDS", [1]]],
+   "want": {"state": "HOLDS", "lines": [1], "since": "2026-10-30", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "kept open: two people posted the other result before two members agreed",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-24", "DOESN'T HOLD", [1]], ["Quin", "2026-10-24", "DOESN'T HOLD", [1]],
+               ["Ann", "2026-10-25", "HOLDS", [1, 2]], ["Bo", "2026-10-26", "HOLDS", [1, 2]]],
+   "want": {"state": "OPEN", "lines": [], "since": "2026-10-26", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": "2026-11-25"}},
+
+  {"why": "disputed, and closed on the 30th day: that still counts",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-24", "DOESN'T HOLD", [1]], ["Quin", "2026-10-24", "DOESN'T HOLD", [1]],
+               ["Ann", "2026-10-25", "HOLDS", [1, 2]], ["Bo", "2026-10-26", "HOLDS", [1, 2]],
+               ["Cy", "2026-11-20", "HOLDS", [1, 2]], ["Di", "2026-11-25", "HOLDS", [1, 2]]],
+   "want": {"state": "HOLDS", "lines": [1, 2], "since": "2026-11-25", "by": ["Cy", "Di"], "both": [], "until": null}},
+
+  {"why": "disputed and not closed in 30 days: CAN'T TELL from the next day, and later posts change nothing",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-24", "DOESN'T HOLD", [1]], ["Quin", "2026-10-24", "DOESN'T HOLD", [1]],
+               ["Ann", "2026-10-25", "HOLDS", [1, 2]], ["Bo", "2026-10-26", "HOLDS", [1, 2]],
+               ["Cy", "2026-11-20", "HOLDS", [1, 2]], ["Di", "2026-11-26", "HOLDS", [1, 2]]],
+   "want": {"state": "CAN'T TELL", "lines": [], "since": "2026-11-26", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": null}},
+
+  {"why": "a second dispute keeps the first one's 30 days: re-posting cannot hold an entry open past CAN'T TELL",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-24", "DOESN'T HOLD", [1]], ["Quin", "2026-10-24", "DOESN'T HOLD", [1]],
+               ["Ann", "2026-10-25", "HOLDS", [1]], ["Bo", "2026-10-26", "HOLDS", [1]],
+               ["Pat", "2026-11-20", "DOESN'T HOLD", [1]], ["Quin", "2026-11-20", "DOESN'T HOLD", [1]],
+               ["Cy", "2026-11-24", "HOLDS", [1]], ["Di", "2026-11-25", "HOLDS", [1]], ["Ed", "2026-11-26", "HOLDS", [1]]],
+   "want": {"state": "CAN'T TELL", "lines": [], "since": "2026-11-26", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": null}},
+
+  {"why": "a NOTE from before the close and one later post of the same result are two people: it reopens",
+   "start": "2026-10-23",
+   "results": [["Cy", "2026-10-24", "DOESN'T HOLD", [1]], ["Ann", "2026-10-25", "HOLDS", [1]],
+               ["Bo", "2026-10-26", "HOLDS", [1]], ["Pat", "2026-10-27", "DOESN'T HOLD", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": "2026-10-27", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": "2026-11-26"}},
+
+  {"why": "read by date, whatever order the file lists them in",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-26", "DOESN'T HOLD", [2]], ["Cy", "2026-10-28", "DOESN'T HOLD", [2]],
+               ["Ann", "2026-10-24", "HOLDS", [1]], ["Bo", "2026-10-25", "HOLDS", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": "2026-10-28", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": "2026-11-27"}},
+
+  {"why": "today's text lets a fact close on some of its WRONG IF lines (ASSEMBLY_SPEC gap 1); the site says which",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [4]], ["Bo", "2026-10-25", "HOLDS", [4]]],
+   "want": {"state": "HOLDS", "lines": [4], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "a promise: the same word, and no lines",
+   "start": "2026-11-22",
+   "results": [["Ann", "2026-11-21", "KEPT", []], ["Bo", "2026-11-22", "KEPT", []], ["Cy", "2026-11-23", "KEPT", []]],
+   "want": {"state": "KEPT", "lines": [], "since": "2026-11-23", "by": ["Bo", "Cy"], "both": [], "until": null}}
+ ]
+}

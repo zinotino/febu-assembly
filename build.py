@@ -311,7 +311,7 @@ def starts_block(L, j):
 # The ledger's own parts: entries, fact 6's steps and rows, the carried-over predictions.
 
 ENTRY = re.compile(r"  (FACT|PROMISE) (\d+)\.\s*(?:\((.*)\))?\s*$")
-FIELD = re.compile(r"([A-Z]+(?: [A-Z]+)?)(?: {2,}| (?=[a-z])|$)")   # "SAYS      one", "IF BROKEN what"
+FIELD = re.compile(r"([A-Z]+(?: [A-Z]+)?)(?: {2,}| (?=[a-z\d])|$)")   # "SAYS      one", "IF BROKEN what", "WITHDRAWN 2026-"
 HEADLINE = {"FACT": "SAYS", "PROMISE": "WILL"}
 
 # What the site adds beside an entry, never in it. Fact 1: Solscan's $FEBU filter on the creator wallet's transfers
@@ -397,12 +397,12 @@ def entry_li(kind, num, fields, state):
             '<span class="state">%s</span></a></li>' % (anchor(kind, num), kind.lower(), num, html.escape(says), state))
 
 
-def entry_html(kind, num, who, fields, doc, extra=""):
+def entry_html(kind, num, who, fields, doc, st, extra=""):
     f = dict(fields)
     head = HEADLINE[kind]
     if head not in f:
         sys.exit("%s %s has no %s line" % (kind, num, head))
-    verdict = "checks posted, see SEEN" if checked(fields) else "not yet checked"
+    verdict = state_text(st, kind, fields) or ("checks posted, see SEEN" if checked(fields) else "not yet checked")
     aid, name = anchor(kind, num), "%s %s" % (kind.lower(), num)
     meta = ['<span>cite as: ledger %s, %s</span>' % (name, verdict), '<span><a href="#%s">link to this %s</a></span>'
             % (aid, kind.lower())]
@@ -729,6 +729,7 @@ def ledger_page(text, raw, steps_text):
     ent_head = entries_section(secs)[0]
     w_heads = [h for h, b in secs if any(W_ITEM.match(r) for r in b)]
     items = entries(dict(secs)[ent_head])
+    st = entry_states(secs)
     found = {(it[1], it[2]) for it in items if it[0] == "entry"}
     if ("FACT", num6) not in found:
         sys.exit("%s is about fact %s, which the ledger does not have" % (STEPS.name, num6))
@@ -740,7 +741,7 @@ def ledger_page(text, raw, steps_text):
                 out.append(doc.blocks(to_lines(it[1]), 2))
             else:
                 _, kind, num, who, fields = it
-                out.append(entry_html(kind, num, who, fields, doc, (walk if (kind, num) == ("FACT", num6) else "")
+                out.append(entry_html(kind, num, who, fields, doc, st[num], (walk if (kind, num) == ("FACT", num6) else "")
                                       + site_note(SITE_NOTES, kind, num, fields)))
         return "".join(out)
 
@@ -913,15 +914,122 @@ def writer(who, fields, members):
     return next((m for m in members if re.search(r"(?<!\w)%s proposed it" % re.escape(m), said)), name)
 
 
-def closed(found, author, members):
-    """(result, lines) once two members other than the writer have posted the same result on the same WRONG IF lines
-    (rule 3), else None.
-    ponytail: ignores reopening and the 90-day silence; the weekly page says so beside its own count."""
-    agree = {}
-    for name, _, word, lines in found:
-        if name in members and name != author:
-            agree.setdefault((word, lines), set()).add(name)
-    return next((k for k, names in agree.items() if len(names) >= 2), None)
+ADOPTED = re.compile(r"\bAdopted on (\d{4}-\d\d-\d\d)")
+DAYS_AFTER = re.compile(r"(\d{1,4}) days after this version is adopted")
+DISPUTE_DAYS = 30                                           # rule 4: a disputed entry not closed in 30 days
+CLOSED = ("HOLDS", "DOESN'T HOLD", "KEPT", "BROKEN")
+
+
+def days_after(d, n):
+    """The date n days after d, stopping at the calendar's ends."""
+    try:
+        return (datetime.date.fromisoformat(d) + datetime.timedelta(days=n)).isoformat()
+    except OverflowError:
+        return (datetime.date.max if n > 0 else datetime.date.min).isoformat()
+
+
+def a_day(d):
+    """d if it is a real date, else None."""
+    try:
+        return days_after(d, 0)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def adopted(secs):
+    """The day STATUS says this version was adopted ("Adopted on 2026-10-22"), or None while it says Proposed."""
+    body, proposed = status(secs)
+    m = ADOPTED.search(" ".join(" ".join(body).split()))
+    return None if proposed or not m else a_day(m.group(1))
+
+
+def due(fields, adopted_on):
+    """A promise's BY date: the date it names, or N days after adoption when it says so; None if neither."""
+    by = text_of(fields, "BY")
+    m = DATE.search(by)
+    if m:
+        return a_day(m.group())
+    m = DAYS_AFTER.search(by)
+    return days_after(adopted_on, int(m.group(1))) if m and a_day(adopted_on) else None
+
+
+def first_day(kind, who, fields, adopted_on):
+    """The first day an entry's results count: the day after adoption (posts count from the next day), and not before
+    the entry's own date, or a promise's BY date. None while none count."""
+    if not a_day(adopted_on):
+        return None
+    days = [days_after(adopted_on, 1)] + [d for d in DATE.findall(who)[:1] if a_day(d)]
+    if kind == "PROMISE":
+        days.append(due(fields, adopted_on))
+    return None if None in days else max(days)
+
+
+def standing(found, author, members, start):
+    """Where an entry stands under rules 3 and 4, from its results in date order (the file's order within a day).
+    Two members other than the writer posting the same result on the same WRONG IF lines close it, on the day of the
+    second post. Two people, member or not, posting the same other word keep it open or reopen it: it carries both
+    results, only later posts count, and 30 days on without a close it is CAN'T TELL (`until` is the last day it can
+    close). An entry nobody disputes stays OPEN however long it waits (WORDS USED HERE). Results dated before `start`
+    count for nothing, and none count while it is None. assets/claims.js has the same function; checks/states.json
+    holds the cases both must pass.
+    ponytail: everyone on the Member line counts as active; the 90-day silence is in the chat, not the file."""
+    out = {"state": "OPEN", "lines": [], "since": None, "by": [], "both": [], "until": None}
+    people, members = {}, set(members)
+    for name, date, word, lines in sorted((r for r in found if start and a_day(r[1]) and r[1] >= start),
+                                          key=lambda r: r[1]):
+        if out["until"] and date > out["until"]:
+            return dict(out, state="CAN'T TELL", since=days_after(out["until"], 1), until=None)
+        if name == author:
+            continue
+        people.setdefault((word, tuple(lines)), set()).add(name)
+        words = sorted({w for (w, _), names in people.items() if len(names) >= 2})
+        if out["state"] != "OPEN":
+            if set(words) - {out["state"]}:                        # reopened (rule 3)
+                out, people = dict(out, state="OPEN", lines=[], by=[], both=words, since=date,
+                                   until=days_after(date, DISPUTE_DAYS)), {}
+            continue
+        done = next(((w, ls, names & members) for (w, ls), names in people.items() if len(names & members) >= 2), None)
+        if done and len(words) > 1:                # kept open (rule 3); a second dispute keeps the first one's clock
+            out, people = dict(out, both=words, since=out["since"] if out["until"] else date,
+                               until=out["until"] or days_after(date, DISPUTE_DAYS)), {}
+        elif done:
+            out = {"state": done[0], "lines": list(done[1]), "since": date, "by": sorted(done[2]), "both": [],
+                   "until": None}
+    return out
+
+
+def entry_state(kind, who, fields, members, adopted_on):
+    """standing() for one entry of the file, with `start` added; a promise's WITHDRAWN line decides it: up to 7 days
+    before its date it is WITHDRAWN, later it counts as BROKEN (HOW AN ENTRY IS WRITTEN)."""
+    start = first_day(kind, who, fields, adopted_on)
+    st = standing(results(fields), writer(who, fields, members), members, start)
+    w = DATE.search(text_of(fields, "WITHDRAWN")) if kind == "PROMISE" and a_day(adopted_on) else None
+    if w and a_day(w.group()):
+        by = due(fields, adopted_on)
+        late = by is not None and w.group() > days_after(by, -7)
+        st = {"state": "BROKEN" if late else "WITHDRAWN", "lines": [], "since": w.group(), "by": [], "both": [],
+              "until": None}
+    return dict(st, start=start)
+
+
+def entry_states(secs):
+    """entry_state() for every entry, by number."""
+    names, on = member_names(secs), adopted(secs)
+    return {n: entry_state(k, w, f, names, on)
+            for _, k, n, w, f in (it for it in entries(entries_section(secs)[1]) if it[0] == "entry")}
+
+
+def state_text(st, kind, fields):
+    """An entry's state in a few words, or None while it is OPEN with nothing to add to its SEEN lines. A close on some
+    of a fact's WRONG IF lines says so: the text lets one stand on any lines (ASSEMBLY_SPEC section 5, gap 1)."""
+    s, ls, of = st["state"], st["lines"], len(wrong_if(fields)) if kind == "FACT" else 0
+    if s in CLOSED and ls and not set(range(1, of + 1)) <= set(ls):
+        return "%s on line%s %s only, of %d" % (s, "s" if len(ls) > 1 else "", ", ".join(map(str, ls)), of)
+    if s != "OPEN":
+        return s
+    if st["both"]:
+        return "disputed, %s: CAN'T TELL after %s unless it closes" % (" and ".join(st["both"]), st["until"])
+    return None
 
 
 def checkable(kind, fields):
@@ -981,14 +1089,18 @@ def check_card(kind, num, author, fields, members):
         % (aid, kind, num, html.escape(author), who, tests, name_options(members), aid, yes, yes, aid, no, no, aid, aid))
 
 
-def pick_li(kind, num, fields, author, members):
-    """One entry as a card on the front page: what it says, where it stands, a way in, and while rule 3 has not closed
-    it, the check card that writes the result post."""
+def pick_li(kind, num, fields, author, members, st):
+    """One entry as a card on the front page: what it says, where it stands (st, from entry_state), a way in, and while
+    it is OPEN, the check card that writes the result post."""
     says = text_of(fields, HEADLINE[kind])
     found = results(fields)
-    done = closed(found, author, members)
-    state = ("closed: %s" % done[0] if done else "%d result%s posted" % (len(found), "" if len(found) == 1 else "s")
-             if found else "checks posted" if checked(fields) else "not yet checked")
+    done = st["state"] != "OPEN"
+    state = state_text(st, kind, fields)
+    if done:
+        state = ("closed: " if st["state"] in CLOSED else "") + state
+    elif not state:
+        state = ("%d result%s posted" % (len(found), "" if len(found) == 1 else "s") if found
+                 else "checks posted" if checked(fields) else "not yet checked")
     card = check_card(kind, num, author, fields, members) if checkable(kind, fields) and not done else ""
     toggle = ('<button type="button" class="btn primary cc-open" aria-expanded="false" aria-controls="check-%s">'
               'Check it here</button>' % anchor(kind, num) if card else "")
@@ -1027,21 +1139,20 @@ def calendar_ics(votes, members, start, secs):
     def day(d):
         return d.replace("-", "")
 
-    def plus(d, n):
-        return (datetime.date.fromisoformat(d) + datetime.timedelta(days=n)).isoformat()
     ev = []
     for by in sorted({b for _, b in votes if b}):
-        ev.append((by, plus(by, 1), "Assembly vote closes: " + "; ".join(v for v, b in votes if b == by), "vote-" + by))
+        ev.append((by, days_after(by, 1), "Assembly vote closes: " + "; ".join(v for v, b in votes if b == by),
+                   "vote-" + by))
     close = max((b for _, b in votes if b), default="")
     if start:
         for w in range(12):
-            d = plus(start, 7 * w)
-            dry = ", a dry run: the vote is open" if plus(d, 7) <= close else ""   # process.md section 10, the freeze
-            ev.append((d, plus(d, 7), "Assembly weekly turn: %s (rule 6)%s" % (members[w % len(members)], dry),
+            d = days_after(start, 7 * w)
+            dry = ", a dry run: the vote is open" if days_after(d, 7) <= close else ""   # process.md section 10, the freeze
+            ev.append((d, days_after(d, 7), "Assembly weekly turn: %s (rule 6)%s" % (members[w % len(members)], dry),
                        "turn-" + d))
     bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
     for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
-        ev.append((d, plus(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
+        ev.append((d, days_after(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
     def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
         return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
     out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
@@ -1166,22 +1277,24 @@ def assembly_page(title, secs, steps_num, how_secs):
     ents = [it for it in items if it[0] == "entry"]
     author = {it[2]: writer(it[3], it[4], names) for it in ents}
     first = cheapest(secs, items)
-    open_ = [it for it in ents if checkable(it[1], it[4]) and not closed(results(it[4]), author[it[2]], names)]
+    st = entry_states(secs)
+    open_ = [it for it in ents if checkable(it[1], it[4]) and st[it[2]]["state"] == "OPEN"]
     rest = [it for it in open_ if it not in first]
-    picks = '<ul class="picks">%s</ul>' % "".join(pick_li(k, n, f, author[n], names) for _, k, n, _, f in first)
+    picks = '<ul class="picks">%s</ul>' % "".join(pick_li(k, n, f, author[n], names, st[n]) for _, k, n, _, f in first)
     if rest:
         picks += ('<details class="others"><summary>%d more open entr%s to check</summary><ul class="picks">%s</ul>'
                   '</details>' % (len(rest), "y" if len(rest) == 1 else "ies",
-                                  "".join(pick_li(k, n, f, author[n], names) for _, k, n, _, f in rest)))
+                                  "".join(pick_li(k, n, f, author[n], names, st[n]) for _, k, n, _, f in rest)))
     todo = [(k, n, text_of(f, HEADLINE[k]), author[n], seen(f)) for _, k, n, _, f in open_]
     rows, done = [], 0
     for _, kind, num, _, fields in (it for it in items if it[0] == "entry"):
         done += checked(fields)
-        rows.append(entry_li(kind, num, fields, "checks posted" if checked(fields) else "not yet checked"))
+        rows.append(entry_li(kind, num, fields, state_text(st[num], kind, fields)
+                             or ("checks posted" if checked(fields) else "not yet checked")))
     after = "".join(doc.blocks(to_lines(it[1]), 2) for it in items if it[0] == "text")
     proposed = status(secs)[1]
     votes = open_votes(title, secs)
-    shut = sum(1 for it in ents if closed(results(it[4]), author[it[2]], names))
+    shut = sum(1 for it in ents if st[it[2]]["state"] in CLOSED and st[it[2]]["by"])   # under rule 3, not withdrawn
     goal = next((it for it in ents if it[1] == "PROMISE" and "entries under rule 3" in text_of(it[4], "WILL")), None)
     task = "<p><strong>Your task now:</strong> check one entry below and post what you saw."
     if votes:
@@ -1268,10 +1381,11 @@ def people_page(secs):
     predictions a heading gives them ("Z'S PREDICTIONS ..."). Nothing is totalled: the ledger keeps no totals."""
     doc = Doc(secs, "ledger.html")
     members = member_names(secs)
+    st = entry_states(secs)
     wrote, saw, preds = {}, {}, {}
     for _, kind, num, who, fields in (it for it in entries(entries_section(secs)[1]) if it[0] == "entry"):
-        # rule 3 closes an entry when members' posts agree; people read that, so this says only whether any are posted
-        li = entry_li(kind, num, fields, "checks posted, see SEEN" if checked(fields) else "open, not yet checked")
+        li = entry_li(kind, num, fields, state_text(st[num], kind, fields)
+                      or ("checks posted, see SEEN" if checked(fields) else "open, not yet checked"))
         if who:
             wrote.setdefault(who.split(",")[0].strip(), []).append(li)
         # ponytail: a check is credited to a name on the Member line; a non-member's needs a fixed SEEN line format
@@ -1331,17 +1445,17 @@ def ledger_dict(title, secs, more=False):
     """What the weekly page needs from ledger.txt: the members in order, each entry's writer, WRONG IF line count and
     SEEN items, the open votes and the next entry number. No addresses. more=True adds each entry's headline, WRONG IF
     clauses and page address (ledger.json)."""
-    names = member_names(secs)
+    names, st = member_names(secs), entry_states(secs)
     items = entries(entries_section(secs)[1])
     ents = []
     for _, k, n, w, f in (it for it in items if it[0] == "entry"):
         e = {"kind": k, "num": int(n), "writer": writer(w, f, names), "lines": len(wrong_if(f)), "empty": not checked(f),
-             "results": [[a, d, r, list(ls)] for a, d, r, ls in results(f)]}
+             "results": [[a, d, r, list(ls)] for a, d, r, ls in results(f)], "state": st[n]}
         if more:
             e.update(says=clip(text_of(f, HEADLINE[k])), wrong_if=[clip(c) for c in wrong_if(f)],
                      url="%s/ledger.html#%s" % (SITE, anchor(k, n)))
         ents.append(e)
-    return {"members": names, "entries": ents, "next": next_number(items),
+    return {"members": names, "adopted": adopted(secs), "entries": ents, "next": next_number(items),
             "votes": [{"subject": v, "by": by} for v, by in open_votes(title, secs)]}
 
 

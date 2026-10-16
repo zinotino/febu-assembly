@@ -1,7 +1,7 @@
 // node test_claims.js: the weekly page's reading of a pasted chat (assets/claims.js), offline, on a made-up week.
 'use strict';
 const assert = require('assert');
-const { parse, review, seenText } = require('./assets/claims.js');
+const { parse, review, seenText, standing } = require('./assets/claims.js');
 
 const data = {
   members: ['Ann', 'Bo', 'Cy', 'Di', 'Ed', 'Flo', 'Zed'],
@@ -86,7 +86,7 @@ assert.ok(one.lines.slice(1).some((l) => l.startsWith('              - Bo, 2026-
 assert.ok(one.lines.join(' ').replace(/\s+/g, ' ').includes('Saw: line 1, none after 2026-09-14; line 2, 11.125 SOL; line 3, 3.8712 SOL.'));
 
 // rule 3: two members other than the writer, the same result on the same lines
-assert.deepStrictEqual([one.closes.word, one.closes.names], ['HOLDS', ['Ann', 'Bo']]);
+assert.deepStrictEqual([one.closes.state, one.closes.by, one.closes.since], ['HOLDS', ['Ann', 'Bo'], '2026-10-16']);
 const two = r.add.find((a) => a.entry.num === 2);
 assert.strictEqual(two.closes, null, 'Cy says DOESN\'T HOLD on line 1 only: no agreement');
 assert.deepStrictEqual(two.lines, ['              - Cy, 2026-10-17: DOESN\'T HOLD on line 1. Saw: a different amount. New: a',
@@ -109,6 +109,28 @@ assert.strictEqual(r.from, '2026-10-13');
 assert.strictEqual(seenText({ who: 'Ann', date: '2026-10-20', word: 'HOLDS', lines: [1, 2], minutes: 1,
   saw: [{ line: 1, text: 'it.' }, { line: 2, text: 'that' }], fresh: 'a date' }),
   '- Ann, 2026-10-20: HOLDS on lines 1, 2. Saw: line 1, it; line 2, that. New: a date. 1 minute.');
+
+// rules 3 and 4: the cases build.py standing() passes too (test_build.py), so the two copies cannot drift
+const fx = require('./checks/states.json');
+fx.cases.forEach((c) => {
+  const got = standing(c.results, fx.writer, fx.members, c.start);
+  delete got.groups;
+  assert.deepStrictEqual(got, c.want, c.why);
+});
+
+// before adoption the paste above is the dry run, counted as if adopted; after it, a post before an entry's first
+// day counts for nothing, so the same two HOLDS on fact 1 close nothing
+const after = JSON.parse(JSON.stringify(data));
+after.adopted = '2026-10-22';
+after.entries.forEach((e) => { e.state = { state: 'OPEN', by: [], start: '2026-10-23' }; });
+let ra = review(p, after, '2026-10-20');
+assert.ok(!ra.add.some((a) => a.entry.num === 1), 'dated before the first day: held back, not copied');
+assert.ok(ra.held.some((h) => h.post.who === 'Ann' && /dated before 2026-10-23/.test(h.why)));
+after.entries.forEach((e) => { e.state.start = '2026-10-16'; });
+assert.strictEqual(review(p, after, '2026-10-20').add.find((a) => a.entry.num === 1).closes.state, 'HOLDS');
+after.entries[0].state = { state: 'WITHDRAWN', by: [], since: '2026-10-15', start: '2026-10-16' };   // only a promise can be,
+ra = review(p, after, '2026-10-20');                                                                   // but the page asks no more
+assert.ok(!ra.add.some((a) => a.entry.num === 1) && ra.held.some((h) => /withdrawn on 2026-10-15/.test(h.why)));
 
 console.log('ok');
 

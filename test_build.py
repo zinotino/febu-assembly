@@ -74,9 +74,10 @@ class CheckedEntry(unittest.TestCase):
         self.assertEqual([f[0] for f in found], ["Ann", "Zed", "Bo Cat"])
         self.assertEqual(found[0], ("Ann", "2026-10-20", "HOLDS", (1, 2)))
         self.assertTrue(build.checked(fields))
-        self.assertIsNone(build.closed(found, "Zed", members))   # Zed is the writer; Bo Cat tested other lines
-        found.append(("Bo Cat", "2026-10-22", "HOLDS", (1, 2)))
-        self.assertEqual(build.closed(found, "Zed", members), ("HOLDS", (1, 2)))
+        self.assertEqual(build.standing(found, "Zed", members, "2026-10-01")["state"], "OPEN")   # Zed wrote it; Bo Cat
+        found.append(("Bo Cat", "2026-10-22", "HOLDS", (1, 2)))                                    # tested other lines
+        st = build.standing(found, "Zed", members, "2026-10-01")
+        self.assertEqual((st["state"], st["lines"], st["since"]), ("HOLDS", [1, 2], "2026-10-22"))
 
 
 
@@ -171,10 +172,6 @@ class Calendar(unittest.TestCase):
         self.assertEqual(ics.count("BEGIN:VEVENT"), 1 + 12 + 1)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class AfterAdoption(unittest.TestCase):
     """The vote-week wording and the fact 1 note clear themselves: no page edit is needed once the ledger changes."""
     def test_freeze_wording_only_while_proposed(self):
@@ -193,3 +190,64 @@ class AfterAdoption(unittest.TestCase):
         self.assertTrue(build.site_note(build.SITE_NOTES, "FACT", "1", old))
         self.assertEqual(build.site_note(build.SITE_NOTES, "FACT", "1", new), "")
         self.assertEqual(build.site_note(build.SITE_NOTES, "FACT", "3", old), "")
+
+
+PROMISE = """  PROMISE 4. (Ann, 2026-10-24)
+    WILL      Do it.
+    BY        2026-12-01
+    KNOWN BY  a link
+    IF BROKEN none
+    WITHDRAWN %s: we stop.
+    SEEN      nobody yet
+"""
+
+
+class States(unittest.TestCase):
+    """Rules 3 and 4 in one place, build.standing, on the cases test_claims.js runs through claims.js too."""
+
+    def test_shared_cases(self):
+        import json
+        fx = json.loads((build.ROOT / "checks" / "states.json").read_text(encoding="utf-8"))
+        for c in fx["cases"]:
+            got = build.standing([tuple(r) for r in c["results"]], fx["writer"], fx["members"], c["start"])
+            self.assertEqual(got, c["want"], c["why"])
+
+    def test_the_real_ledger_before_and_after_adoption(self):
+        real = build.LEDGER.read_text(encoding="utf-8")
+        status = lambda s: re.sub(r"(?ms)^STATUS\n.*?(?=^\S)", "STATUS\n  %s\n\n" % s, real, count=1)
+        self.assertEqual({s["start"] for s in build.entry_states(build.sections(real)[1]).values()}, {None})
+        st = build.entry_states(build.sections(status("Adopted on 2026-10-22 under rule 7."))[1])
+        self.assertEqual(st["1"]["start"], "2026-10-23")   # posts count from the day after adoption
+        self.assertEqual(st["7"]["start"], "2026-11-21")   # PROMISE 7: BY is 30 days after adoption
+        self.assertEqual({s["state"] for s in st.values()}, {"OPEN"})
+        self.assertIsNone(build.adopted(build.sections(status("Adopted 2026-10-22, in other words."))[1]))
+
+    def test_withdrawn(self):
+        for day, word in (("2026-11-24", "WITHDRAWN"), ("2026-11-25", "BROKEN")):   # up to 7 days before BY
+            fields = build.entries((PROMISE % day).split("\n"))[0][4]
+            self.assertEqual(build.text_of(fields, "IF BROKEN"), "none")   # "WITHDRAWN 2026-..." is its own field
+            st = build.entry_state("PROMISE", "Ann, 2026-10-24", fields, ["Ann", "Bo"], "2026-10-22")
+            self.assertEqual((st["state"], st["since"], st["start"]), (word, day, "2026-12-01"))
+            self.assertEqual(build.entry_state("PROMISE", "Ann, 2026-10-24", fields, ["Ann"], None)["state"], "OPEN")
+
+    def test_text(self):
+        fields = build.entries(CHECKED.split("\n"))[0][4]   # three WRONG IF lines
+        st = lambda **k: dict(build.standing([], "", [], None), **k)
+        self.assertIsNone(build.state_text(st(), "FACT", fields))
+        self.assertEqual(build.state_text(st(state="HOLDS", lines=[1, 2, 3]), "FACT", fields), "HOLDS")
+        self.assertEqual(build.state_text(st(state="HOLDS", lines=[2]), "FACT", fields), "HOLDS on line 2 only, of 3")
+        self.assertEqual(build.state_text(st(both=["DOESN'T HOLD", "HOLDS"], until="2026-11-27"), "FACT", fields),
+                         "disputed, DOESN'T HOLD and HOLDS: CAN'T TELL after 2026-11-27 unless it closes")
+        self.assertEqual(build.state_text(st(state="KEPT"), "PROMISE", fields), "KEPT")
+
+    def test_odd_dates_do_not_stop_the_build(self):
+        self.assertEqual(build.days_after("9999-12-31", 30), "9999-12-31")
+        self.assertIsNone(build.a_day("2026-13-45"))
+        found = [("Ann", "2026-13-45", "HOLDS", (1,)), ("Bo", "9999-12-20", "HOLDS", (1,)),
+                 ("Pat", "9999-12-21", "DOESN'T HOLD", (1,)), ("Quin", "9999-12-22", "DOESN'T HOLD", (1,)),
+                 ("Cy", "9999-12-23", "HOLDS", (1,))]
+        self.assertEqual(build.standing(found, "Zed", ["Ann", "Bo", "Cy"], "2026-10-23")["until"], "9999-12-31")
+
+
+if __name__ == "__main__":
+    unittest.main()
