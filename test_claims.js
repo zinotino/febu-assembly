@@ -122,10 +122,15 @@ fx.cases.forEach((c) => {
 // day counts for nothing, so the same two HOLDS on fact 1 close nothing
 const after = JSON.parse(JSON.stringify(data));
 after.adopted = '2026-10-22';
-after.entries.forEach((e) => { e.state = { start: '2026-10-23' }; });
-assert.strictEqual(review(p, after, '2026-10-20').add.find((a) => a.entry.num === 1).closes, null);
-after.entries.forEach((e) => { e.state = { start: '2026-10-16' }; });
+after.entries.forEach((e) => { e.state = { state: 'OPEN', by: [], start: '2026-10-23' }; });
+let ra = review(p, after, '2026-10-20');
+assert.ok(!ra.add.some((a) => a.entry.num === 1), 'dated before the first day: held back, not copied');
+assert.ok(ra.held.some((h) => h.post.who === 'Ann' && /dated before 2026-10-23/.test(h.why)));
+after.entries.forEach((e) => { e.state.start = '2026-10-16'; });
 assert.strictEqual(review(p, after, '2026-10-20').add.find((a) => a.entry.num === 1).closes.state, 'HOLDS');
+after.entries[0].state = { state: 'WITHDRAWN', by: [], since: '2026-10-15', start: '2026-10-16' };   // only a promise can be,
+ra = review(p, after, '2026-10-20');                                                                   // but the page asks no more
+assert.ok(!ra.add.some((a) => a.entry.num === 1) && ra.held.some((h) => /withdrawn on 2026-10-15/.test(h.why)));
 
 console.log('ok');
 

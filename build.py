@@ -989,8 +989,9 @@ def standing(found, author, members, start):
                                    until=days_after(date, DISPUTE_DAYS)), {}
             continue
         done = next(((w, ls, names & members) for (w, ls), names in people.items() if len(names & members) >= 2), None)
-        if done and len(words) > 1:                                 # kept open (rule 3)
-            out, people = dict(out, both=words, since=date, until=days_after(date, DISPUTE_DAYS)), {}
+        if done and len(words) > 1:                # kept open (rule 3); a second dispute keeps the first one's clock
+            out, people = dict(out, both=words, since=out["since"] if out["until"] else date,
+                               until=out["until"] or days_after(date, DISPUTE_DAYS)), {}
         elif done:
             out = {"state": done[0], "lines": list(done[1]), "since": date, "by": sorted(done[2]), "both": [],
                    "until": None}
@@ -1022,7 +1023,7 @@ def state_text(st, kind, fields):
     """An entry's state in a few words, or None while it is OPEN with nothing to add to its SEEN lines. A close on some
     of a fact's WRONG IF lines says so: the text lets one stand on any lines (ASSEMBLY_SPEC section 5, gap 1)."""
     s, ls, of = st["state"], st["lines"], len(wrong_if(fields)) if kind == "FACT" else 0
-    if s in CLOSED and ls and len(ls) < of:
+    if s in CLOSED and ls and not set(range(1, of + 1)) <= set(ls):
         return "%s on line%s %s only, of %d" % (s, "s" if len(ls) > 1 else "", ", ".join(map(str, ls)), of)
     if s != "OPEN":
         return s
@@ -1293,7 +1294,7 @@ def assembly_page(title, secs, steps_num, how_secs):
     after = "".join(doc.blocks(to_lines(it[1]), 2) for it in items if it[0] == "text")
     proposed = status(secs)[1]
     votes = open_votes(title, secs)
-    shut = sum(1 for it in ents if st[it[2]]["state"] in CLOSED)
+    shut = sum(1 for it in ents if st[it[2]]["state"] in CLOSED and st[it[2]]["by"])   # under rule 3, not withdrawn
     goal = next((it for it in ents if it[1] == "PROMISE" and "entries under rule 3" in text_of(it[4], "WILL")), None)
     task = "<p><strong>Your task now:</strong> check one entry below and post what you saw."
     if votes:

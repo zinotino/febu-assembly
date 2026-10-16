@@ -87,6 +87,22 @@
    "want": {"state": "CAN'T TELL", "lines": [], "since": "2026-11-26", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
             "until": null}},
 
+  {"why": "a second dispute keeps the first one's 30 days: re-posting cannot hold an entry open past CAN'T TELL",
+   "start": "2026-10-23",
+   "results": [["Pat", "2026-10-24", "DOESN'T HOLD", [1]], ["Quin", "2026-10-24", "DOESN'T HOLD", [1]],
+               ["Ann", "2026-10-25", "HOLDS", [1]], ["Bo", "2026-10-26", "HOLDS", [1]],
+               ["Pat", "2026-11-20", "DOESN'T HOLD", [1]], ["Quin", "2026-11-20", "DOESN'T HOLD", [1]],
+               ["Cy", "2026-11-24", "HOLDS", [1]], ["Di", "2026-11-25", "HOLDS", [1]], ["Ed", "2026-11-26", "HOLDS", [1]]],
+   "want": {"state": "CAN'T TELL", "lines": [], "since": "2026-11-26", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": null}},
+
+  {"why": "a NOTE from before the close and one later post of the same result are two people: it reopens",
+   "start": "2026-10-23",
+   "results": [["Cy", "2026-10-24", "DOESN'T HOLD", [1]], ["Ann", "2026-10-25", "HOLDS", [1]],
+               ["Bo", "2026-10-26", "HOLDS", [1]], ["Pat", "2026-10-27", "DOESN'T HOLD", [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": "2026-10-27", "by": [], "both": ["DOESN'T HOLD", "HOLDS"],
+            "until": "2026-11-26"}},
+
   {"why": "read by date, whatever order the file lists them in",
    "start": "2026-10-23",
    "results": [["Pat", "2026-10-26", "DOESN'T HOLD", [2]], ["Cy", "2026-10-28", "DOESN'T HOLD", [2]],

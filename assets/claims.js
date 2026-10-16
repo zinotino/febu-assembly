@@ -113,6 +113,14 @@
     }
     if (RESULTS[e.kind].indexOf(c.word) < 0) return 'a ' + e.kind.toLowerCase() + "'s result is " + RESULTS[e.kind].join(' or ');
     if (c.who === e.writer) return c.who + ' wrote ' + label(e) + ', and nobody checks their own entry (rule 3)';
+    var st = data.adopted && e.state;
+    if (st && (st.state === 'WITHDRAWN' || (st.state === 'BROKEN' && !st.by.length))) {
+      return label(e) + ' was withdrawn on ' + st.since + ', so a result changes nothing';
+    }
+    if (st && !(st.start && c.date >= st.start)) {
+      return 'it is dated before ' + (st.start ? st.start + ', the first day ' + label(e) + "'s results count" :
+        'any day ' + label(e) + "'s results count (its BY date)") + ', so it counts for nothing (lint I4)';
+    }
     if (e.kind === 'FACT' && !c.lines.length) return 'it names no WRONG IF lines';
     var bad = c.lines.filter(function (n) { return n < 1 || n > e.lines; });
     if (bad.length) return label(e) + ' has ' + e.lines + ' WRONG IF line' + (e.lines === 1 ? '' : 's') + ', and the post names ' + bad.join(', ');
@@ -137,20 +145,22 @@
   }
   function realDay(d) {   // Date.parse takes 2026-02-30 as 03-02; build.py does not
     var t = Date.parse(d + 'T00:00:00Z');
-    return /^\d{4}-\d\d-\d\d$/.test(d) && !isNaN(t) && new Date(t).toISOString().slice(0, 10) === d;
+    return /^\d{4}-\d\d-\d\d$/.test(d) && d.slice(0, 4) !== '0000' && !isNaN(t) && new Date(t).toISOString().slice(0, 10) === d;
   }
 
   // Rules 3 and 4, as build.py standing() writes them: checks/states.json holds the cases both must pass. `groups`
   // (results since the last dispute, by word and lines, writer left out) is this copy's own, for the weekly page.
   function shut(st) { return st.state !== 'OPEN' && st.state !== "CAN'T TELL"; }
+  function untested(lines, n) { var out = []; for (var i = 1; i <= n; i++) if (lines.indexOf(i) < 0) out.push(i); return out; }
   function standing(found, writer, members, start) {
     var out = { state: 'OPEN', lines: [], since: null, by: [], both: [], until: null }, people = {};
     var rs = found.filter(function (r) { return start && realDay(r[1]) && r[1] >= start; })
       .sort(function (a, b) { return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0; });   // stable: the file's order within a day
     var groups = function () { return Object.keys(people).map(function (k) { return people[k]; }); };
     var inside = function (g) { return g.names.filter(function (n) { return members.indexOf(n) >= 0; }); };
-    var dispute = function (date, words) {
-      out = { state: 'OPEN', lines: [], since: date, by: [], both: words, until: daysAfter(date, DISPUTE_DAYS) };
+    var dispute = function (date, words) {   // a second dispute keeps the first one's clock
+      out = { state: 'OPEN', lines: [], since: out.until ? out.since : date, by: [], both: words,
+        until: out.until || daysAfter(date, DISPUTE_DAYS) };
       people = {};
     };
     for (var i = 0; i < rs.length; i++) {
@@ -199,6 +209,7 @@
       var after = standing(a.entry.results.concat(a.posts.map(function (c) { return [c.who, c.date, c.word, c.lines]; })),
                            a.entry.writer, data.members, start);
       var moved = after.state !== before.state || after.since !== before.since;
+      a.before = before;
       a.was = shut(before) && !moved ? before : null;
       a.closes = shut(after) && moved ? after : null;
       a.after = after;
@@ -571,11 +582,16 @@
           row.classList.add('ok');
           row.appendChild(document.createTextNode('closes ' + st.state + linesText(st.lines) + ' on ' + st.since + ': ' +
             st.by.join(' and ') + ', two members other than ' + e.writer + ', posted the same result on the same lines.' +
-            (e.kind === 'FACT' && st.lines.length < e.lines ? ' That is ' + st.lines.length + ' of its ' + e.lines +
-              ' WRONG IF lines: the rules today let it close on some of them.' : '')));
+            (st.state === 'HOLDS' && untested(st.lines, e.lines).length ? ' It was not tested on line' +
+              (untested(st.lines, e.lines).length > 1 ? 's ' : ' ') + untested(st.lines, e.lines).join(', ') + ' of its ' +
+              e.lines + ' WRONG IF lines: the rules today let it close on some of them.' : '')));
         } else if (st.state === "CAN'T TELL") {
           row.appendChild(document.createTextNode("is CAN'T TELL from " + st.since + ': it was disputed (' + st.both.join(' and ') +
             ') and did not close within 30 days (rule 4).'));
+        } else if (shut(a.before)) {
+          row.appendChild(document.createTextNode('reopens on ' + st.since + ': it was ' + a.before.state + ', and two people ' +
+            'have now posted the other result. It carries both; only posts after that day count, and it is ' +
+            "CAN'T TELL after " + st.until + ' unless two members other than ' + e.writer + ' close it (rules 3 and 4).'));
         } else if (st.both.length) {
           row.appendChild(document.createTextNode('stays open, disputed since ' + st.since + ': two people posted ' +
             st.both.join(' and two posted ') + '. It carries both results; only posts after that day count, and it is ' +
