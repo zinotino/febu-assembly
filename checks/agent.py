@@ -103,7 +103,7 @@ def ledger_data():
 HOST = re.compile(r"[A-Za-z0-9.:\[\]-]+")
 # --rpc: http(s), a plain host or an IPv6 literal, a port, then anything printable. No user:password@, no space, no
 # non-ASCII, no control character: an error from the HTTP library echoes parts of the address, and the host goes into a post.
-RPC_URL = re.compile(r"(https?)://(?:([A-Za-z0-9.-]+)|\[([0-9A-Fa-f:]+)\])(?::(\d{1,5}))?(?:[/?#][!-~]*)?")
+RPC_URL = re.compile(r"(https?)://(?:([A-Za-z0-9.-]+)|\[([0-9A-Fa-f:]+)\])(?::([0-9]{1,5}))?(?:[/?#][!-~]*)?")
 
 
 def host_of(url):
@@ -117,11 +117,12 @@ def host_of(url):
     return host if HOST.fullmatch(host) else "unknown"
 
 
-def check_rpc(url):
-    """--rpc: the https address of a Solana node, or http for a node on this machine (common.py's own example)."""
+def check_rpc(url, name="--rpc"):
+    """--rpc, or SOLANA_RPC: the https address of a Solana node, or http for a node on this machine (common.py's own
+    example). The message never repeats the address: one that does not parse can still hold a key."""
     m = RPC_URL.fullmatch(url)
     if not m or (m.group(4) and int(m.group(4)) > 65535) or (m[1] == "http" and (m[2] or m[3]).lower() not in LOOPBACK):
-        raise Refused("--rpc takes the https address of a Solana node (http only for a node on your own machine)")
+        raise Refused("%s takes the https address of a Solana node (http only for a node on your own machine)" % name)
     return url
 
 
@@ -141,13 +142,19 @@ def source_of(num, rpc=None):
 
 
 def redact(text, url):
-    """The node's address cut to scheme and host in a script's output: its path, query or fragment can hold an API key."""
-    m = re.match(r"[A-Za-z]+://[^/?#]*", url or "")
+    """The node's address cut to scheme and host in a script's output: its path, query or fragment can hold an API key,
+    and so can an address that does not parse. Each part of 6 or more characters is cut too, longest first: a node may
+    echo the key alone ("invalid api key ...") or a request line."""
+    url = url or ""
+    m = re.match(r"[A-Za-z]+://[^/?#]*", url)
     if not m:
-        return text
+        return text.replace(url, "<cut>") if len(url) >= 6 else text
     text = text.replace(url, "%s://%s" % (url.split(":", 1)[0], host_of(url)))
     rest = url[m.end():]
-    return text.replace(rest, "<cut>") if len(rest) >= 6 else text   # a part of it echoed alone, in a request line say
+    for part in sorted({rest, *re.split(r"[/?#&=@:;]", rest)}, key=len, reverse=True):
+        if len(part) >= 6:
+            text = text.replace(part, "<cut>")
+    return text
 
 
 def status_text():
@@ -178,7 +185,8 @@ def execute(num, say=lambda s: None, rpc=None):
         raise Refused("entry %d has no script in checks/: open its link and look" % num)
     if rpc is not None and num not in RPC_FACTS:
         raise Refused("entry %d reads a link, not the Solana node: --rpc does nothing here" % num)
-    url = check_rpc(rpc) if rpc is not None else common.RPC
+    # SOLANA_RPC is checked like --rpc: it is how the MCP server sets the node, and a malformed one put its key in an error
+    url = (check_rpc(rpc) if rpc is not None else check_rpc(common.RPC, "SOLANA_RPC") if num in RPC_FACTS else common.RPC)
     env = {**os.environ, "PYTHONIOENCODING": "utf-8", **({"SOLANA_RPC": rpc} if rpc is not None else {})}
     if not _busy.acquire(blocking=False):
         raise Refused("another script run is still going: wait for it")
@@ -267,6 +275,7 @@ def source_notes(posts, data):
     by = {}
     for p in posts:
         via = (p["via"] or "").rstrip(".,;)").lower()   # a person's full stop after the host is not a second source
+        via = via[:-4] if via.endswith(":443") else via    # nor is https's own port written out
         if p["num"] in RPC_FACTS and via and via != "unknown" and not is_loopback(via)                 and p["who"].lower() in members and p["who"].lower() != writer.get(p["num"]):
             by.setdefault((p["kind"], p["num"], via), set()).add(p["who"])
     return ["%s %d: %s all read via %s, which is one source, not two. What makes them two checks is the link each opened "

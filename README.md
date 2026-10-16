@@ -154,7 +154,8 @@ is not a Saw.
   set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast
   callers; the scripts wait and retry. `python checks/agent.py run 8 --rpc https://your-node` does the same for the
   helper, and its `Script:` line ends in `via <host>`: two members whose lines name one host read one source, and
-  `lint` on both posts says so. The host only is named; a path or query can hold a key and is cut from the output.
+  `lint` on both posts says so. The host only is named; a path or query can hold a key and is cut from the output. Some providers put an id in the host itself, and the host is printed: pick a node whose name you would post. A
+  node that answers with a redirect is refused, not followed.
 - `fact5.py` takes a copy of your own too, in the same form, which is how KNOWN BUGS 3 gets fixed:
   `python checks/fact5.py my-copy.json`. It prints the copy's SHA-256, so two people can tell whether they counted
   the same copy.

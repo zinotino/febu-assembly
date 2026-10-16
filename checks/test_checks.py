@@ -291,6 +291,46 @@ def test_rpc_option_takes_a_node_and_keeps_its_key_out_of_what_is_printed(monkey
     assert "SECRET" not in str(e.value)
 
 
+def test_solana_rpc_is_checked_like_rpc_and_no_key_leaks(monkeypatch):
+    """SOLANA_RPC is how the MCP server sets the node. One with user:key@ once put the key in an InvalidURL error, and a
+    typo with no :// came back whole in a traceback. Both are refused now, before any script runs, with no address in the
+    message. A node that echoes its key alone has it cut, and one that answers with a redirect is refused, not followed."""
+    import http.server
+    import threading
+    import pytest
+    import agent
+    import common
+    ran = []
+    monkeypatch.setattr(agent.subprocess, "run", lambda *a, **k: ran.append(a))
+    for bad in ("https://user:KEYSECRET@127.0.0.1/x", "https//host.example/KEYSECRET", "KEYSECRET", "https://x.example:٨٠/"):
+        monkeypatch.setattr(common, "RPC", bad)
+        with pytest.raises(agent.Refused, match="SOLANA_RPC takes") as e:
+            agent.execute(2)
+        assert "KEYSECRET" not in str(e.value) and "٨" not in str(e.value) and not ran
+    monkeypatch.setattr(common, "RPC", "https://api.mainnet-beta.solana.com")
+    assert agent.check_rpc(common.RPC, "SOLANA_RPC") == common.RPC
+    url = "https://mainnet.example/v2/?api-key=abcdef-123456"
+    assert agent.redact("invalid api key abcdef-123456 for %s" % url, url) == "invalid api key <cut> for https://mainnet.example"
+    assert agent.redact("x KEYSECRET y", "KEYSECRET") == "x <cut> y"
+
+    class Moved(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.send_response(302)
+            self.send_header("Location", "http://127.0.0.1:9/elsewhere")
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Moved)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        monkeypatch.setattr(common, "RPC", "http://127.0.0.1:%d/" % srv.server_address[1])
+        with pytest.raises(SystemExit, match="answered HTTP 302"):
+            common.rpc("getSlot", [])
+    finally:
+        srv.shutdown()
+
+
 def test_script_line_names_its_source():
     import agent
     undo = with_scripts(agent, ["verdict: HOLDS\n"])
@@ -320,6 +360,7 @@ def test_lint_notes_two_checks_that_read_one_source():
     why, notes = review(post("Ann", "node.example"), post("Bo", "NODE.example."))   # case and a full stop do not make a second source
     assert why == [] and len(notes) == 1 and "FACT 1: Ann and Bo" in notes[0] and "one source" in notes[0] and "--rpc" in notes[0]
     assert review(post("Ann", "node.example"), post("Bo", "other.example"))[1] == []
+    assert len(review(post("Ann", "node.example:443"), post("Bo", "node.example"))[1]) == 1   # https's own port is the same node
     assert review(post("Ann", "node.example"), post("Ann", "node.example"))[1] == []   # one member twice is not two
     assert review(post("Ann", ""), post("Bo", ""))[1] == []                            # no source named: nothing to compare
     assert review(post("Ann", "unknown"), post("Bo", "unknown"))[1] == []

@@ -40,6 +40,14 @@ def find(pattern, where, what):
     return m.group(1)
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):   # refused, not followed: what the check names as its node is what it read
+        return None
+
+
+OPEN = urllib.request.build_opener(_NoRedirect).open
+
+
 def rpc(method, params):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
     last = None
@@ -48,7 +56,7 @@ def rpc(method, params):
             time.sleep(3 * attempt)   # the public node's "slow down" passes after a few seconds
         req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
         try:
-            r = json.load(urllib.request.urlopen(req, timeout=60))
+            r = json.load(OPEN(req, timeout=60))
         except urllib.error.HTTPError as err:
             if err.code < 500 and err.code != 429:   # refused, not busy: asking again will not help
                 raise SystemExit("%s: %s answered HTTP %d" % (method, RPC, err.code))
