@@ -130,16 +130,50 @@
       ' New: ' + stop(c.fresh) + (c.minutes ? ' ' + c.minutes + ' minute' + (c.minutes === 1 ? '' : 's') + '.' : '');
   }
 
-  function agreeing(found, writer, members) {   // rule 3: members other than the writer, by result and lines
-    var by = {};
-    found.forEach(function (r) {
-      if (members.indexOf(r[0]) < 0 || r[0] === writer) return;
-      var g = by[r[2] + ' ' + r[3].join(',')] = by[r[2] + ' ' + r[3].join(',')] || { word: r[2], lines: r[3], names: [] };
-      if (g.names.indexOf(r[0]) < 0) g.names.push(r[0]);
-    });
-    return Object.keys(by).map(function (k) { return by[k]; });
+  var DISPUTE_DAYS = 30;   // rule 4, as build.py DISPUTE_DAYS
+  function daysAfter(d, n) {   // stops at 9999-12-31, as build.py days_after does
+    var s = new Date(Date.parse(d + 'T00:00:00Z') + n * DAY).toISOString();
+    return s.charAt(0) === '+' ? '9999-12-31' : s.slice(0, 10);
   }
-  function closing(groups) { return groups.filter(function (g) { return g.names.length >= 2; })[0] || null; }
+  function realDay(d) {   // Date.parse takes 2026-02-30 as 03-02; build.py does not
+    var t = Date.parse(d + 'T00:00:00Z');
+    return /^\d{4}-\d\d-\d\d$/.test(d) && !isNaN(t) && new Date(t).toISOString().slice(0, 10) === d;
+  }
+
+  // Rules 3 and 4, as build.py standing() writes them: checks/states.json holds the cases both must pass. `groups`
+  // (results since the last dispute, by word and lines, writer left out) is this copy's own, for the weekly page.
+  function shut(st) { return st.state !== 'OPEN' && st.state !== "CAN'T TELL"; }
+  function standing(found, writer, members, start) {
+    var out = { state: 'OPEN', lines: [], since: null, by: [], both: [], until: null }, people = {};
+    var rs = found.filter(function (r) { return start && realDay(r[1]) && r[1] >= start; })
+      .sort(function (a, b) { return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0; });   // stable: the file's order within a day
+    var groups = function () { return Object.keys(people).map(function (k) { return people[k]; }); };
+    var inside = function (g) { return g.names.filter(function (n) { return members.indexOf(n) >= 0; }); };
+    var dispute = function (date, words) {
+      out = { state: 'OPEN', lines: [], since: date, by: [], both: words, until: daysAfter(date, DISPUTE_DAYS) };
+      people = {};
+    };
+    for (var i = 0; i < rs.length; i++) {
+      var name = rs[i][0], date = rs[i][1], word = rs[i][2], lines = rs[i][3], key = word + ' ' + lines.join(',');
+      if (out.until && date > out.until) {
+        return { state: "CAN'T TELL", lines: [], since: daysAfter(out.until, 1), by: [], both: out.both, until: null, groups: groups() };
+      }
+      if (name === writer) continue;
+      var g = people[key] = people[key] || { word: word, lines: lines, names: [] };
+      if (g.names.indexOf(name) < 0) g.names.push(name);
+      var words = groups().filter(function (x) { return x.names.length >= 2; }).map(function (x) { return x.word; })
+        .filter(function (w, j, a) { return a.indexOf(w) === j; }).sort();
+      if (out.state !== 'OPEN') {
+        if (words.some(function (w) { return w !== out.state; })) dispute(date, words);   // reopened (rule 3)
+        continue;
+      }
+      var done = groups().filter(function (x) { return inside(x).length >= 2; })[0];
+      if (done && words.length > 1) dispute(date, words);                                  // kept open (rule 3)
+      else if (done) out = { state: done.word, lines: done.lines, since: date, by: inside(done).sort(), both: [], until: null };
+    }
+    out.groups = groups();
+    return out;
+  }
 
   function review(p, data, now) {
     var find = {}, add = [], held = [], already = [];
@@ -159,12 +193,15 @@
       a.posts.forEach(function (c, i) {
         a.lines = a.lines.concat(wrap(i === 0 && a.entry.empty ? '    SEEN      ' : PAD14, seenText(c), PAD16));
       });
-      var before = agreeing(a.entry.results, a.entry.writer, data.members);
-      var after = agreeing(a.entry.results.concat(a.posts.map(function (c) { return [c.who, c.date, c.word, c.lines]; })),
-                           a.entry.writer, data.members);
-      a.was = closing(before);
-      a.closes = a.was ? null : closing(after);
-      a.groups = after;
+      // before adoption every post is the dry run: count it as if the rules were adopted, and the page says so
+      var start = data.adopted ? (a.entry.state || {}).start || null : '0';
+      var before = standing(a.entry.results, a.entry.writer, data.members, start);
+      var after = standing(a.entry.results.concat(a.posts.map(function (c) { return [c.who, c.date, c.word, c.lines]; })),
+                           a.entry.writer, data.members, start);
+      var moved = after.state !== before.state || after.since !== before.since;
+      a.was = shut(before) && !moved ? before : null;
+      a.closes = shut(after) && moved ? after : null;
+      a.after = after;
       a.outsiders = a.posts.filter(function (c) { return data.members.indexOf(c.who) < 0; }).map(function (c) { return c.who; });
     });
 
@@ -210,7 +247,7 @@
   }
 
   if (typeof document === 'undefined') {   // under node, for test_claims.js
-    module.exports = { parse: parse, review: review, wrap: wrap, seenText: seenText };
+    module.exports = { parse: parse, review: review, wrap: wrap, seenText: seenText, standing: standing };
     return;
   }
 
@@ -527,21 +564,34 @@
       r.add.forEach(function (a) {
         var e = a.entry, row = el('p', 'wk-close');
         row.appendChild(el('strong', '', label(e) + ' '));
-        if (a.was) row.appendChild(document.createTextNode('was closed already, ' + groupText(a.was) + '.'));
+        var st = a.after;
+        if (a.was) row.appendChild(document.createTextNode('was closed already: ' + a.was.state + linesText(a.was.lines) +
+          ' on ' + a.was.since + ', by ' + a.was.by.join(' and ') + '.'));
         else if (a.closes) {
           row.classList.add('ok');
-          row.appendChild(document.createTextNode('closes ' + a.closes.word + linesText(a.closes.lines) + ': ' +
-            a.closes.names.join(' and ') + ', two members other than ' + e.writer + ', posted the same result on the same lines.'));
+          row.appendChild(document.createTextNode('closes ' + st.state + linesText(st.lines) + ' on ' + st.since + ': ' +
+            st.by.join(' and ') + ', two members other than ' + e.writer + ', posted the same result on the same lines.' +
+            (e.kind === 'FACT' && st.lines.length < e.lines ? ' That is ' + st.lines.length + ' of its ' + e.lines +
+              ' WRONG IF lines: the rules today let it close on some of them.' : '')));
+        } else if (st.state === "CAN'T TELL") {
+          row.appendChild(document.createTextNode("is CAN'T TELL from " + st.since + ': it was disputed (' + st.both.join(' and ') +
+            ') and did not close within 30 days (rule 4).'));
+        } else if (st.both.length) {
+          row.appendChild(document.createTextNode('stays open, disputed since ' + st.since + ': two people posted ' +
+            st.both.join(' and two posted ') + '. It carries both results; only posts after that day count, and it is ' +
+            "CAN'T TELL after " + st.until + ' unless two members other than ' + e.writer + ' close it (rules 3 and 4).'));
         } else {
-          row.appendChild(document.createTextNode('stays open. ' + (a.groups.length ? 'So far: ' + a.groups.map(groupText).join('; ') +
-            '. It closes when a second member other than ' + e.writer + ' posts the same result on the same WRONG IF lines.'
-            : 'No result from a member other than ' + e.writer + ' yet.')));
+          row.appendChild(document.createTextNode('stays open. ' + (st.groups.length ? 'So far: ' + st.groups.map(groupText).join('; ') +
+            '. It closes when two members other than ' + e.writer + ' post the same result on the same WRONG IF lines.'
+            : 'No result from anyone other than ' + e.writer + ' yet.')));
         }
         out.appendChild(row);
         if (a.outsiders.length) para(out, 'Not counted toward closing: ' + a.outsiders.join(', ') + ' (not on the Member line).', 'hint');
       });
-      para(out, 'This counts the SEEN lines the file holds in the weekly page\'s form, plus this week\'s. It does not ' +
-        'know about a reopened entry or a member silent for 90 days: check those by hand.', 'hint');
+      if (!data.adopted) para(out, 'STATUS says Proposed: nothing closes yet, and these posts are the dry run. This ' +
+        'shows what they would do once the rules are adopted.', 'hint');
+      para(out, 'This counts the SEEN lines the file holds in the weekly page\'s form, plus this week\'s, the way ' +
+        'build.py does. It does not know about a member silent for 90 days: check that by hand.', 'hint');
 
       out = box('w-votes');
       if (!r.votes.length) para(out, 'Nothing in the ledger is up for a vote, and no VOTE post in what you pasted.');

@@ -41,8 +41,6 @@ OK, WARN, FAIL, CANT = "OK", "WARN", "FAIL", "CAN'T TELL"
 REMOVED = "[removed]"
 GROWS = ("SEEN", "CHANGED", "NOTE", "UNPAID", "WITHDRAWN")       # an entry's fields that only gain lines
 NAMED = re.compile(r"\barchive/[\w.-]+\.txt\b")
-ADOPTED = re.compile(r"\bAdopted on (\d{4}-\d\d-\d\d)")
-DAYS_AFTER = re.compile(r"(\d{1,4}) days after this version is adopted")
 NEXT = re.compile(r"\s*The next entry is number (\d{1,6})\.\s*$")
 LABEL = re.compile(r"^\s*[A-Z]{2,}(?: [A-Z]+)?\s+")   # "    SAYS      ", at the start only
 
@@ -198,20 +196,6 @@ def first_date(text):
     return m.group() if m else None
 
 
-def due(fields, adopted):
-    """A promise's BY date: the date it names, or N days after adoption when it says so; None if neither."""
-    by = build.text_of(fields, "BY")
-    if first_date(by):
-        return first_date(by)
-    m = DAYS_AFTER.search(by)
-    if m and adopted:
-        try:
-            return (dt.date.fromisoformat(adopted) + dt.timedelta(days=int(m.group(1)))).isoformat()
-        except (ValueError, OverflowError):
-            return None
-    return None
-
-
 def lint(new, prev, archive, today):
     """Rows of (status, what) for the new text against the earlier one (None when there is none to compare)."""
     try:
@@ -297,8 +281,7 @@ def _lint(new, prev, archive, today):
         add(OK, "I2 the %d entries are numbered 1 to %d in order%s" % (
             len(nums), len(nums), ", and the next is %d" % nxt[-1] if nxt else ""))
 
-    m = ADOPTED.search(re.sub(r"\s+", " ", " ".join(body)))
-    adopted = m.group(1) if m and not proposed else None
+    adopted = build.adopted(secs)
     any_items, said_cant = False, False
 
     for kind, num, who, fields in ents:
@@ -311,7 +294,9 @@ def _lint(new, prev, archive, today):
             item = "%s: %s's SEEN item of %s" % (label, name, date)
             if name.strip().casefold() == writer.strip().casefold():               # I3
                 add(FAIL, "I3 %s is by its writer; nobody checks their own entry (rule 3)" % item)
-            if proposed:                                                           # I4
+            if not build.a_day(date):                                              # I4
+                add(FAIL, "I4 %s: %s is not a date on the calendar, so it counts toward nothing" % (item, date))
+            if proposed:
                 add(FAIL, "I4 %s is in the file while STATUS says Proposed: posts before adoption close nothing and "
                     "go in no file" % item)
             elif adopted is None and not said_cant:
@@ -323,7 +308,7 @@ def _lint(new, prev, archive, today):
             if date > today:
                 add(FAIL, "I4 %s is dated after today (%s, UTC)" % (item, today))
             if kind == "PROMISE" and not proposed:
-                by = due(fields, adopted)
+                by = build.due(fields, adopted)
                 if by is None:
                     add(CANT, "I4 %s: the BY line names no date this can read, so its results' dates are not "
                         "checked" % item)

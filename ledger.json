@@ -15,6 +15,7 @@
   "WitnesstoFebu",
   "Zurandol"
  ],
+ "adopted": null,
  "entries": [
   {
    "kind": "FACT",
@@ -23,6 +24,15 @@
    "lines": 3,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "Between 2026-09-29 and 2026-10-09 the wallet that created $FEBU bought no $FEBU: it made no swap that got it $FEBU.",
    "wrong_if": [
     "that transaction does not create $FEBU",
@@ -38,6 +48,15 @@
    "lines": 3,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "On 2026-09-22 the wallet that created $FEBU sold all of its $FEBU, 23,843,803.61 tokens, in one transaction, and received no $FEBU after it through 2026-10-14.",
    "wrong_if": [
     "the sale moves a different amount of $FEBU",
@@ -53,6 +72,15 @@
    "lines": 2,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "The dialogue where febu says \"ubef wins every argument\" was already on theinterlocution.com before febu's first tweet about UBEF.",
    "wrong_if": [
     "the phrase is not in that copy",
@@ -67,6 +95,15 @@
    "lines": 1,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "In the copy Z saved, the eight books rotate every four pages with no exception: pages 1-4 THE SPILL, 5-8 THE ASSEMBLER, 9-12 THE MEATSPACE, 13-16 THE INFINITE ROOM, 17-20 THE COMMANDMENTS, 21-24 THE PARABLES, 25-28 THE RENT, 29-32 THE LITURGY, then round again, on all 164 pages.",
    "wrong_if": [
     "any page sits in a book the rotation does not predict"
@@ -80,6 +117,15 @@
    "lines": 2,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "In the copy Z saved, none of the words jest, hollow, false, mock, laugh, theater, spectacle or debt appears on scripture pages 1-24, and jest, hollow and laugh each appear on at least 40 of pages 25-164.",
    "wrong_if": [
     "any of the eight words is on pages 1-24",
@@ -94,6 +140,15 @@
    "lines": 4,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "The wallet that created $FEBU received 2,939.10 SOL from its creator-fee account in 44 payments between 2026-07-09 and 2026-09-14, and had received nothing from it by the end of 2026-10-14. Trades on the main $FEBU pool pay into that account.",
    "wrong_if": [
     "a $FEBU trade shows nothing paid into the fee account",
@@ -110,6 +165,15 @@
    "lines": 0,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "Close at least three entries other than this one under rule 3, at least one of them written by someone other than Zurandol.",
    "wrong_if": [],
    "url": "https://febu-assembly.vercel.app/ledger.html#promise-7"
@@ -121,6 +185,15 @@
    "lines": 3,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "The $FEBU creator-fee account from fact 6 paid nothing out from 2026-09-15 to the end of 2026-10-14, held 11.125 SOL on 2026-10-14, and held about 3.87 SOL at 00:00 UTC on 2026-09-22.",
    "wrong_if": [
     "a payment out between 2026-09-15 and the end of 2026-10-14 (UTC) shows",
@@ -136,6 +209,15 @@
    "lines": 4,
    "empty": true,
    "results": [],
+   "state": {
+    "state": "OPEN",
+    "lines": [],
+    "since": null,
+    "by": [],
+    "both": [],
+    "until": null,
+    "start": null
+   },
    "says": "Fact 6's row 20 (2026-07-22, 66.44 SOL) was run by a Squads multisig, not by the febu wallet, and in the same transaction that multisig set a new creator on another coin.",
    "wrong_if": [
     "the transaction's signer is not F2fRg5Et...",

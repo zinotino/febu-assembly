@@ -191,6 +191,7 @@ def test_the_writer_cannot_check():
 
 def test_dates():
     for status, date in (("Proposed by Zed.", "2026-10-16"),                     # the vote week: the dry run
+                         ("Adopted on 2026-10-22 under rule 7.", "2026-11-00"),  # no such day: state() skips it
                          ("Adopted on 2026-10-22 under rule 7.", "2026-10-22"),  # the day of adoption itself
                          ("Adopted on 2026-10-22 under rule 7.", "2026-12-01")):  # after today
         new = make(status=status, seen1=seen(item("Ann", date)))
