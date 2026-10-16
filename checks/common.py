@@ -80,10 +80,13 @@ def redact(text, url):
 def rpc(method, params):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
     last = None
+    try:
+        req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
+    except ValueError:   # not an address at all, and urllib's message repeats it whole: it may be the key itself
+        raise SystemExit(redact("%s: SOLANA_RPC %s is not the address of a node" % (method, RPC), RPC)) from None
     for attempt in range(6):
         if attempt:
             time.sleep(3 * attempt)   # the public node's "slow down" passes after a few seconds
-        req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
         try:
             r = json.load(OPEN(req, timeout=60))
         except urllib.error.HTTPError as err:

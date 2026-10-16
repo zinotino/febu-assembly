@@ -43,7 +43,7 @@ def lacks(r, word):
     logs = r["meta"]["logMessages"]
     if any(word in ln for ln in logs or []):
         return False
-    if logs is None or "Log truncated" in logs:
+    if not logs or "Log truncated" in logs:   # empty is not kept either: a run always logs its first invoke
         raise SystemExit("the node did not keep the whole log of a transaction, so it cannot show that %s is absent" % word)
     return True
 
@@ -196,6 +196,8 @@ def sigs_since(account, t0):
         out +=[s for s in page if s["blockTime"] >= t0 and s["err"] is None]
         if not page or page[-1]["blockTime"] < t0:
             return out
+        if page[-1]["signature"] == before:
+            raise SystemExit("the node gave the same page twice for %s: it ignores `before`" % c.short(account))
         before = page[-1]["signature"]
 
 
@@ -548,8 +550,13 @@ def door2():
     err, logs, _ = simulate(payer(), [v2])
     if err is not None or not any(word in ln for ln in logs):
         raise SystemExit("CONTROL failed: the dry run of the call did not run to the end and name %s (%s)" % (word, json.dumps(err)))
-    # the window is fact 8's, typed in as of 2026-10-15: from 09-14 (a day early, to be safe) to the end of 2026-10-14
-    sigs = [s for s in sigs_since(pcv, day(2026, 9, 14)) if s["blockTime"] < day(2026, 10, 15)]
+    # the window is fact 8's, typed in as of 2026-10-15: from 09-14 (a day early, to be safe) to the end of 2026-10-14.
+    # control: the scan starts a week earlier. The vault had pump trades on 09-13 (21,761 from 07-08 to 09-13), so a node
+    # whose history stops inside the window, one that keeps only recent slots, shows an empty week, not an empty window.
+    t0 = day(2026, 9, 14)
+    scanned = sigs_since(pcv, day(2026, 9, 7))
+    sigs = [s for s in scanned if t0 <= s["blockTime"] < day(2026, 10, 15)]
+    reaches = sum(s["blockTime"] < t0 for s in scanned)
     seen = hits = unread = 0
     for s in sigs:
         try:
@@ -562,7 +569,9 @@ def door2():
     print("Door 2, read %s: pump's creator vault %s" % (c.now(), pcv))
     print("%d transactions on it from 2026-09-14 to the end of 2026-10-14 (newest %s), %d read, %d unread, %d name %s" % (
         len(sigs), c.when(sigs[0]["blockTime"]) if sigs else "none", seen, unread, hits, word))
-    print("\nverdict:", "CAN'T TELL" if unread else verdict({"a payment went out through pump's creator vault in the window": hits > 0}))
+    print("CONTROL, the node shows the vault's transactions in the week before the window: %d" % reaches)
+    print("\nverdict:", "CAN'T TELL (a CONTROL line above failed)" if not reaches else "CAN'T TELL" if unread else
+          verdict({"a payment went out through pump's creator vault in the window": hits > 0}))
 
 
 def b58d_any(s):

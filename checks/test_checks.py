@@ -436,22 +436,32 @@ def sig(s, t):
     return {"signature": s, "blockTime": t, "err": None}
 
 
-def on_fake_chain(monkeypatch, capsys, cmd, txs, sigs, balance="11.5"):
+KEYED = "https://x.example/v2/?api-key=KEYSECRET42"
+
+
+def on_fake_chain(monkeypatch, capsys, cmd, txs, sigs, balance="11.5", deaf=False):
     """Run `python checks/resolve.py cmd` against a fake node whose address holds a key; return its last verdict line.
     txs maps a signature to its transaction (None: the node does not know it; an exception: reading it raises that);
-    sigs maps an account to its signatures, newest first, as the node pages them. No run may print the key."""
+    sigs maps an account to its signatures, newest first, paged two at a time from `before` (deaf: a node that ignores
+    `before`). No run may print the key."""
+    import collections
     import resolve
+    asked = collections.Counter()
 
     def rpc(method, params):
         if method == "getTokenAccountBalance":
             return {"value": {"uiAmountString": balance}}
         if method == "getSignaturesForAddress":
-            return [] if "before" in params[1] else sigs.get(params[0], [])
+            asked[params[0]] += 1
+            assert asked[params[0]] < 50, "paged forever"
+            got = sigs.get(params[0], [])
+            at = 0 if deaf or "before" not in params[1] else [s["signature"] for s in got].index(params[1]["before"]) + 1
+            return got[at:at + 2]
         got = txs.get(params[0])
         if isinstance(got, BaseException):
             raise got
         return got
-    monkeypatch.setattr(resolve.c, "RPC", "https://x.example/v2/?api-key=KEYSECRET42")
+    monkeypatch.setattr(resolve.c, "RPC", KEYED)
     monkeypatch.setattr(resolve.c, "rpc", rpc)
     monkeypatch.setattr(resolve.time, "sleep", lambda s: None)
     try:
@@ -478,8 +488,8 @@ def test_resolve_fact8_says_cant_tell_on_a_read_it_cannot_trust(monkeypatch, cap
     paid = lambda t, a, b: token_tx(t, (fee, "pool", WSOL, a, b), (ata, wallet, WSOL, "0", "1"))
     txs = {**{s: token_tx(d14, keys=[ata]) for s in steps}, resolve.ROW_20: token_tx(d14, (ata, wallet, WSOL, "0", "1")),
            steps[-1]: paid(d14, "7", "0.131"),   # row 44, the one payment out on 09-14
-           "open": token_tx(d22 + 60, (fee, "pool", WSOL, "3.9", "4.0")),
-           "close": token_tx(d22 + 3600, (fee, "pool", WSOL, "4.0", "5.0")), "pay": paid(oct1, "11", "0.5")}
+           "open": token_tx(d22 + 60, (fee, "pool", WSOL, "3.9", "4.5")),   # read in the wrong order, 09-22 opens at 4.5
+           "close": token_tx(d22 + 3600, (fee, "pool", WSOL, "4.5", "5.0")), "pay": paid(oct1, "11", "0.5")}
     sigs = {ata: [sig(steps[-1], d14)], fee: [sig("close", d22 + 3600), sig("open", d22 + 60), sig(steps[-1], d14)]}
     paying = {**sigs, ata: [sig("pay", oct1), *sigs[ata]]}
     assert on_fake_chain(monkeypatch, capsys, "fact8", txs, sigs) == "verdict: HOLDS"
@@ -495,12 +505,14 @@ def test_resolve_fact8_says_cant_tell_on_a_read_it_cannot_trust(monkeypatch, cap
              "09-22's first transaction lists no fee balance": lambda t, g: t.update({"open": token_tx(d22 + 60, keys=[fee])}),
              "09-22's first transaction does not read": lambda t, g: t.update({"open": SystemExit("HTTP 500")}),
              "no transaction read on 09-22": lambda t, g: g.update({fee: g[fee][2:]}),
-             "a signature with no block time": lambda t, g: g[fee][0].update({"blockTime": None})}
+             "a signature with no block time": lambda t, g: g[fee][0].update({"blockTime": None}),
+             "the node refuses row 20 and names its own key": lambda t, g: t.update({resolve.ROW_20: SystemExit("HTTP 401 " + KEYED)})}
     for name, edit in cases.items():
         assert broken(edit).startswith("verdict: CAN'T TELL"), name
     # an amount the node left out is not a balance of zero: here it would hide the payment out
     gone = lambda t, g: t["pay"]["meta"]["preTokenBalances"][0]["uiTokenAmount"].pop("uiAmountString")
     assert broken(gone, paying).startswith("verdict: CAN'T TELL")
+    assert "the same page twice" in on_fake_chain(monkeypatch, capsys, "fact8", txs, sigs, deaf=True)   # it ignores `before`
 
 
 def test_resolve_door2_counts_a_log_it_cannot_see_whole_as_unread(monkeypatch, capsys):
@@ -517,15 +529,17 @@ def test_resolve_door2_counts_a_log_it_cannot_see_whole_as_unread(monkeypatch, c
     oct1, cut = resolve.day(2026, 10, 1), ["Program log: Instruction: Buy", "Log truncated"]
     swap = token_tx(oct1, logs=["Program log: Instruction: Buy"], inner=[resolve.PAMM])
 
-    def door2(b):
-        return on_fake_chain(monkeypatch, capsys, "door2", {"a": swap, "b": b}, {pcv: [sig("a", oct1 + 60), sig("b", oct1)]})
+    def door2(b, before=(sig("older", resolve.day(2026, 9, 10)),)):
+        return on_fake_chain(monkeypatch, capsys, "door2", {"a": swap, "b": b}, {pcv: [sig("a", oct1 + 60), sig("b", oct1), *before]})
     assert door2(swap) == "verdict: HOLDS"
     assert door2(token_tx(oct1, logs=[word], inner=[resolve.PAMM])) == "verdict: DOESN'T HOLD"
     assert door2(token_tx(oct1, logs=[word, "Log truncated"], inner=[resolve.PAMM])) == "verdict: DOESN'T HOLD"   # the call shows
     assert door2(token_tx(oct1, logs=cut, inner=[resolve.PUMP])) == "verdict: HOLDS"   # cut short, but pAMM never ran
     for b in (token_tx(oct1, logs=None, inner=[resolve.PAMM]), token_tx(oct1, logs=cut, inner=[resolve.PAMM]),
-              token_tx(oct1, logs=cut, inner=None), {**swap, "meta": None}):
+              token_tx(oct1, logs=cut, inner=None), token_tx(oct1, logs=[], inner=[resolve.PAMM]), {**swap, "meta": None}):
         assert door2(b).startswith("verdict: CAN'T TELL"), b
+    assert door2(swap, before=()).startswith("verdict: CAN'T TELL")   # a node whose history stops inside the window
+    assert on_fake_chain(monkeypatch, capsys, "door2", {}, {}).startswith("verdict: CAN'T TELL")   # or that shows none at all
     dry["run"] = ({"InstructionError": [0, {"Custom": 2006}]}, [word, "Program log: AnchorError: ConstraintSeeds"], {})
     assert door2(swap).startswith("verdict: CAN'T TELL")
 
@@ -570,7 +584,7 @@ def test_resolve_fact9_reads_no_line_from_a_log_it_cannot_see_whole():
     assert resolve.verdict(resolve.lines9(r, "S", "V", "AdminSetCreator")) == "HOLDS"
     r["meta"]["logMessages"].append("Log truncated")   # cut short after the word: the word still shows
     assert resolve.verdict(resolve.lines9(r, "S", "V", "AdminSetCreator")) == "HOLDS"
-    for logs in (None, ["Program log: Instruction: Other", "Log truncated"]):
+    for logs in (None, [], ["Program log: Instruction: Other", "Log truncated"]):   # a run always logs its first invoke
         r["meta"]["logMessages"] = logs
         with pytest.raises(SystemExit, match="whole log"):
             resolve.lines9(r, "S", "V", "AdminSetCreator")
@@ -653,6 +667,10 @@ def test_no_key_in_what_the_checks_print(monkeypatch, capsys):
     monkeypatch.setattr(common.time, "sleep", lambda s: None)
     monkeypatch.setattr(common, "RPC", "https://user:KEYSECRET42@x.example/")   # InvalidURL: "nonnumeric port: 'KEYSECRET42@..."
     with pytest.raises(SystemExit, match="no answer") as e:
+        common.rpc("getSlot", [])
+    assert "KEYSECRET42" not in str(e.value)
+    monkeypatch.setattr(common, "RPC", "KEYSECRET42")   # no scheme: urllib's ValueError repeats it whole
+    with pytest.raises(SystemExit) as e:
         common.rpc("getSlot", [])
     assert "KEYSECRET42" not in str(e.value)
 
