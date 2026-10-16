@@ -290,7 +290,7 @@ def _lint(new, prev, archive, today):
         res = build.results(fields)
         any_items = any_items or bool(res)
 
-        for name, date, word, lines in res:
+        for name, date, word, lines, *_ in res:
             item = "%s: %s's SEEN item of %s" % (label, name, date)
             if name.strip().casefold() == writer.strip().casefold():               # I3
                 add(FAIL, "I3 %s is by its writer; nobody checks their own entry (rule 3)" % item)
@@ -327,7 +327,7 @@ def _lint(new, prev, archive, today):
         changed = [first_date(" ".join(ln.txt for ln in ls)) for lab, ls in fields if lab == "CHANGED"]  # I5
         if None in changed:
             add(WARN, "I5 %s: a CHANGED line names no date" % label)
-        dates = [d for _, d, _, _ in res]
+        dates = [r[1] for r in res]
         if dates and any(d and d > min(dates) for d in changed):
             add(FAIL, "I5 %s: a CHANGED line is dated after its first SEEN item (%s)" % (label, min(dates)))
 

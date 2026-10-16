@@ -72,13 +72,59 @@ class CheckedEntry(unittest.TestCase):
         found = build.results(fields)
         self.assertEqual(build.wrong_if(fields), ["it is not there", "it moved", "it is gone"])
         self.assertEqual([f[0] for f in found], ["Ann", "Zed", "Bo Cat"])
-        self.assertEqual(found[0], ("Ann", "2026-10-20", "HOLDS", (1, 2)))
+        self.assertEqual(found[0], ("Ann", "2026-10-20", "HOLDS", (1, 2), (), None))
         self.assertTrue(build.checked(fields))
         self.assertEqual(build.standing(found, "Zed", members, "2026-10-01")["state"], "OPEN")   # Zed wrote it; Bo Cat
         found.append(("Bo Cat", "2026-10-22", "HOLDS", (1, 2)))                                    # tested other lines
         st = build.standing(found, "Zed", members, "2026-10-01")
         self.assertEqual((st["state"], st["lines"], st["since"]), ("HOLDS", [1, 2], "2026-10-22"))
 
+
+
+SLOTS = ("- Ann, 2026-10-24: HOLDS on line 1. Items: line 1, 20 of 164. Script: python checks/resolve.py fact4 by "
+         "Zurandol via api.mainnet-beta.solana.com. Saw: line 1, pages 1-20 as predicted. New: page 7 is short. 30 minutes.")
+
+
+class Slots(unittest.TestCase):
+    """Items: and Script: (ASSEMBLY_SPEC section 4) read back from the SEEN item the weekly page writes (test_claims.js
+    writes this same line), and two samples of fact 4 closing nothing on the real ledger."""
+
+    def read(self, item):
+        import textwrap
+        seen = "\n                ".join(textwrap.wrap(item, 76))   # wrapped as the ledger lays it out
+        return build.results(build.entries(("  FACT 4. (Zed, 2026-10-12)\n    WRONG IF  a page is off.\n"
+                                            "    SEEN      %s\n" % seen).split("\n"))[0][4])
+
+    def test_read_back(self):
+        self.assertEqual(self.read(SLOTS), [("Ann", "2026-10-24", "HOLDS", (1,), (1,), (
+            "python checks/resolve.py fact4", "Zurandol", "api.mainnet-beta.solana.com"))])
+        self.assertEqual(self.read("- Bo, 2026-10-24: HOLDS on line 1. Items: all 164. Script: mine.py by Bo. Saw: x."),
+                         [("Bo", "2026-10-24", "HOLDS", (1,), (), ("mine.py", "Bo", None))])
+        self.assertEqual(self.read("- Bo, 2026-10-24: HOLDS. Items: 20 of 164; line 2, all 44. Saw: x."),
+                         [("Bo", "2026-10-24", "HOLDS", (), (0,), None)])
+        self.assertEqual(self.read("- Bo, 2026-10-24: HOLDS on line 1. Saw: x. New: y."),   # an item from before the slots
+                         [("Bo", "2026-10-24", "HOLDS", (1,), (), None)])
+        for odd in ("Items: twenty.", "Items: 20 of 164; most.", "Script: mine.py.", "Script: x by Bo, Cy.",
+                    "items: 20 of 164.", "Item: 20 of 164.", "ITEMS : 20 of 164.", " Items: 20 of 164.", "Items 20 of 164.",
+                    "Items: 20 of 164", "script: x by Bo."):
+            self.assertEqual(self.read("- Bo, 2026-10-24: HOLDS on line 1. %s Saw: x." % odd), [], odd)   # lint I6
+
+    def test_two_samples_of_fact_4_close_nothing(self):
+        real = re.sub(r"(?ms)^STATUS\n.*?(?=^\S)", "STATUS\n  Adopted on 2026-10-22 under rule 7.\n\n",
+                      build.LEDGER.read_text(encoding="utf-8"), count=1)
+        two = [m for m in build.member_names(build.sections(real)[1]) if m != "Zurandol"][:2]
+
+        def fact4(items):
+            seen = "\n              ".join("- %s, 2026-10-2%d: HOLDS on line 1.%s Saw: line 1, as predicted. New: page %d."
+                                           % (who, 4 + i, items, i) for i, who in enumerate(two))
+            text = real.replace("    SEEN      nobody yet\n\n  FACT 5.", "    SEEN      %s\n\n  FACT 5." % seen)
+            self.assertNotEqual(text, real)
+            return build.entry_states(build.sections(text)[1])["4"]["state"]
+
+        self.assertEqual(fact4(" Items: line 1, 20 of 164."), "OPEN")
+        self.assertEqual(fact4(" items: line 1, 20 of 164."), "OPEN")   # misspelt: left to a person, not a full check
+        self.assertEqual(fact4(" Items: line 1, all 164."), "HOLDS")
+        self.assertEqual(fact4(""), "HOLDS")   # nothing says it was a sample: the text trusts the post
 
 
 class Votes(unittest.TestCase):

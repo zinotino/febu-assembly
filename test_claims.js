@@ -132,9 +132,51 @@ after.entries[0].state = { state: 'WITHDRAWN', by: [], since: '2026-10-15', star
 ra = review(p, after, '2026-10-20');                                                                   // but the page asks no more
 assert.ok(!ra.add.some((a) => a.entry.num === 1) && ra.held.some((h) => /withdrawn on 2026-10-15/.test(h.why)));
 
+// Items: and Script: (ASSEMBLY_SPEC section 4) go into the SEEN item, and two samples of a line over many items, fact 4's
+// 164 pages, close nothing (rule 3). The Script: line is agent.py's own, "via" and all.
+const many = { members: data.members, next: 2, votes: [], adopted: '2026-10-22',
+  entries: [{ kind: 'FACT', num: 1, writer: 'Zed', lines: 1, empty: true, results: [], state: { state: 'OPEN', by: [], start: '2026-10-23' } }] };
+const samples = `CHECK FACT 1 · HOLDS · line 1 · Ann · 2026-10-24
+Line 1: any page sits in a book the rotation does not predict
+Saw: pages 1-20 as predicted
+Items: 20 of 164
+New: page 7 is short
+Minutes: 30
+Script: python checks/resolve.py fact4 by Zurandol said HOLDS on ledger d3e17658 at 2026-10-24T12:00Z via api.mainnet-beta.solana.com
+I opened the link myself.
+
+CHECK FACT 1 · HOLDS · line 1 · Bo · 2026-10-25
+Saw: pages 100-119 as predicted
+Items: 20 of 164
+New: page 101 has a typo
+I opened the link myself.`;
+const ps = parse(samples);
+assert.deepStrictEqual(ps.unread, []);
+assert.deepStrictEqual([ps.checks[0].items, ps.checks[1].items], [[{ line: 1, n: 20, of: 164 }], [{ line: 0, n: 20, of: 164 }]]);
+assert.deepStrictEqual(ps.checks[0].script, { name: 'python checks/resolve.py fact4', by: 'Zurandol', via: 'api.mainnet-beta.solana.com' });
+assert.strictEqual(seenText(ps.checks[0]), '- Ann, 2026-10-24: HOLDS on line 1. Items: line 1, 20 of 164. Script: python ' +
+  'checks/resolve.py fact4 by Zurandol via api.mainnet-beta.solana.com. Saw: line 1, pages 1-20 as predicted. New: page 7 ' +
+  'is short. 30 minutes.');   // test_build.py reads this same line back (SLOTS)
+const rs = review(ps, many, '2026-10-25');
+assert.strictEqual(rs.add[0].posts.length, 2, 'a sample stays a SEEN line');
+assert.strictEqual(rs.add[0].closes, null, 'two samples close nothing');
+const all = review(parse(samples.replace(/Items: 20 of 164/g, 'Items: 164 of 164')), many, '2026-10-25');
+assert.strictEqual(all.add[0].closes.state, 'HOLDS', 'the same two over all 164 pages close it');
+assert.ok(seenText(all.add[0].posts[1]).includes(' Items: all 164. Saw:'));
+const why = (t) => review(parse(t), many, '2026-10-25').held.map((h) => h.why);
+assert.ok(/write Items: all 164/.test(why(samples.replace('Items: 20 of 164', 'Items: twenty pages'))[0]));
+assert.ok(/write Items: all 164/.test(why(samples.replace('Items: 20 of 164', 'Items: 165 of 164'))[0]));
+assert.ok(/write Items: all 164/.test(why(samples.replace('Items: 20 of 164', 'Items: 20 of 99999999999999999999999'))[0]),
+  'a count JavaScript would print as 1e+23 cannot be read back from the file');
+assert.ok(/whose script/.test(why(samples.replace(' by Zurandol', ''))[0]), 'a Script: line names whose script it is');
+
 console.log('ok');
 
 // A pasted line with a long run of spaces must not take quadratic time (the weekly page parses on every keystroke).
 const t0 = Date.now();
 parse('CHECK FACT 1 · HOLDS · lines 1' + ' '.repeat(200000) + 'x');
 assert(Date.now() - t0 < 300, "parse took " + (Date.now() - t0) + " ms on a 200k-space line");
+const dots = '.'.repeat(200000) + 'x', t1 = Date.now();   // nor a long run of full stops, in a Script: or a Saw: line
+review(parse('CHECK FACT 1 · HOLDS · line 1 · Ann · 2026-10-24\nSaw: a' + dots + '\nNew: b\nScript: a by ' + dots +
+  '\nI opened the link myself.'), many, '2026-10-25');
+assert(Date.now() - t1 < 300, "review took " + (Date.now() - t1) + " ms on 200k full stops");

@@ -871,8 +871,16 @@ def cheapest(secs, items):
 # to paste into the chat or into ledger.txt; none of them posts, stores or sends anything (claims.js does the typing).
 
 RESULTS = {"FACT": ("HOLDS", "DOESN'T HOLD"), "PROMISE": ("KEPT", "BROKEN")}
-# A SEEN item as the weekly page writes it: "- Laura, 2026-10-16: HOLDS on lines 1, 2. Saw: ... New: ... 9 minutes."
-SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\.")
+# A SEEN item as the weekly page writes it: "- Laura, 2026-10-16: HOLDS on lines 1, 2. Saw: ... New: ... 9 minutes.",
+# with two slots before Saw: when the post had them: "Items: line 1, 20 of 164." for a line over many items (rule 3),
+# and "Script: python checks/x.py by Ann via host." naming whose script ran. A slot word in that place written any
+# other way ("items:", "Item:", a count with no full stop) leaves the whole item to a person (lint I6), so a sample
+# cannot pass for a full check by being misspelt.
+ITEMS = r"(?:line \d+, )?(?:all \d+|\d+ of \d+)"
+SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\."
+                       r"(?: Items: (%s(?:; %s)*)\.|(?!\s*(?i:items?)\b))" % (ITEMS, ITEMS) +
+                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.(?= Saw:)|(?!\s*(?i:script)\b))")
+ITEM = re.compile(r"(?:line (\d+), )?(?:all (\d+)|(\d+) of (\d+))")
 CLAUSE = re.compile(r"[;,] or ")                            # "a, or b; or c": one WRONG IF line per clause
 DATE = re.compile(r"\b\d{4}-\d\d-\d\d\b")
 CHAT = "  ·  "                                         # between the parts of a post's first line
@@ -896,11 +904,18 @@ def seen_items(fields):
     return items
 
 
+def sampled(items):
+    """The lines an Items slot says were not tested over all their items ("20 of 164"; a count past the total is no full
+    check either), 0 for one that names no line."""
+    return tuple(sorted({int(ln or 0) for ln, _, n, of in ITEM.findall(items or "") if n and int(n) != int(of)}))
+
+
 def results(fields):
-    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers). A SEEN line
-    written another way is left to a person to read."""
+    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers, the lines tested
+    on a sample, and (script, author, host) or None). A SEEN line written another way is left to a person to read."""
     found = (SEEN_ITEM.match(it.replace("’", "'")) for it in seen_items(fields))
-    return [(m.group(1), m.group(2), m.group(3), tuple(sorted({int(n) for n in re.findall(r"\d+", m.group(4) or "")})))
+    return [(m.group(1), m.group(2), m.group(3), tuple(sorted({int(n) for n in re.findall(r"\d+", m.group(4) or "")})),
+             sampled(m.group(5)), m.group(6) and (m.group(6), m.group(7), m.group(8)))
             for m in found if m]
 
 
@@ -970,16 +985,18 @@ def standing(found, author, members, start):
     second post. Two people, member or not, posting the same other word keep it open or reopen it: it carries both
     results, only later posts count, and 30 days on without a close it is CAN'T TELL (`until` is the last day it can
     close). An entry nobody disputes stays OPEN however long it waits (WORDS USED HERE). Results dated before `start`
-    count for nothing, and none count while it is None. assets/claims.js has the same function; checks/states.json
-    holds the cases both must pass.
+    count for nothing, and none count while it is None. A HOLDS that names a sample counts for nothing either (rule 3:
+    it stays a SEEN line); a sample that found a wrong item counts toward DOESN'T HOLD. A result's fifth part, if it
+    has one, is the lines it tested on a sample. assets/claims.js has the same function; checks/states.json holds the
+    cases both must pass.
     ponytail: everyone on the Member line counts as active; the 90-day silence is in the chat, not the file."""
     out = {"state": "OPEN", "lines": [], "since": None, "by": [], "both": [], "until": None}
     people, members = {}, set(members)
-    for name, date, word, lines in sorted((r for r in found if start and a_day(r[1]) and r[1] >= start),
-                                          key=lambda r: r[1]):
+    for name, date, word, lines, *rest in sorted((r for r in found if start and a_day(r[1]) and r[1] >= start),
+                                                 key=lambda r: r[1]):
         if out["until"] and date > out["until"]:
             return dict(out, state="CAN'T TELL", since=days_after(out["until"], 1), until=None)
-        if name == author:
+        if name == author or (word == "HOLDS" and rest and rest[0]):
             continue
         people.setdefault((word, tuple(lines)), set()).add(name)
         words = sorted({w for (w, _), names in people.items() if len(names) >= 2})
@@ -1048,8 +1065,9 @@ def name_options(members):
 
 
 def check_card(kind, num, author, fields, members):
-    """The check card: tick the WRONG IF lines you tested, say what you saw on each, one new thing on the page, the
-    minutes, your name and your result. claims.js writes the chat post from it; Copy waits for the new thing."""
+    """The check card: tick the WRONG IF lines you tested, say what you saw on each (and for a line over many items,
+    how many you opened), one new thing on the page, the minutes, your name and your result. claims.js writes the chat
+    post from it; Copy waits for the new thing."""
     aid = anchor(kind, num)
     if kind == "FACT":
         tests = ('<fieldset class="cc-set"><legend>Which WRONG IF lines did you test? Say what you saw on each.</legend>'
@@ -1057,7 +1075,10 @@ def check_card(kind, num, author, fields, members):
                      '<li><label class="ln"><input type="checkbox" class="ln-on" value="%d"><span class="n">%d</span>'
                      '<span class="t">%s</span></label><input type="text" class="saw" data-line="%d" autocomplete="off" '
                      'aria-label="What you saw on line %d" placeholder="What you saw: the number, the words or the date" '
-                     'hidden></li>' % (i, i, html.escape(short_addr(t)), i, i) for i, t in enumerate(wrong_if(fields), 1)))
+                     'hidden><input type="text" class="items" data-line="%d" autocomplete="off" aria-label="Items you '
+                     'opened on line %d, if it covers many" placeholder="If it covers many items, how many you opened: '
+                     'all 164, or 20 of 164" hidden></li>' % (i, i, html.escape(short_addr(t)), i, i, i, i)
+                     for i, t in enumerate(wrong_if(fields), 1)))
     else:
         tests = ('<label class="f">What you saw at the KNOWN BY link, on or after %s<input type="text" class="saw" '
                  'autocomplete="off" placeholder="The number, the words or the date"></label>'
@@ -1450,7 +1471,8 @@ def ledger_dict(title, secs, more=False):
     ents = []
     for _, k, n, w, f in (it for it in items if it[0] == "entry"):
         e = {"kind": k, "num": int(n), "writer": writer(w, f, names), "lines": len(wrong_if(f)), "empty": not checked(f),
-             "results": [[a, d, r, list(ls)] for a, d, r, ls in results(f)], "state": st[n]}
+             "results": [[a, d, r, list(ls), list(sm), sc and list(sc)] for a, d, r, ls, sm, sc in results(f)],
+             "state": st[n]}
         if more:
             e.update(says=clip(text_of(f, HEADLINE[k])), wrong_if=[clip(c) for c in wrong_if(f)],
                      url="%s/ledger.html#%s" % (SITE, anchor(k, n)))
