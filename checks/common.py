@@ -11,6 +11,7 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from decimal import Decimal
 from pathlib import Path
@@ -46,20 +47,51 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 OPEN = urllib.request.build_opener(_NoRedirect).open
+HOST = re.compile(r"[A-Za-z0-9.:\[\]-]+")
+
+
+def host_of(url):
+    """The host of an address, with its port if it has one, and nothing else: a path or query can hold a key, and this goes
+    into a post line, so anything but letters, digits and . : - [ ] reads as unknown."""
+    try:
+        p = urllib.parse.urlparse(url)
+        host = ("[%s]" % p.hostname if p.hostname and ":" in p.hostname else p.hostname or "") + (":%d" % p.port if p.port else "")
+    except ValueError:
+        return "unknown"
+    return host if HOST.fullmatch(host) else "unknown"
+
+
+def redact(text, url):
+    """The node's address cut to scheme and host in a script's output: its user:password@, path, query or fragment can hold
+    an API key, and so can an address that does not parse. Each part of 6 or more characters is cut too, longest first: a
+    node may echo the key alone ("invalid api key ..."), a request line, or the HTTP library a port it could not read."""
+    url = url or ""
+    m = re.match(r"[A-Za-z]+://(?:([^/?#]*)@)?[^/?#]*", url)
+    if not m:
+        return text.replace(url, "<cut>") if len(url) >= 6 else text
+    text = text.replace(url, "%s://%s" % (url.split(":", 1)[0], host_of(url)))
+    user, rest = m.group(1) or "", url[m.end():]
+    for part in sorted({rest, user, *re.split(r"[/?#&=@:;]", user + "/" + rest)}, key=len, reverse=True):
+        if len(part) >= 6:
+            text = text.replace(part, "<cut>")
+    return text
 
 
 def rpc(method, params):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
     last = None
+    try:
+        req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
+    except ValueError:   # not an address at all, and urllib's message repeats it whole: it may be the key itself
+        raise SystemExit(redact("%s: SOLANA_RPC %s is not the address of a node" % (method, RPC), RPC)) from None
     for attempt in range(6):
         if attempt:
             time.sleep(3 * attempt)   # the public node's "slow down" passes after a few seconds
-        req = urllib.request.Request(RPC, body, {"Content-Type": "application/json", "User-Agent": "curl/8"})
         try:
             r = json.load(OPEN(req, timeout=60))
         except urllib.error.HTTPError as err:
             if err.code < 500 and err.code != 429:   # refused, not busy: asking again will not help
-                raise SystemExit("%s: %s answered HTTP %d" % (method, RPC, err.code))
+                raise SystemExit(redact("%s: %s answered HTTP %d" % (method, RPC, err.code), RPC))
             last = "HTTP %d" % err.code
             continue
         except (OSError, ValueError, http.client.HTTPException) as err:   # no connection, or a cut-off or non-JSON body
@@ -69,9 +101,9 @@ def rpc(method, params):
             last = r["error"]
             continue
         if "error" in r:
-            raise SystemExit("%s: %s" % (method, r["error"]))
+            raise SystemExit(redact("%s: %s" % (method, r["error"]), RPC))
         return r["result"]
-    raise SystemExit("%s: no answer from %s after 6 tries (last: %s)" % (method, RPC, last))
+    raise SystemExit(redact("%s: no answer from %s after 6 tries (last: %s)" % (method, RPC, last), RPC))
 
 
 def tx(sig):
@@ -79,7 +111,7 @@ def tx(sig):
     # version 1: the creator wallet moved to v1 transactions on 2026-09-20
     r = rpc("getTransaction", [sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 1}])
     if r is None:
-        raise SystemExit("%s does not know transaction %s" % (RPC, sig))
+        raise SystemExit(redact("%s does not know transaction %s" % (RPC, sig), RPC))
     return r
 
 
@@ -100,12 +132,14 @@ def signers(r):
 
 
 def token_changes(r):
-    """[(token account, owner, mint, before, after)] from the transaction's own balance lists."""
+    """[(token account, owner, mint, before, after)] from the transaction's own balance lists. An account missing from one
+    list was opened or closed in the transaction: 0 there. A listed balance with no amount or owner raises KeyError: a
+    field the node left out is not a zero, and not someone else's account."""
     k = keys(r)
     pre = {b["accountIndex"]: b for b in r["meta"]["preTokenBalances"]}
     post = {b["accountIndex"]: b for b in r["meta"]["postTokenBalances"]}
-    amt = lambda b: Decimal((b or {}).get("uiTokenAmount", {}).get("uiAmountString") or "0")
-    return [(k[i], (post.get(i) or pre[i]).get("owner"), (post.get(i) or pre[i])["mint"], amt(pre.get(i)),
+    amt = lambda b: Decimal(b["uiTokenAmount"]["uiAmountString"]) if b else Decimal(0)
+    return [(k[i], (post.get(i) or pre[i])["owner"], (post.get(i) or pre[i])["mint"], amt(pre.get(i)),
              amt(post.get(i))) for i in sorted(set(pre) | set(post))]
 
 

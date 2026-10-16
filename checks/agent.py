@@ -25,13 +25,13 @@ import shutil
 import subprocess
 import sys
 import threading
-import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "checks"
 sys.path.insert(0, str(HERE))   # common.py sits beside this file
 import common  # noqa: E402
+from common import host_of, redact  # noqa: E402  (the node's key is cut by the same code in every check)
 # Fact -> the scripts that read it. Fact 8 needs both reads (process.md, section 5). Fact 7 is a promise: no script.
 SCRIPTS = {1: ["resolve.py fact1"], 2: ["fact2.py"], 3: ["resolve.py fact3"], 4: ["resolve.py fact4"], 5: ["fact5.py"],
            6: ["fact6.py"], 8: ["resolve.py fact8", "resolve.py door2"], 9: ["resolve.py test9"]}
@@ -100,21 +100,9 @@ def ledger_data():
     return data
 
 
-HOST = re.compile(r"[A-Za-z0-9.:\[\]-]+")
 # --rpc: http(s), a plain host or an IPv6 literal, a port, then anything printable. No user:password@, no space, no
 # non-ASCII, no control character: an error from the HTTP library echoes parts of the address, and the host goes into a post.
 RPC_URL = re.compile(r"(https?)://(?:([A-Za-z0-9.-]+)|\[([0-9A-Fa-f:]+)\])(?::([0-9]{1,5}))?(?:[/?#][!-~]*)?")
-
-
-def host_of(url):
-    """The host of an address, with its port if it has one, and nothing else: a path or query can hold a key, and this goes
-    into a post line, so anything but letters, digits and . : - [ ] reads as unknown."""
-    try:
-        p = urllib.parse.urlparse(url)
-        host = ("[%s]" % p.hostname if p.hostname and ":" in p.hostname else p.hostname or "") + (":%d" % p.port if p.port else "")
-    except ValueError:
-        return "unknown"
-    return host if HOST.fullmatch(host) else "unknown"
 
 
 def check_rpc(url, name="--rpc"):
@@ -139,22 +127,6 @@ def source_of(num, rpc=None):
     except (KeyError, SystemExit):
         m = None
     return host_of(m.group(m.lastindex or 0)) if m else "unknown"
-
-
-def redact(text, url):
-    """The node's address cut to scheme and host in a script's output: its path, query or fragment can hold an API key,
-    and so can an address that does not parse. Each part of 6 or more characters is cut too, longest first: a node may
-    echo the key alone ("invalid api key ...") or a request line."""
-    url = url or ""
-    m = re.match(r"[A-Za-z]+://[^/?#]*", url)
-    if not m:
-        return text.replace(url, "<cut>") if len(url) >= 6 else text
-    text = text.replace(url, "%s://%s" % (url.split(":", 1)[0], host_of(url)))
-    rest = url[m.end():]
-    for part in sorted({rest, *re.split(r"[/?#&=@:;]", rest)}, key=len, reverse=True):
-        if len(part) >= 6:
-            text = text.replace(part, "<cut>")
-    return text
 
 
 def status_text():

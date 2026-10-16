@@ -8,7 +8,7 @@ the ledger and post; it posts nothing.
 import re
 from decimal import Decimal
 
-from common import B58, RPC, WSOL, entry, find, keys, now, sol_change, short, signers, text, token_changes, tx, when
+from common import B58, RPC, WSOL, entry, find, host_of, keys, now, sol_change, short, signers, text, token_changes, tx, when
 
 ROW = re.compile(r"^\s*(\d+)\s+(\d{4}-\d\d-\d\d \d\d:\d\d)\s+(\d+(?:\.\d+)?)\s+(?:https://solscan\.io/tx/)?(%s)" % B58, re.M)
 TOTAL = re.compile(r"^\s*total\s+(\d+(?:\.\d+)?)\s*$", re.M)
@@ -43,7 +43,7 @@ def main():
     sale = find(r"STEP 1.*?solscan\.io/tx/(%s)" % B58, steps.replace("\n", " "), "step 1's trade")
     table, total = rows(steps)
 
-    print("Fact 6, read %s from %s" % (now(), RPC))
+    print("Fact 6, read %s from %s" % (now(), host_of(RPC)))
     print("Fee account %s, creator wallet %s" % (short(fee_account), short(wallet)))
     print()
     r = tx(sale)

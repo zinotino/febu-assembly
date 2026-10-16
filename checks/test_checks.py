@@ -414,3 +414,277 @@ def test_mcp_server_only_helps():
     assert "no CHECK line" in bad.content[0].text
     assert nope.isError and "no script" in nope.content[0].text
     assert hostile.isError and "as it appears in the chat" in hostile.content[0].text
+
+
+# ---------- resolve.py on a fake node: a read it cannot trust ends in CAN'T TELL, never HOLDS ----------
+
+def token_tx(t, *changes, keys=(), logs=(), signer=None, inner=()):
+    """A parsed transaction at time t. changes are (token account, owner, mint, before, after), amounts as strings; keys
+    are more accounts in it; logs is its log (None: the node kept none); inner the programs other programs called in it
+    (None: the node kept no list)."""
+    accts = [ch[0] for ch in changes] + list(keys)
+    bal = lambda i, ch, amt: {"accountIndex": i, "owner": ch[1], "mint": ch[2], "uiTokenAmount": {"uiAmountString": amt}}
+    return {"blockTime": t, "transaction": {"message": {"accountKeys": [{"pubkey": k, "signer": k == signer} for k in accts],
+                                                        "instructions": [{"programId": "ComputeBudget111111111111111111111111111111"}]}},
+            "meta": {"err": None, "logMessages": None if logs is None else list(logs),
+                     "innerInstructions": None if inner is None else [{"index": 0, "instructions": [{"programId": p} for p in inner]}],
+                     "preTokenBalances": [bal(i, ch, ch[3]) for i, ch in enumerate(changes)],
+                     "postTokenBalances": [bal(i, ch, ch[4]) for i, ch in enumerate(changes)]}}
+
+
+def sig(s, t):
+    return {"signature": s, "blockTime": t, "err": None}
+
+
+KEYED = "https://x.example/v2/?api-key=KEYSECRET42"
+
+
+def on_fake_chain(monkeypatch, capsys, cmd, txs, sigs, balance="11.5", deaf=False):
+    """Run `python checks/resolve.py cmd` against a fake node whose address holds a key; return its last verdict line.
+    txs maps a signature to its transaction (None: the node does not know it; an exception: reading it raises that);
+    sigs maps an account to its signatures, newest first, paged two at a time from `before` (deaf: a node that ignores
+    `before`). No run may print the key."""
+    import collections
+    import resolve
+    asked = collections.Counter()
+
+    def rpc(method, params):
+        if method == "getTokenAccountBalance":
+            return {"value": {"uiAmountString": balance}}
+        if method == "getSignaturesForAddress":
+            asked[params[0]] += 1
+            assert asked[params[0]] < 50, "paged forever"
+            got = sigs.get(params[0], [])
+            at = 0 if deaf or "before" not in params[1] else [s["signature"] for s in got].index(params[1]["before"]) + 1
+            return got[at:at + 2]
+        got = txs.get(params[0])
+        if isinstance(got, BaseException):
+            raise got
+        return got
+    monkeypatch.setattr(resolve.c, "RPC", KEYED)
+    monkeypatch.setattr(resolve.c, "rpc", rpc)
+    monkeypatch.setattr(resolve.time, "sleep", lambda s: None)
+    try:
+        resolve.main(cmd)
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert "KEYSECRET42" not in out
+    said = [ln for ln in out.splitlines() if ln.startswith("verdict")]
+    return said[-1] if said else out
+
+
+def test_resolve_fact8_says_cant_tell_on_a_read_it_cannot_trust(monkeypatch, capsys):
+    """Fact 8 on a fake chain where it holds, then with one thing broken each: a control payment the node does not know,
+    a control that does not match, 09-22 read without the fee account's balance or not at all, a signature with no block
+    time, a payment out whose amount the node left out. Each must say CAN'T TELL, never HOLDS."""
+    import copy
+    import resolve
+    wallet = find(r"other than (%s)" % B58, entry(6), "wallet")
+    fee = find(r"solscan\.io/account/(%s)" % B58, entry(6), "fee account")
+    ata = resolve.derive_ata(wallet, WSOL)
+    steps = [s for *_, s in rows(text("fact-6-steps.txt"))[0]]
+    d14, d22, oct1 = resolve.day(2026, 9, 14, 21), resolve.day(2026, 9, 22), resolve.day(2026, 10, 1)
+    paid = lambda t, a, b: token_tx(t, (fee, "pool", WSOL, a, b), (ata, wallet, WSOL, "0", "1"))
+    txs = {**{s: token_tx(d14, keys=[ata]) for s in steps}, resolve.ROW_20: token_tx(d14, (ata, wallet, WSOL, "0", "1")),
+           steps[-1]: paid(d14, "7", "0.131"),   # row 44, the one payment out on 09-14
+           "open": token_tx(d22 + 60, (fee, "pool", WSOL, "3.9", "4.5")),   # read in the wrong order, 09-22 opens at 4.5
+           "close": token_tx(d22 + 3600, (fee, "pool", WSOL, "4.5", "5.0")), "pay": paid(oct1, "11", "0.5")}
+    sigs = {ata: [sig(steps[-1], d14)], fee: [sig("close", d22 + 3600), sig("open", d22 + 60), sig(steps[-1], d14)]}
+    paying = {**sigs, ata: [sig("pay", oct1), *sigs[ata]]}
+    assert on_fake_chain(monkeypatch, capsys, "fact8", txs, sigs) == "verdict: HOLDS"
+    assert on_fake_chain(monkeypatch, capsys, "fact8", txs, paying) == "verdict: DOESN'T HOLD"
+
+    def broken(edit, s=sigs):
+        t, g = copy.deepcopy(txs), copy.deepcopy(s)
+        edit(t, g)
+        return on_fake_chain(monkeypatch, capsys, "fact8", t, g)
+    cases = {"a control payment the node does not know": lambda t, g: t.update({steps[0]: None}),
+             "row 20 paid another account": lambda t, g: t.update({resolve.ROW_20: token_tx(d14, ("x", wallet, WSOL, "0", "1"))}),
+             "09-14 shows no payment out": lambda t, g: t.update({steps[-1]: token_tx(d14, keys=[ata, fee])}),
+             "09-22's first transaction lists no fee balance": lambda t, g: t.update({"open": token_tx(d22 + 60, keys=[fee])}),
+             "09-22's first transaction does not read": lambda t, g: t.update({"open": SystemExit("HTTP 500")}),
+             "no transaction read on 09-22": lambda t, g: g.update({fee: g[fee][2:]}),
+             "a signature with no block time": lambda t, g: g[fee][0].update({"blockTime": None}),
+             "the node refuses row 20 and names its own key": lambda t, g: t.update({resolve.ROW_20: SystemExit("HTTP 401 " + KEYED)})}
+    for name, edit in cases.items():
+        assert broken(edit).startswith("verdict: CAN'T TELL"), name
+    # an amount the node left out is not a balance of zero: here it would hide the payment out
+    gone = lambda t, g: t["pay"]["meta"]["preTokenBalances"][0]["uiTokenAmount"].pop("uiAmountString")
+    assert broken(gone, paying).startswith("verdict: CAN'T TELL")
+    assert "the same page twice" in on_fake_chain(monkeypatch, capsys, "fact8", txs, sigs, deaf=True)   # it ignores `before`
+
+
+def test_resolve_door2_counts_a_log_it_cannot_see_whole_as_unread(monkeypatch, capsys):
+    """Door 2 greps each transaction's log for the call. A log the node did not keep, or cut short without the word, cannot
+    show the call is absent, unless the transaction never runs pAMM, whose instruction the call is: the node keeps every
+    instruction even when it cuts the log. Nor can a dry run that names the call and then fails, as one on a wrong vault does."""
+    import resolve
+    word = "Program log: Instruction: TransferCreatorFeesToPumpV2"
+    dry = {"run": (None, [word], {})}
+    monkeypatch.setattr(resolve, "payer", lambda: "1" * 32)
+    monkeypatch.setattr(resolve, "simulate", lambda payer, ixs, watch=(): dry["run"])
+    wallet = find(r"other than (%s)" % B58, entry(6), "wallet")
+    pcv = resolve.to_pump_v2(wallet, find(r"solscan\.io/account/(%s)" % B58, entry(6), "fee account"))[0]
+    oct1, cut = resolve.day(2026, 10, 1), ["Program log: Instruction: Buy", "Log truncated"]
+    swap = token_tx(oct1, logs=["Program log: Instruction: Buy"], inner=[resolve.PAMM])
+
+    def door2(b, before=(sig("older", resolve.day(2026, 9, 10)),)):
+        return on_fake_chain(monkeypatch, capsys, "door2", {"a": swap, "b": b}, {pcv: [sig("a", oct1 + 60), sig("b", oct1), *before]})
+    assert door2(swap) == "verdict: HOLDS"
+    assert door2(token_tx(oct1, logs=[word], inner=[resolve.PAMM])) == "verdict: DOESN'T HOLD"
+    assert door2(token_tx(oct1, logs=[word, "Log truncated"], inner=[resolve.PAMM])) == "verdict: DOESN'T HOLD"   # the call shows
+    assert door2(token_tx(oct1, logs=cut, inner=[resolve.PUMP])) == "verdict: HOLDS"   # cut short, but pAMM never ran
+    for b in (token_tx(oct1, logs=None, inner=[resolve.PAMM]), token_tx(oct1, logs=cut, inner=[resolve.PAMM]),
+              token_tx(oct1, logs=cut, inner=None), token_tx(oct1, logs=[], inner=[resolve.PAMM]), {**swap, "meta": None}):
+        assert door2(b).startswith("verdict: CAN'T TELL"), b
+    assert door2(swap, before=()).startswith("verdict: CAN'T TELL")   # a node whose history stops inside the window
+    assert on_fake_chain(monkeypatch, capsys, "door2", {}, {}).startswith("verdict: CAN'T TELL")   # or that shows none at all
+    dry["run"] = ({"InstructionError": [0, {"Custom": 2006}]}, [word, "Program log: AnchorError: ConstraintSeeds"], {})
+    assert door2(swap).startswith("verdict: CAN'T TELL")
+
+
+def test_resolve_fact1_gates_its_verdict_on_its_controls(monkeypatch, capsys):
+    """Fact 1 on a fake chain where it holds, then with a control failing (the sale left from another account; the 08-14
+    inflow is not where the window rule expects it), a creating transaction whose log the node cut short or kept none of,
+    and a buy in the window whose balance has no owner. None of them may say HOLDS."""
+    import copy
+    import resolve
+    create, wallet = find(r"solscan\.io/tx/(%s)" % B58, entry(1), "create"), find(r"signer is\s+(%s)" % B58, entry(1), "wallet")
+    mint, sale = find(r"\$FEBU token,\s+(%s)" % B58, entry(1), "mint"), find(r"solscan\.io/tx/(%s)" % B58, entry(2), "sale")
+    ata = resolve.derive_ata(wallet, mint, resolve.TOKEN_2022)
+    aug14, oct1 = resolve.day(2026, 8, 14, 12), resolve.day(2026, 10, 1)
+    txs = {create: token_tx(resolve.day(2026, 7, 8), keys=[wallet, mint], signer=wallet,
+                            logs=["Program log: Instruction: InitializeMint2"]),
+           sale: token_tx(resolve.day(2026, 9, 22), (ata, wallet, mint, "100", "0")),
+           "in": token_tx(aug14, (ata, wallet, mint, "0", "100")), "buy": token_tx(oct1, (ata, wallet, mint, "0", "5"))}
+    sigs, buying = {ata: [sig("in", aug14)]}, {ata: [sig("buy", oct1), sig("in", aug14)]}
+    assert on_fake_chain(monkeypatch, capsys, "fact1", txs, sigs) == "verdict: HOLDS"
+    assert on_fake_chain(monkeypatch, capsys, "fact1", txs, buying) == "verdict: DOESN'T HOLD"
+
+    def broken(edit, s=sigs):
+        t = copy.deepcopy(txs)
+        edit(t)
+        return on_fake_chain(monkeypatch, capsys, "fact1", t, s)
+    cut = ["Program log: Instruction: Create", "Log truncated"]
+    cases = {"the sale left from another account": lambda t: t.update({sale: token_tx(1, ("x", wallet, mint, "100", "0"))}),
+             "the 08-14 inflow came on 08-20": lambda t: t["in"].update({"blockTime": resolve.day(2026, 8, 20)}),
+             "the creating log cut short": lambda t: t[create]["meta"].update({"logMessages": cut}),
+             "no creating log kept": lambda t: t[create]["meta"].update({"logMessages": None})}
+    for name, edit in cases.items():
+        assert broken(edit).startswith("verdict: CAN'T TELL"), name
+    no_owner = lambda t: t["buy"]["meta"]["postTokenBalances"][0].pop("owner")
+    assert broken(no_owner, buying).startswith("verdict: CAN'T TELL")
+
+
+def test_resolve_fact9_reads_no_line_from_a_log_it_cannot_see_whole():
+    import pytest
+    import resolve
+    r = token_tx(0, keys=["S", "V"], signer="S", logs=["Program log: Instruction: AdminSetCreator"])
+    assert resolve.verdict(resolve.lines9(r, "S", "V", "AdminSetCreator")) == "HOLDS"
+    r["meta"]["logMessages"].append("Log truncated")   # cut short after the word: the word still shows
+    assert resolve.verdict(resolve.lines9(r, "S", "V", "AdminSetCreator")) == "HOLDS"
+    for logs in (None, [], ["Program log: Instruction: Other", "Log truncated"]):   # a run always logs its first invoke
+        r["meta"]["logMessages"] = logs
+        with pytest.raises(SystemExit, match="whole log"):
+            resolve.lines9(r, "S", "V", "AdminSetCreator")
+
+
+def test_resolve_reads_the_copy_it_names_not_where_a_redirect_points():
+    """The archive answers a stamp it has no copy of with a redirect to the nearest copy. Following it would check another
+    copy than the ledger names, so get() refuses it."""
+    import http.server
+    import threading
+    import urllib.error
+    import pytest
+    import resolve
+
+    class Moved(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(302 if self.path == "/named" else 200)
+            if self.path == "/named":
+                self.send_header("Location", "/nearest")
+            self.end_headers()
+            self.wfile.write(b"" if self.path == "/named" else b"another copy")
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Moved)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        base = "http://127.0.0.1:%d" % srv.server_address[1]
+        assert resolve.get(base + "/nearest") == b"another copy"
+        with pytest.raises(urllib.error.HTTPError, match="302"):
+            resolve.get(base + "/named")
+    finally:
+        srv.shutdown()
+
+
+def test_resolve_fact4_hashes_the_copy_it_checks(monkeypatch, capsys):
+    """Fact 4 printed the SHA-256 of a second download, not of the copy it checked: a copy that changed in between showed
+    a hash that names neither."""
+    import hashlib
+    import json
+    import re
+    import resolve
+    books = re.findall(r"\d+-\d+ (THE [A-Z ]+?)(?:,| then)", " ".join(entry(4).split()))
+    checked = json.dumps([{"page_number": n, "book": books[(n - 1) // 4 % 8]} for n in range(1, 165)]).encode()
+    copies = [checked, checked + b" "]
+    monkeypatch.setattr(resolve, "get", lambda url: copies.pop(0))
+    resolve.fact4()
+    out = capsys.readouterr().out
+    assert hashlib.sha256(checked).hexdigest() in out and "verdict (on this copy, KNOWN BUGS 3): HOLDS" in out
+
+
+def test_no_key_in_what_the_checks_print(monkeypatch, capsys):
+    """A direct run (not through agent.py) with SOLANA_RPC holding a key: the key is in no error and no header line. The
+    node refuses (HTTP 401); the HTTP library echoes an address it cannot parse; fact 2 and fact 6 name the node they read.
+    resolve.py's runs are checked in on_fake_chain."""
+    import http.server
+    import runpy
+    import threading
+    from pathlib import Path
+    import pytest
+    import common
+    import fact6
+
+    class Refuse(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.send_response(401)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Refuse)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        monkeypatch.setattr(common, "RPC", "http://127.0.0.1:%d/v2/?api-key=KEYSECRET42" % srv.server_address[1])
+        with pytest.raises(SystemExit, match="answered HTTP 401") as e:
+            common.rpc("getSlot", [])
+        assert "KEYSECRET42" not in str(e.value)
+    finally:
+        srv.shutdown()
+    monkeypatch.setattr(common.time, "sleep", lambda s: None)
+    monkeypatch.setattr(common, "RPC", "https://user:KEYSECRET42@x.example/")   # InvalidURL: "nonnumeric port: 'KEYSECRET42@..."
+    with pytest.raises(SystemExit, match="no answer") as e:
+        common.rpc("getSlot", [])
+    assert "KEYSECRET42" not in str(e.value)
+    monkeypatch.setattr(common, "RPC", "KEYSECRET42")   # no scheme: urllib's ValueError repeats it whole
+    with pytest.raises(SystemExit) as e:
+        common.rpc("getSlot", [])
+    assert "KEYSECRET42" not in str(e.value)
+
+    key = "https://x.example/v2/?api-key=KEYSECRET42"
+    monkeypatch.setattr(common, "RPC", key)
+    monkeypatch.setattr(fact6, "RPC", key)   # fact 6 took the name when it was imported
+    monkeypatch.setattr(common, "rpc", lambda method, params: {"value": []} if method == "getTokenAccountsByOwner"
+                        else token_tx(0, keys=["W"], signer="W"))
+    runpy.run_path(str(Path(common.__file__).parent / "fact2.py"))
+
+    def stop(method, params):
+        raise SystemExit("stop")
+    monkeypatch.setattr(common, "rpc", stop)
+    with pytest.raises(SystemExit, match="stop"):   # fact 6 stops at its first read, after its header
+        fact6.main()
+    out = capsys.readouterr().out
+    assert "Fact 2, read" in out and "Fact 6, read" in out and "x.example" in out and "KEYSECRET42" not in out

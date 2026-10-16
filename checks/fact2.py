@@ -6,7 +6,7 @@ Reads only. Prints what it saw, for a person to compare with the ledger and post
 """
 from decimal import Decimal
 
-from common import B58, RPC, entry, find, now, rpc, short, signers, token_changes, tx, when
+from common import B58, RPC, entry, find, host_of, now, rpc, short, signers, token_changes, tx, when
 
 fact = entry(2)
 sale = find(r"solscan\.io/tx/(%s)" % B58, fact, "fact 2's sale")
@@ -18,7 +18,7 @@ r = tx(sale)
 mine = [(a, b) for acct, owner, m, a, b in token_changes(r) if owner == wallet and m == mint]
 held = rpc("getTokenAccountsByOwner", [wallet, {"mint": mint}, {"encoding": "jsonParsed"}])["value"]
 
-print("Fact 2, read %s from %s" % (now(), RPC))
+print("Fact 2, read %s from %s" % (now(), host_of(RPC)))
 print("The ledger says: the wallet sold all %s $FEBU in one transaction, and received none after it through 2026-10-14."
       % says)
 print("Below: its $FEBU now. For $FEBU coming in after the sale, open its transfers (fact 1's link), filtered to $FEBU.")
