@@ -242,6 +242,11 @@ def test_unreadable_seen_item_is_left_to_a_person():
     new = make(seen1="    SEEN      Ann, 2026-10-23: saw it. HOLDS.")
     rows = lint(new, new, NOWHERE, TODAY)
     assert codes(rows, WARN) == ["I6"] and not codes(rows, FAIL)
+    for slot in ("Items: twenty pages.", "Script: mine.py."):   # a misspelt slot could hide a sample: a person reads it
+        new = make(seen1=seen(item("Ann", "2026-10-23").replace(". Saw:", ". %s Saw:" % slot)))
+        assert codes(lint(new, new, NOWHERE, TODAY), WARN) == ["I6"], slot
+    new = make(seen1=seen(item("Ann", "2026-10-23").replace(". Saw:", ". Items: line 1, all 44. Script: x.py by Bo. Saw:")))
+    assert not codes(lint(new, new, NOWHERE, TODAY), WARN)
 
 
 def test_results_and_lines():

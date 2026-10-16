@@ -124,7 +124,9 @@ def test_release_against_a_local_site():
 DATA = {"members": ["Ann", "Bo", "Zed"], "next": 2, "votes": [],
         "entries": [{"kind": "FACT", "num": 1, "writer": "Zed", "lines": 2, "empty": True, "results": []}]}
 FILLED = ("CHECK FACT 1 | HOLDS | lines 1,2 | Ann | 2026-10-16\nLine 1:\nSaw: 5 SOL\nLine 2:\nSaw: none\n"
-          "New: the page is dated 2026-07-08\nScript: x\nI opened the link myself.\n")
+          "New: the page is dated 2026-07-08\n%s\nI opened the link myself.\n")
+SCRIPT = "Script: python checks/x.py by Zed said HOLDS on ledger d3e17658 at 2026-10-16T12:00Z via api.mainnet-beta.solana.com"
+FILLED %= SCRIPT
 
 
 def with_scripts(agent, outs):
@@ -154,6 +156,12 @@ def test_agent_draft_waits_for_a_person():
     assert held(FILLED.replace("\nI opened the link myself.\n", "\n\nI opened the link myself.\n"))   # outside the post
     assert held(FILLED + "\nVOTE YES | version 3 | Ann | 2026-10-16\n")                    # lint reads check posts only
     assert held(FILLED.replace("| Ann |", "| Zed |"))                                      # nobody checks their own entry
+    assert held(FILLED.replace(" by Zed", ""))                                             # whose script is it?
+    assert held(FILLED.replace("Saw: 5 SOL", "Saw: 5 SOL\nItems: some"))                   # Items: all n, or n of m
+    assert agent.lint(FILLED.replace("Saw: 5 SOL", "Saw: 5 SOL\nItems: 20 of 164"), DATA, "2026-10-16") == []
+    line = agent.script_line(["python checks/x.py"], "HOLDS", "2026-10-16T12:00Z")       # the helper's own line reads
+    assert " by %s said HOLDS on ledger " % agent.AUTHOR in line
+    assert agent.lint(FILLED.replace(SCRIPT, line), DATA, "2026-10-16") == []
     seen = copy.deepcopy(DATA)
     seen["entries"][0].update(empty=False, results=[["Ann", "2026-10-16", "HOLDS", [1, 2]]])
     assert agent.lint(FILLED, seen, "2026-10-16") == ["nothing to add: the ledger already has this result"]

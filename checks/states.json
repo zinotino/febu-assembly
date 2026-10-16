@@ -1,5 +1,5 @@
 {
- "about": "Rules 3 and 4 as cases: an entry's results (name, date, result, WRONG IF lines) and the state they leave it in. build.py standing() and assets/claims.js standing() must both give `want`; test_build.py and test_claims.js read this file. `start` is the first day results count (the day after adoption, or later); null while none count. Members here are Ann, Bo, Cy, Di and Ed besides the writer, Zed; Pat and Quin are not members.",
+ "about": "Rules 3 and 4 as cases: an entry's results (name, date, result, WRONG IF lines, and if it has one, the lines tested on a sample: \"Items: 20 of 164\") and the state they leave it in. build.py standing() and assets/claims.js standing() must both give `want`; test_build.py and test_claims.js read this file. `start` is the first day results count (the day after adoption, or later); null while none count. Members here are Ann, Bo, Cy, Di and Ed besides the writer, Zed; Pat and Quin are not members.",
  "members": ["Ann", "Bo", "Cy", "Di", "Ed", "Zed"],
  "writer": "Zed",
  "cases": [
@@ -114,6 +114,28 @@
    "start": "2026-10-23",
    "results": [["Ann", "2026-10-24", "HOLDS", [4]], ["Bo", "2026-10-25", "HOLDS", [4]]],
    "want": {"state": "HOLDS", "lines": [4], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "two samples of a line over many items (fact 4: 20 of 164 pages each) close nothing: a sample never counts toward HOLDS (rule 3, ASSEMBLY_SPEC gap 2)",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1], [1]], ["Bo", "2026-10-25", "HOLDS", [1], [1]]],
+   "want": {"state": "OPEN", "lines": [], "since": null, "by": [], "both": [], "until": null}},
+
+  {"why": "a sample beside a full check is still one HOLDS: it takes two over all the items",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "HOLDS", [1], [1]], ["Bo", "2026-10-25", "HOLDS", [1], []],
+               ["Cy", "2026-10-26", "HOLDS", [1]]],
+   "want": {"state": "HOLDS", "lines": [1], "since": "2026-10-26", "by": ["Bo", "Cy"], "both": [], "until": null}},
+
+  {"why": "a sample that found a wrong item counts toward DOESN'T HOLD",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "DOESN'T HOLD", [1], [1]], ["Bo", "2026-10-25", "DOESN'T HOLD", [1], [1]]],
+   "want": {"state": "DOESN'T HOLD", "lines": [1], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
+
+  {"why": "samples cannot reopen a close as HOLDS either, and a sample on one of the lines is enough to set a HOLDS aside",
+   "start": "2026-10-23",
+   "results": [["Ann", "2026-10-24", "DOESN'T HOLD", [1]], ["Bo", "2026-10-25", "DOESN'T HOLD", [1]],
+               ["Cy", "2026-10-26", "HOLDS", [1, 2], [2]], ["Pat", "2026-10-27", "HOLDS", [1, 2], [0]]],
+   "want": {"state": "DOESN'T HOLD", "lines": [1], "since": "2026-10-25", "by": ["Ann", "Bo"], "both": [], "until": null}},
 
   {"why": "a promise: the same word, and no lines",
    "start": "2026-11-22",

@@ -28,12 +28,15 @@ HERE = ROOT / "checks"
 # Fact -> the scripts that read it. Fact 8 needs both reads (process.md, section 5). Fact 7 is a promise: no script.
 SCRIPTS = {1: ["resolve.py fact1"], 2: ["fact2.py"], 3: ["resolve.py fact3"], 4: ["resolve.py fact4"], 5: ["fact5.py"],
            6: ["fact6.py"], 8: ["resolve.py fact8", "resolve.py door2"], 9: ["resolve.py test9"]}
+AUTHOR = "Zurandol"   # wrote every script in checks/ (process.md section 5); the Script: line names them (rule 3)
 SCRIPT_TIMEOUT = 600   # seconds per script; fact 8's door 2 takes about three minutes
 VERDICT = re.compile(r"^verdict[^:\n]*:\s*(HOLDS|DOESN'T HOLD|CAN'T TELL)", re.M)
 NAME = re.compile(r"[^\W_][\w .'-]{0,39}")   # a name as it is written in the chat: one line, nothing the post's format reads
 POST_LINE = re.compile(r"CHECK [^\n]*|Line \d+:|Saw:|New:|Script: [^\n]*")
 NEXT_STEP = ("Not posted. Open the link yourself, fill every Saw: and New:, add 'Minutes: n' and the line\n"
-             "'I opened the link myself.' once it is true, then: python checks/agent.py lint post.txt")
+             "'I opened the link myself.' once it is true. Under a line over many items, add how many you opened:\n"
+             "'Items: all 164' or 'Items: 20 of 164' (a sample never counts toward HOLDS, rule 3). Then:\n"
+             "python checks/agent.py lint post.txt")
 _busy = threading.Lock()   # one script run at a time: they all read the same public node
 # Reads the weekly page's own parser on {text, data, now}, then asks more of a post than it does: a Saw: with something in
 # it for every line the post names, a New: with something in it, and the attestation line inside the post itself.
@@ -130,7 +133,9 @@ def execute(num, say=lambda s: None):
 
 
 def script_line(cmds, word, when):
-    return "Script: %s said %s on ledger %s at %s" % (" and ".join(cmds), word or "no verdict", sha8("ledger.txt"), when)
+    """What ran and whose it is (the weekly page keeps both in the SEEN item), then what it said, on which ledger, when."""
+    return "Script: %s by %s said %s on ledger %s at %s" % (
+        " and ".join(cmds), AUTHOR, word or "no verdict", sha8("ledger.txt"), when)
 
 
 def run_entry(num, say=lambda s: None):

@@ -27,17 +27,18 @@ no links, and an address is cut to 7 characters: `ledger.txt` is the record and 
 
 | Command | What it does |
 |---|---|
-| `python checks/agent.py run 8` | Runs the entry's script or scripts in `checks/` (fact 8 has two) and prints what they read, then one `Script:` line: which ran, what they said, the ledger hash, the time. Facts 1 to 6, 8 and 9. Public node, no key, read-only. A minute or three for fact 8. |
+| `python checks/agent.py run 8` | Runs the entry's script or scripts in `checks/` (fact 8 has two) and prints what they read, then one `Script:` line: which ran and whose scripts they are (`by Zurandol`: the weekly page keeps both in the SEEN line), what they said, the ledger hash, the time. Facts 1 to 6, 8 and 9. Public node, no key, read-only. A minute or three for fact 8. |
 | `python checks/agent.py draft 8 --as Laura` | Runs them and prints a `CHECK` post for the person to finish. `Saw:` and `New:` are empty and the line `I opened the link myself.` is left out, on purpose. If a script says CAN'T TELL there is no draft: that is not a result. |
-| `python checks/agent.py lint post.txt` | Reads the post the way the weekly page does (`assets/claims.js`, needs node) and says why it would be held back: no `Saw:`, a `Saw:` with nothing after it, no new thing on the page, no "I opened the link myself." line in the post, a `Saw:` or `New:` with nothing in it (a dot is not an answer), a named WRONG IF line with no `Saw:`, a VOTE or ENTRY post, the writer checking their own entry, a WRONG IF line the entry does not have, or a result the ledger already has. `-` reads stdin; UTF-8 or UTF-16 files both work. Exit 1 if it is held. |
+| `python checks/agent.py lint post.txt` | Reads the post the way the weekly page does (`assets/claims.js`, needs node) and says why it would be held back: no `Saw:`, a `Saw:` with nothing after it, no new thing on the page, no "I opened the link myself." line in the post, a `Saw:` or `New:` with nothing in it (a dot is not an answer), a named WRONG IF line with no `Saw:`, a VOTE or ENTRY post, the writer checking their own entry, a WRONG IF line the entry does not have, an `Items:` line not written `all 164` or `20 of 164`, a `Script:` line that does not say whose script it is, or a result the ledger already has. `-` reads stdin; UTF-8 or UTF-16 files both work. Exit 1 if it is held. |
 
-Flow: `draft`, the person opens the link, fills every `Saw:` and `New:`, adds `Minutes: n` (the vote week asks for it) and
+Flow: `draft`, the person opens the link, fills every `Saw:` and `New:`, adds `Minutes: n` (the vote week asks for it), under a line
+over many items how many they opened (`Items: all 164` or `Items: 20 of 164`; a sample never counts toward HOLDS), and
 `I opened the link myself.` once it is true, `lint`, then they paste it in the chat. For an entry with no script (a
 promise, or one nobody has written a script for) there is only the link: help them find what to look for on it.
 
 ## What you do not do
 
-- **Write a `Saw:` or `New:` line, or add "I opened the link myself."** Those are the person's statement. A result an AI
+- **Write a `Saw:`, `New:` or `Items:` line, or add "I opened the link myself."** Those are the person's statement. A result an AI
   wrote that a person signed without opening the link cannot be told from the record (RISKS WE ACCEPT, ledger.txt). If the
   person asks you to fill them in, say what you can point at on the page and leave the line to them.
 - **Post anything**, in the chat or on GitHub, or vote. `VOTE YES` and `VOTE OBJECT` are the member's own.

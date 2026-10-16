@@ -37,7 +37,8 @@
 
   /* --- the weekly page's reading of a pasted chat ------------------------------------------------------------------
      A post's first line is the part a machine reads. The check card, the vote buttons and the entry form write them:
-       CHECK FACT 8 · HOLDS · lines 1,2,3 · Laura · 2026-10-16      then Line n: / Saw: / New: / Minutes: lines
+       CHECK FACT 8 · HOLDS · lines 1,2,3 · Laura · 2026-10-16      then Line n: / Saw: / Items: / New: / Minutes: lines,
+                                                                     and Script: <name> by <author> if a script ran
        VOTE YES · version 3 · Laura · 2026-10-16                     an objection adds two lines saying why
        ENTRY FACT 10 · Laura · 2026-10-16                            then the entry, as the ledger lays it out
      "|" or "•" work in place of "·", for anyone typing one on a phone. A blank line ends a post. Every other line is
@@ -66,7 +67,7 @@
       if ((m = s.match(CHECK))) {
         out.checks.push(cur = { type: 'check', at: i + 1, kind: m[1].toUpperCase(), num: +m[2], lines: numbers(m[4]),
           word: m[3].toUpperCase().replace(/DOESN'?T\s+HOLD/, "DOESN'T HOLD"), who: m[5].trim(), date: m[6], saw: [],
-          fresh: '', minutes: 0, opened: false, line: 0 });
+          fresh: '', minutes: 0, opened: false, line: 0, items: [], script: null });
       } else if ((m = s.match(VOTE))) {
         out.votes.push(cur = { type: 'vote', at: i + 1, say: m[1].toUpperCase(), subject: m[2].trim(), who: m[3].trim(),
           date: m[4], why: [] });
@@ -97,8 +98,34 @@
     if ((m = s.match(/^saw\s*:\s*(.*)$/i))) { cur.saw.push({ line: cur.line, text: m[1].trim() }); return true; }
     if ((m = s.match(/^new\s*:\s*(.*)$/i))) { cur.fresh = m[1].trim(); return true; }
     if ((m = s.match(/^minutes?\s*:\s*(\d+)/i))) { cur.minutes = +m[1]; return true; }
+    if ((m = s.match(/^items?\s*:\s*(.*)$/i))) { cur.items.push(itemsOf(cur.line, m[1])); return true; }
+    if ((m = s.match(/^script\s*:\s*(.*)$/i))) { cur.script = scriptOf(m[1]); return true; }
     if (/^i opened the link/i.test(s)) { cur.opened = true; return true; }
     return false;
+  }
+
+  // "Items: all 164" or "Items: 20 of 164", under the Line n: it counts for (rule 3: a sample never counts toward HOLDS)
+  function itemsOf(line, text) {
+    var m = String(text).trim().match(/^(?:all\s+(\d+)|(\d+)\s+of\s+(\d+))\.?$/i);
+    return m && +(m[2] || m[1]) <= +(m[3] || m[1]) ? { line: line, n: +(m[2] || m[1]), of: +(m[3] || m[1]) }
+      : { line: line, bad: String(text).trim() };
+  }
+  function sampledOf(c) {   // the lines a post tested on a sample, 0 for an Items line under no Line n: (build.py sampled)
+    return c.items.filter(function (i) { return i.n < i.of; }).map(function (i) { return i.line; })
+      .filter(function (n, j, a) { return a.indexOf(n) === j; }).sort(function (x, y) { return x - y; });
+  }
+  // "Script: python checks/x.py by Ann said HOLDS on ledger 1a2b3c4d at 2026-10-23T12:00Z via host", as agent.py writes
+  // it: the name, whose script it is, and where it read from are kept; the rest is that run's own. Split, not one
+  // regex, so a long pasted line stays linear.
+  function scriptOf(text) {
+    var s = String(text).trim(), by = s.indexOf(' by '), via = null;
+    if (by < 1) return { bad: s };
+    var who = s.slice(by + 4), v = who.lastIndexOf(' via ');
+    if (v >= 0) { via = who.slice(v + 5).replace(/\.+$/, ''); who = who.slice(0, v); }
+    if (who.indexOf(' said ') >= 0) who = who.slice(0, who.indexOf(' said '));
+    who = who.replace(/\.+$/, '').trim();
+    if (!who || /[:;,]/.test(who) || (via !== null && !/^\S+$/.test(via))) return { bad: s };
+    return { name: s.slice(0, by), by: who, via: via || null };
   }
 
   function label(e) { return e.kind + ' ' + e.num; }
@@ -125,16 +152,24 @@
     var bad = c.lines.filter(function (n) { return n < 1 || n > e.lines; });
     if (bad.length) return label(e) + ' has ' + e.lines + ' WRONG IF line' + (e.lines === 1 ? '' : 's') + ', and the post names ' + bad.join(', ');
     if (!c.saw.some(function (s) { return s.text; })) return 'it does not say what they saw';
+    var odd = c.items.filter(function (i) { return i.bad !== undefined; })[0];
+    if (odd) return 'its Items: line says "' + odd.bad + '"; write Items: all 164, or Items: 20 of 164';
+    if (c.script && c.script.bad !== undefined) return 'its Script: line does not say whose script it is: Script: <name> by <author>';
     if (!c.fresh) return 'it names nothing new on the page (HOW TO CHECK AN ENTRY, step 3)';
     if (!c.opened) return 'it does not say they opened the link themselves (Saw)';
     return '';
   }
 
-  function seenText(c) {   // build.py reads this back (SEEN_ITEM): keep the part up to the first full stop as it is
+  function seenText(c) {   // build.py reads this back (SEEN_ITEM): keep the part up to Saw: as it is
     var saw = c.saw.filter(function (s) { return s.text; }).map(function (s) {
       return (s.line ? 'line ' + s.line + ', ' : '') + s.text.replace(/[\s.;]+$/, '');
     });
-    return '- ' + c.who + ', ' + c.date + ': ' + c.word + linesText(c.lines) + '. Saw: ' + stop(saw.join('; ')) +
+    var items = (c.items || []).filter(function (i) { return i.bad === undefined; }).map(function (i) {
+      return (i.line ? 'line ' + i.line + ', ' : '') + (i.n === i.of ? 'all ' + i.of : i.n + ' of ' + i.of);
+    }), sc = c.script && c.script.bad === undefined ? c.script : null;
+    return '- ' + c.who + ', ' + c.date + ': ' + c.word + linesText(c.lines) + '.' +
+      (items.length ? ' Items: ' + items.join('; ') + '.' : '') +
+      (sc ? ' Script: ' + sc.name + ' by ' + sc.by + (sc.via ? ' via ' + sc.via : '') + '.' : '') + ' Saw: ' + stop(saw.join('; ')) +
       ' New: ' + stop(c.fresh) + (c.minutes ? ' ' + c.minutes + ' minute' + (c.minutes === 1 ? '' : 's') + '.' : '');
   }
 
@@ -168,7 +203,7 @@
       if (out.until && date > out.until) {
         return { state: "CAN'T TELL", lines: [], since: daysAfter(out.until, 1), by: [], both: out.both, until: null, groups: groups() };
       }
-      if (name === writer) continue;
+      if (name === writer || (word === 'HOLDS' && rs[i][4] && rs[i][4].length)) continue;   // a sampled HOLDS: rule 3
       var g = people[key] = people[key] || { word: word, lines: lines, names: [] };
       if (g.names.indexOf(name) < 0) g.names.push(name);
       var words = groups().filter(function (x) { return x.names.length >= 2; }).map(function (x) { return x.word; })
@@ -206,7 +241,7 @@
       // before adoption every post is the dry run: count it as if the rules were adopted, and the page says so
       var start = data.adopted ? (a.entry.state || {}).start || null : '0';
       var before = standing(a.entry.results, a.entry.writer, data.members, start);
-      var after = standing(a.entry.results.concat(a.posts.map(function (c) { return [c.who, c.date, c.word, c.lines]; })),
+      var after = standing(a.entry.results.concat(a.posts.map(function (c) { return [c.who, c.date, c.word, c.lines, sampledOf(c)]; })),
                            a.entry.writer, data.members, start);
       var moved = after.state !== before.state || after.since !== before.since;
       a.before = before;
@@ -368,18 +403,23 @@
     copy.classList.add('copy');
     function write() {
       var ticked = [].filter.call(card.querySelectorAll('.ln-on'), function (b) { return b.checked; });
-      each('.ln-on', function (b) { b.closest('li').querySelector('.saw').hidden = !b.checked; }, card);
+      each('.ln-on', function (b) {
+        var li = b.closest('li');
+        li.querySelector('.saw').hidden = li.querySelector('.items').hidden = !b.checked;
+      }, card);
       var name = nameOf(card), res = card.querySelector('input[type=radio]:checked');
       var fresh = card.querySelector('.new').value.trim(), mins = card.querySelector('.min').value.trim();
       var opened = card.querySelector('.opened').checked, missing = [];
       var head = ['CHECK ' + kind + ' ' + card.dataset.num, res ? res.value : '?'];
       if (kind === 'FACT') head.push('lines ' + (ticked.map(function (b) { return b.value; }).join(',') || '?'));
-      var post = [head.concat(name || '?', today()).join(DOT)], blank = false;
+      var post = [head.concat(name || '?', today()).join(DOT)], blank = false, odd = false;
       if (kind === 'FACT') {
         ticked.forEach(function (b) {
-          var li = b.closest('li'), saw = li.querySelector('.saw').value.trim();
+          var li = b.closest('li'), saw = li.querySelector('.saw').value.trim(), items = li.querySelector('.items').value.trim();
           blank = blank || !saw;
           post.push('Line ' + b.value + ': ' + li.querySelector('.t').textContent, 'Saw: ' + (saw || '?'));
+          if (items) post.push('Items: ' + items);
+          odd = odd || (!!items && itemsOf(0, items).bad !== undefined);
         });
       } else {
         var saw = card.querySelector('.saw').value.trim();
@@ -391,6 +431,7 @@
       if (opened) post.push('I opened the link myself. No AI wrote this result.');
       if (kind === 'FACT' && !ticked.length) missing.push('tick the WRONG IF lines you tested');
       else if (blank) missing.push('what you saw' + (kind === 'FACT' ? ' on each line you ticked' : ''));
+      if (odd) missing.push('the items you opened as "all 164" or "20 of 164"');
       if (!fresh) missing.push('one thing on the page that is new');
       if (!res) missing.push('your result');
       if (!name) missing.push('your name');
@@ -400,7 +441,8 @@
       copy.dataset.copy = post.join('\n');
       needs(card.querySelector('.need'), [copy], missing, 'Ready. Copy it and paste it in the chat.');
     }
-    var key = 'draft:' + kind + card.dataset.num, fields = card.querySelectorAll('input, select');
+    // draft2: the card grew an Items box per line, and a draft is kept by field order, so an older one would land shifted
+    var key = 'draft2:' + kind + card.dataset.num, fields = card.querySelectorAll('input, select');
     var isTick = function (f) { return f.type === 'checkbox' || f.type === 'radio'; };
     var keep = function (e) {   // an unfinished card survives a reload, until its post is copied
       if (e && !e.isTrusted) return;   // the name picked under "your week" arrives by a made event: not a draft
