@@ -48,6 +48,15 @@ def lacks(r, word):
     return True
 
 
+def programs(r):
+    """Every program the transaction ran, at the top or called by another, or None if the node kept no list of the inner
+    calls. It keeps every instruction even when it cuts the log short."""
+    inner = r["meta"]["innerInstructions"]
+    if inner is None:
+        return None
+    return {i["programId"] for i in r["transaction"]["message"]["instructions"] + [j for g in inner for j in g["instructions"]]}
+
+
 def lines9(r, signer, vault, word):
     """The tripped state of each WRONG IF line of fact 9, read from one parsed transaction."""
     return {"signer is not %s" % c.short(signer): signer not in c.signers(r),
@@ -544,9 +553,11 @@ def door2():
     seen = hits = unread = 0
     for s in sigs:
         try:
-            hits += not lacks(c.tx(s["signature"]), word)
+            t = c.tx(s["signature"])
+            ran = programs(t)   # the call is pAMM's: a transaction that never runs pAMM cannot hold it, whatever its log
+            hits += (ran is None or PAMM in ran) and not lacks(t, word)
             seen += 1
-        except SystemExit:   # not on the node, or a log it did not keep whole
+        except SystemExit:   # not on the node, or it runs pAMM and its log was not kept whole
             unread += 1
     print("Door 2, read %s: pump's creator vault %s" % (c.now(), pcv))
     print("%d transactions on it from 2026-09-14 to the end of 2026-10-14 (newest %s), %d read, %d unread, %d name %s" % (

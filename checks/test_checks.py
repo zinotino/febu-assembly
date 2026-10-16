@@ -418,13 +418,16 @@ def test_mcp_server_only_helps():
 
 # ---------- resolve.py on a fake node: a read it cannot trust ends in CAN'T TELL, never HOLDS ----------
 
-def token_tx(t, *changes, keys=(), logs=(), signer=None):
+def token_tx(t, *changes, keys=(), logs=(), signer=None, inner=()):
     """A parsed transaction at time t. changes are (token account, owner, mint, before, after), amounts as strings; keys
-    are more accounts in it; logs is its log (None: the node kept none)."""
+    are more accounts in it; logs is its log (None: the node kept none); inner the programs other programs called in it
+    (None: the node kept no list)."""
     accts = [ch[0] for ch in changes] + list(keys)
     bal = lambda i, ch, amt: {"accountIndex": i, "owner": ch[1], "mint": ch[2], "uiTokenAmount": {"uiAmountString": amt}}
-    return {"blockTime": t, "transaction": {"message": {"accountKeys": [{"pubkey": k, "signer": k == signer} for k in accts]}},
+    return {"blockTime": t, "transaction": {"message": {"accountKeys": [{"pubkey": k, "signer": k == signer} for k in accts],
+                                                        "instructions": [{"programId": "ComputeBudget111111111111111111111111111111"}]}},
             "meta": {"err": None, "logMessages": None if logs is None else list(logs),
+                     "innerInstructions": None if inner is None else [{"index": 0, "instructions": [{"programId": p} for p in inner]}],
                      "preTokenBalances": [bal(i, ch, ch[3]) for i, ch in enumerate(changes)],
                      "postTokenBalances": [bal(i, ch, ch[4]) for i, ch in enumerate(changes)]}}
 
@@ -502,7 +505,8 @@ def test_resolve_fact8_says_cant_tell_on_a_read_it_cannot_trust(monkeypatch, cap
 
 def test_resolve_door2_counts_a_log_it_cannot_see_whole_as_unread(monkeypatch, capsys):
     """Door 2 greps each transaction's log for the call. A log the node did not keep, or cut short without the word, cannot
-    show the call is absent; neither can a dry run that names the call and then fails, as one on a wrong vault does."""
+    show the call is absent, unless the transaction never runs pAMM, whose instruction the call is: the node keeps every
+    instruction even when it cuts the log. Nor can a dry run that names the call and then fails, as one on a wrong vault does."""
     import resolve
     word = "Program log: Instruction: TransferCreatorFeesToPumpV2"
     dry = {"run": (None, [word], {})}
@@ -510,16 +514,17 @@ def test_resolve_door2_counts_a_log_it_cannot_see_whole_as_unread(monkeypatch, c
     monkeypatch.setattr(resolve, "simulate", lambda payer, ixs, watch=(): dry["run"])
     wallet = find(r"other than (%s)" % B58, entry(6), "wallet")
     pcv = resolve.to_pump_v2(wallet, find(r"solscan\.io/account/(%s)" % B58, entry(6), "fee account"))[0]
-    oct1 = resolve.day(2026, 10, 1)
-    swap = token_tx(oct1, logs=["Program log: Instruction: Buy"])
+    oct1, cut = resolve.day(2026, 10, 1), ["Program log: Instruction: Buy", "Log truncated"]
+    swap = token_tx(oct1, logs=["Program log: Instruction: Buy"], inner=[resolve.PAMM])
 
     def door2(b):
         return on_fake_chain(monkeypatch, capsys, "door2", {"a": swap, "b": b}, {pcv: [sig("a", oct1 + 60), sig("b", oct1)]})
     assert door2(swap) == "verdict: HOLDS"
-    assert door2(token_tx(oct1, logs=[word])) == "verdict: DOESN'T HOLD"
-    assert door2(token_tx(oct1, logs=[word, "Log truncated"])) == "verdict: DOESN'T HOLD"   # cut short, but the call shows
-    for b in (token_tx(oct1, logs=None), token_tx(oct1, logs=["Program log: Instruction: Buy", "Log truncated"]),
-              {**swap, "meta": None}):
+    assert door2(token_tx(oct1, logs=[word], inner=[resolve.PAMM])) == "verdict: DOESN'T HOLD"
+    assert door2(token_tx(oct1, logs=[word, "Log truncated"], inner=[resolve.PAMM])) == "verdict: DOESN'T HOLD"   # the call shows
+    assert door2(token_tx(oct1, logs=cut, inner=[resolve.PUMP])) == "verdict: HOLDS"   # cut short, but pAMM never ran
+    for b in (token_tx(oct1, logs=None, inner=[resolve.PAMM]), token_tx(oct1, logs=cut, inner=[resolve.PAMM]),
+              token_tx(oct1, logs=cut, inner=None), {**swap, "meta": None}):
         assert door2(b).startswith("verdict: CAN'T TELL"), b
     dry["run"] = ({"InstructionError": [0, {"Custom": 2006}]}, [word, "Program log: AnchorError: ConstraintSeeds"], {})
     assert door2(swap).startswith("verdict: CAN'T TELL")
