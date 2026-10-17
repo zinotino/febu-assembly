@@ -1,16 +1,17 @@
-"""Who closes the entries? Anyone can run this; it reads a file, needs no key and posts nothing.
+"""Who closes the answers? Anyone can run this; it reads a file, needs no key and posts nothing.
 
     python checks/closers.py             ledger.txt in this checkout
     python checks/closers.py FILE        a saved copy, such as the file whose hash was last posted
     python checks/closers.py --test      offline tests
 
-Rule 3 closes an entry when two members other than its writer post the same result, and it trusts that those two
-checked apart. Two who share a blind spot, or agree in advance, can close a false fact. This prints, for every entry
-rule 3 has closed, its writer, its two closers and the day it closed, read by build.py's own entry_state(), so this
-and the pages cannot disagree. Then the totals: entries written and closes made per name, closes per pair of
-closers, and the share of all closes taken by the busiest pair and by the busiest closer. A pair that made at least
-half the closes, or a writer who wrote at least half the closed entries, gets a FLAG line for the group to read. It
-is a reading, not a rule: no line fails. The output is plain text for the weekly turn to paste into the chat.
+Rule 4 closes an answer when three members other than its posters post the same result, one of them by hand, and it
+trusts that those three checked apart. Three who share a blind spot, or agree in advance, can close a false answer. This
+prints, for every answer rule 4 has closed, its posters, its closers and the day it closed, read by build.py's own
+model(), so this and the pages cannot disagree. Then the totals: answers posted and closed per poster, closes per
+closer, closes per set of closers, and the share of all closes taken by the busiest set and by the busiest closer. A set
+that made at least half the closes, or a poster on at least half the closed answers, gets a FLAG line for the group to
+read. It is a reading, not a rule: no line fails. The output is plain text for the weekly turn to paste into the chat;
+rule 9 keeps such totals out of the file and off the group's pages.
 Exit: 0 when it ran, 2 when nothing has closed yet, 1 when the file cannot be read.
 """
 import hashlib
@@ -22,31 +23,28 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import build  # noqa: E402  the site's own reading of the file
 
+CLOSED = ("HOLDS", "DOESN'T HOLD")
+
 
 def tally(text):
-    """The closed entries as (entry, result, writer, (closer, closer), day), and the counts, from the file's text.
-    A WITHDRAWN promise counts nowhere."""
-    secs = build.sections(text)[1]
-    names, on = build.member_names(secs), build.adopted(secs)
-    rows, written = [], Counter()
-    for _, kind, num, who, fields in (it for it in build.entries(build.entries_section(secs)[1]) if it[0] == "entry"):
-        st = build.entry_state(kind, who, fields, names, on)
-        if st["state"] == "WITHDRAWN":
-            continue
-        author = build.writer(who, fields, names)
-        written[author] += 1
-        if st["state"] in build.CLOSED and st["by"]:   # a promise withdrawn late is BROKEN with no closers: not rule 3
-            rows.append(("%s %s" % (kind.lower(), num), build.state_text(st, kind, fields), author, tuple(sorted(st["by"])),
-                         st["since"]))
+    """The closed answers as (answer, result, posters, closers, day), and the counts, from the file's text."""
+    m = build.model(build.sections(text)[1])
+    rows, posted = [], Counter()
+    for q in m["questions"]:
+        for a in q["answers"]:
+            ps, st = tuple(sorted(a["posters"])), a["state"]
+            posted.update(ps)
+            if st["state"] in CLOSED and st["by"]:
+                rows.append(("Q%d answer %d" % (q["num"], a["num"]), build.state_text(st), ps, tuple(st["by"]), st["since"]))
     n = len(rows)
-    closed = Counter(r[2] for r in rows)
-    pairs = Counter(" and ".join(r[3]) for r in rows)
-    flags = ["FLAG: %s made %s, at least half. Rule 3 trusts two closers who check apart." % (p, share(c, n, "closes"))
-             for p, c in ranked(pairs) if 2 * c >= n]
-    flags += ["FLAG: %s wrote %s, at least half." % (w, share(c, n, "closed entries")) for w, c in ranked(closed)
+    closed = Counter(p for r in rows for p in r[2])
+    sets = Counter(", ".join(r[3]) for r in rows)
+    flags = ["FLAG: %s made %s, at least half. Rule 4 trusts closers who check apart." % (s, share(c, n, "closes"))
+             for s, c in ranked(sets) if 2 * c >= n]
+    flags += ["FLAG: %s posted %s, at least half." % (w, share(c, n, "closed answers")) for w, c in ranked(closed)
               if 2 * c >= n]
-    return {"rows": rows, "written": written, "closed": closed, "closers": Counter(x for r in rows for x in r[3]),
-            "pairs": pairs, "flags": flags}
+    return {"rows": rows, "posted": posted, "closed": closed, "closers": Counter(x for r in rows for x in r[3]),
+            "sets": sets, "flags": flags}
 
 
 def ranked(counts):
@@ -64,22 +62,26 @@ def busiest(counts, n, on=""):
     return "%s, %s%s" % ("; ".join(k for k, c in ranked(counts) if c == top), on, share(top, n, "closes"))
 
 
+def names(xs):
+    return ", ".join(xs[:-1]) + " and " + xs[-1] if len(xs) > 1 else "".join(xs)
+
+
 def report(t, name, sha):
     n = len(t["rows"])
     out = ["Who closed what: %s %s..., read by build.py." % (name, sha[:8])]
     if not n:
-        out.append("Nothing has closed under rule 3 yet.")
+        out.append("Nothing has closed under rule 4 yet.")
     else:
-        out.append("Closed under rule 3: %d entr%s." % (n, "y" if n == 1 else "ies"))
-        out += ["- %s, %s: written by %s, closed by %s on %s." % (e, res, w, " and ".join(by), day)
-                for e, res, w, by, day in t["rows"]]
-    out.append("Entries written: %s." % ", ".join("%s %d (%d closed)" % (w, c, t["closed"][w])
-                                                  for w, c in ranked(t["written"])))
+        out.append("Closed under rule 4: %d answer%s." % (n, "" if n == 1 else "s"))
+        out += ["- %s, %s: posted by %s, closed by %s on %s." % (a, res, names(ps), names(by), day)
+                for a, res, ps, by, day in t["rows"]]
+    out.append("Answers per poster (who posted or changed it, or wrote the fact it copies): %s." % (", ".join(
+        "%s %d (%d closed)" % (w, c, t["closed"][w]) for w, c in ranked(t["posted"])) or "none yet"))
     if n:
         out.append("Closes per closer: %s." % ", ".join("%s %d" % kv for kv in ranked(t["closers"])))
-        out.append("Closes per pair: %s." % ", ".join("%s %d" % kv for kv in ranked(t["pairs"])))
-        out.append("Busiest pair: %s." % busiest(t["pairs"], n))
-        out.append("Busiest closer: %s." % busiest(t["closers"], n, "one of the two on "))
+        out.append("Closes per set of closers: %s." % "; ".join("%s %d" % kv for kv in ranked(t["sets"])))
+        out.append("Busiest set: %s." % busiest(t["sets"], n))
+        out.append("Busiest closer: %s." % busiest(t["closers"], n, "one of the closers on "))
         out += t["flags"]
     return "\n".join(out)
 

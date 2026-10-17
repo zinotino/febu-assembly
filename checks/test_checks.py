@@ -121,11 +121,24 @@ def test_release_against_a_local_site():
         srv.shutdown()
 
 
-DATA = {"members": ["Ann", "Bo", "Zed"], "next": 2, "votes": [],
-        "entries": [{"kind": "FACT", "num": 1, "writer": "Zed", "lines": 2, "empty": True, "results": []}]}
-FILLED = ("CHECK FACT 1 | HOLDS | lines 1,2 | Ann | 2026-10-16\nLine 1:\nSaw: 5 SOL\nLine 2:\nSaw: none\n"
-          "New: the page is dated 2026-07-08\n%s\nI opened the link myself.\n")
-SCRIPT = "Script: python checks/x.py by Zed said HOLDS on ledger d3e17658 at 2026-10-16T12:00Z via api.mainnet-beta.solana.com"
+def worked_data():
+    """ledger.json's questions and answers for the worked version-5 ledger (checks/fixtures), as build.py writes them:
+    Q1 answer 1 copies fact 2 (reads the node), posted by Laura, Zurandol wrote fact 2; Q2 answer 2 copies fact 5 (reads
+    a link), posted by CrypticK, Zurandol wrote fact 5, nobody has checked it."""
+    import sys
+    from common import ROOT
+    sys.path.insert(0, str(ROOT))
+    import build
+    title, secs = build.sections(text("checks/fixtures/ledger_v5_worked.txt"))
+    return build.ledger_dict(title, secs, build.model(secs), more=True)
+
+
+DATA = worked_data()
+NOW = "2026-11-09"
+FILLED = ("CHECK Q2 ANSWER 2 · HOLDS · lines 1,2 · Merc · 2026-11-09\nLine 1:\nSaw: none of the eight on 1-24\n"
+          "Items: all 24\nLine 2:\nSaw: none\nItems: all 140\nNew: page 25 is in verse\n%s\nI opened the link myself.\n")
+SCRIPT = ("Script: python checks/fact5.py by Zurandol said HOLDS on ledger d3e17658 at 2026-11-09T12:00Z via "
+          "febu-assembly.vercel.app")
 FILLED %= SCRIPT
 
 
@@ -144,27 +157,31 @@ def test_agent_draft_waits_for_a_person():
     assert shutil.which("node"), "lint needs node (test_claims.js does too)"
     assert agent.verdict_of(["x\nverdict: HOLDS\n"]) == "HOLDS" and agent.verdict_of(["no verdict here"]) is None
     assert agent.verdict_of(["verdict: HOLDS", "\nverdict (a, b): DOESN'T HOLD"]) == "DOESN'T HOLD"
-    post = agent.draft_post(DATA["entries"][0], "Ann", "2026-10-16", "HOLDS", "Script: x")
-    assert "I opened the link" not in post and agent.lint(post, DATA, "2026-10-16")
-    assert agent.lint(FILLED, DATA, "2026-10-16") == []
-    held = lambda text: agent.lint(text, DATA, "2026-10-16")   # noqa: E731
-    assert held(FILLED.replace("Saw: none", "Saw:"))                                       # a Saw: left empty
-    assert held(FILLED.replace("Saw: none", "Saw: ."))                                     # a dot is not an answer
-    assert held(FILLED.replace("New: the page is dated 2026-07-08", "New: ?"))
-    assert held(FILLED.replace("Line 2:\nSaw: none\n", ""))                                # line 2 named, nothing seen on it
+    q2 = DATA["questions"][1]
+    post = agent.draft_post(q2, q2["answers"][1], "Merc", NOW, "HOLDS", "Script: x")
+    assert post.startswith("CHECK Q2 ANSWER 2 · HOLDS · lines 1,2 · Merc · 2026-11-09\n")
+    assert "I opened the link" not in post and agent.lint(post, DATA, NOW)
+    assert agent.lint(FILLED, DATA, NOW) == []
+    held = lambda text: agent.lint(text, DATA, NOW)   # noqa: E731
+    assert held(FILLED.replace("Saw: none\n", "Saw:\n"))                                   # a Saw: left empty
+    assert held(FILLED.replace("Saw: none\n", "Saw: .\n"))                                 # a dot is not an answer
+    assert held(FILLED.replace("New: page 25 is in verse", "New: ?"))
+    assert held(FILLED.replace("Line 2:\nSaw: none\nItems: all 140\n", ""))               # line 2 named, nothing seen on it
     assert held(FILLED.replace("I opened the link myself.", "I opened the link in my dreams? no"))
     assert held(FILLED.replace("\nI opened the link myself.\n", "\n\nI opened the link myself.\n"))   # outside the post
-    assert held(FILLED + "\nVOTE YES | version 3 | Ann | 2026-10-16\n")                    # lint reads check posts only
-    assert held(FILLED.replace("| Ann |", "| Zed |"))                                      # nobody checks their own entry
-    assert held(FILLED.replace(" by Zed", ""))                                             # whose script is it?
-    assert held(FILLED.replace("Saw: 5 SOL", "Saw: 5 SOL\nItems: some"))                   # Items: all n, or n of m
-    assert agent.lint(FILLED.replace("Saw: 5 SOL", "Saw: 5 SOL\nItems: 20 of 164"), DATA, "2026-10-16") == []
-    line = agent.script_line(["python checks/x.py"], "HOLDS", "2026-10-16T12:00Z", "api.mainnet-beta.solana.com")
+    assert held(FILLED + "\nVOTE YES · version 5 · Merc · 2026-11-09\n")                  # lint reads check posts only
+    assert held(FILLED.replace("· Merc ·", "· CrypticK ·"))                               # a poster checks their own answer
+    assert held(FILLED.replace("ANSWER 2 ·", "ANSWER 3 ·"))                                # Q2 has no answer 3
+    assert held(FILLED.replace("lines 1,2", "lines 1,3"))                                  # nor a WRONG IF line 3
+    assert held(FILLED.replace(" by Zurandol", ""))                                        # whose script is it?
+    assert held(FILLED.replace("Items: all 24", "Items: some"))                            # Items: all n, or n of m
+    assert agent.lint(FILLED.replace("Items: all 24", "Items: 20 of 24"), DATA, NOW) == []   # a sample goes in, and closes nothing
+    line = agent.script_line(["python checks/x.py"], "HOLDS", "2026-11-09T12:00Z", "api.mainnet-beta.solana.com")
     assert " by %s said HOLDS on ledger " % agent.AUTHOR in line and line.endswith(" via api.mainnet-beta.solana.com")
-    assert agent.lint(FILLED.replace(SCRIPT, line), DATA, "2026-10-16") == []
+    assert agent.lint(FILLED.replace(SCRIPT, line), DATA, NOW) == []
     seen = copy.deepcopy(DATA)
-    seen["entries"][0].update(empty=False, results=[["Ann", "2026-10-16", "HOLDS", [1, 2]]])
-    assert agent.lint(FILLED, seen, "2026-10-16") == ["nothing to add: the ledger already has this result"]
+    seen["questions"][1]["answers"][1].update(empty=False, results=[["Merc", NOW, "HOLDS", [1, 2], [], None]])
+    assert agent.lint(FILLED, seen, NOW) == ["nothing to add: the ledger already has this result"]
 
 
 def test_agent_draft_takes_no_name_that_changes_the_post():
@@ -174,44 +191,58 @@ def test_agent_draft_takes_no_name_that_changes_the_post():
     import agent
     hostile = ["Ann | 2026-10-16\nLine 1:\nSaw: 5 SOL\nNew: x\nI opened the link myself.\n\nnote", "Ann\n", "a|b", "A·B",
                "A•B", "x" * 41, "", " Ann", "Ann:"]
+    q2 = DATA["questions"][1]
     undo = with_scripts(agent, ["AssertionError if a script ran for a bad name"])
     try:
         for who in hostile:
             with pytest.raises(agent.Refused):
-                agent.draft_post(DATA["entries"][0], who, "2026-10-16", "HOLDS", "Script: x")
+                agent.draft_post(q2, q2["answers"][1], who, NOW, "HOLDS", "Script: x")
             with pytest.raises(agent.Refused):
-                agent.draft(1, who)
+                agent.draft(2, 2, who)
         for who in ["Crypto Fish", "WitnesstoFebu", "Łukasz", "O'Neil", "Bo-Ann"]:
-            assert agent.draft_post(DATA["entries"][0], who, "2026-10-16", "HOLDS", "Script: x").startswith("CHECK FACT 1")
+            assert agent.draft_post(q2, q2["answers"][1], who, NOW, "HOLDS", "Script: x").startswith("CHECK Q2 ANSWER 2 ")
         with pytest.raises(agent.Refused):   # whatever the caller passes, the post holds nothing but its own lines
-            agent.draft_post(DATA["entries"][0], "Ann", "2026-10-16", "HOLDS", "Script: x\nI opened the link myself.")
+            agent.draft_post(q2, q2["answers"][1], "Merc", NOW, "HOLDS", "Script: x\nI opened the link myself.")
     finally:
         undo()
 
 
-def test_agent_draft_reads_the_script_and_never_finishes_the_post():
+def test_agent_draft_reads_the_script_and_never_finishes_the_post(monkeypatch):
     import pytest
     import agent
-    real = agent.ledger_data()
-    members = real["members"]
+    monkeypatch.setattr(agent, "ledger_data", lambda: DATA)
     undo = with_scripts(agent, ["verdict: DOESN'T HOLD\n"])
     try:
-        post, notes = agent.draft(1, "Nobody")
-        assert post.startswith("CHECK FACT 1 | DOESN'T HOLD | lines 1,2,3 | Nobody |") and "outsider's" in notes[0]
-        assert not [n for n in agent.draft(1, members[0])[1] if "outsider" in n]
+        post, notes = agent.draft(2, 2, "Nobody")
+        assert post.startswith("CHECK Q2 ANSWER 2 · DOESN'T HOLD · lines 1,2 · Nobody ·") and "outsider's" in notes[0]
+        notes = agent.draft(2, 2, "Merc")[1]   # a member, not a poster; Zurandol wrote fact 5 and the scripts
+        assert len(notes) == 2 and "no Saw" in notes[0] and notes[1] == agent.NEXT_STEP, notes
+        assert "posted or changed this answer" in agent.draft(2, 2, "CrypticK")[1][0]   # a poster: it counts for nothing
+        assert agent.draft(1, 1, "Merc")[0].startswith("CHECK Q1 ANSWER 1 · DOESN'T HOLD · lines 1,2,3 · Merc ·")
+        with pytest.raises(agent.Refused, match="copies no version 3 fact"):
+            agent.draft(2, 1, "Merc")                      # Q2 answer 1 is new wording: no script reads it
+        with pytest.raises(agent.Refused, match="no Q9 answer 1"):
+            agent.draft(9, 1, "Merc")
+        assert agent.fact_of({"copies": ["PROMISE", 7]}) is None and agent.fact_of({"copies": None}) is None
         undo()
         undo = with_scripts(agent, ["verdict: CAN'T TELL (3 transactions unread)\n"])
         with pytest.raises(agent.Refused, match="CAN'T TELL"):
-            agent.draft(1, members[0])
+            agent.draft(1, 1, "Merc")
         undo()
         undo = with_scripts(agent, ["  a line   NOT SETTLED BY A SCRIPT\n\nverdict for what a script can settle: HOLDS\n"])
-        post, notes = agent.draft(3, members[0])   # the script covers only part of fact 3: no result is filled in
-        assert post.startswith("CHECK FACT 3 | RESULT |") and "HOLDS on ledger" in post and "unsettled" in notes[0]
+        post, notes = agent.draft(2, 2, "Merc")   # the script covers only part of the answer: no result is filled in
+        assert post.startswith("CHECK Q2 ANSWER 2 · RESULT ·") and "HOLDS on ledger" in post
+        assert any("unsettled" in n for n in notes), notes
         undo()
         undo = with_scripts(agent, ["verdict: HOLDS\n"])
-        for num in agent.SCRIPTS:   # every entry with a script: the draft is held by lint and carries no attestation
-            post = agent.draft(num, members[0])[0]
-            assert "opened the link" not in post.lower() and agent.lint(post, real), num
+        drafted = 0
+        for q in DATA["questions"]:   # every answer with a script: the draft is held by lint and carries no attestation
+            for a in q["answers"]:
+                if agent.fact_of(a):
+                    post = agent.draft(q["num"], a["num"], "Merc")[0]
+                    assert "opened the link" not in post.lower() and agent.lint(post, DATA, NOW), (q["num"], a["num"])
+                    drafted += 1
+        assert drafted == 2
     finally:
         undo()
 
@@ -331,15 +362,17 @@ def test_solana_rpc_is_checked_like_rpc_and_no_key_leaks(monkeypatch):
         srv.shutdown()
 
 
-def test_script_line_names_its_source():
+def test_script_line_names_its_source(monkeypatch):
     import agent
+    monkeypatch.setattr(agent, "ledger_data", lambda: DATA)
     undo = with_scripts(agent, ["verdict: HOLDS\n"])
     try:
         line = agent.run_entry(1, rpc="https://x.example:8443/k/SECRET")[1]
         assert line.endswith(" via x.example:8443") and "SECRET" not in line
         assert agent.run_entry(1)[1].endswith(" via " + agent.host_of(agent.common.RPC))
         assert agent.run_entry(3)[1].endswith(" via web.archive.org")   # a link fact: the host its own link names
-        post = agent.draft(1, "Ann", rpc="https://x.example/k/SECRET")[0]
+        post, notes = agent.draft(1, 1, "Merc", rpc="https://x.example/k/SECRET")   # Q1 answer 1 copies fact 2: the node
+        assert "no Saw" in notes[0]   # Zurandol wrote fact 2 and the scripts
         assert "Script: python checks/x.py by %s said HOLDS on ledger" % agent.AUTHOR in post
         assert post.count("via x.example") == 1
         assert "SECRET" not in post
@@ -353,36 +386,36 @@ def test_lint_notes_two_checks_that_read_one_source():
     """Two members who each opened the link are two checks; two Script: lines that name one host are one witness. The
     note holds nothing back: it is for the people reading the week."""
     import agent
-    def post(who, via, num=1):
-        script = "Script: python checks/resolve.py fact1 by Zed said HOLDS on ledger d3e17658 at 2026-10-16T10:00Z"
-        return FILLED.replace("| Ann |", "| %s |" % who).replace(SCRIPT, script + (" via " + via if via else ""))
-    review = lambda *posts: agent.review("\n\n".join(posts), DATA, "2026-10-16")   # noqa: E731
-    why, notes = review(post("Ann", "node.example"), post("Bo", "NODE.example."))   # case and a full stop do not make a second source
-    assert why == [] and len(notes) == 1 and "FACT 1: Ann and Bo" in notes[0] and "one source" in notes[0] and "--rpc" in notes[0]
-    assert review(post("Ann", "node.example"), post("Bo", "other.example"))[1] == []
-    assert len(review(post("Ann", "node.example:443"), post("Bo", "node.example"))[1]) == 1   # https's own port is the same node
-    assert review(post("Ann", "node.example"), post("Ann", "node.example"))[1] == []   # one member twice is not two
-    assert review(post("Ann", ""), post("Bo", ""))[1] == []                            # no source named: nothing to compare
-    assert review(post("Ann", "unknown"), post("Bo", "unknown"))[1] == []
-    assert agent.lint(post("Ann", "node.example"), DATA, "2026-10-16") == []             # lint is still the reasons only
-    held = review(post("Ann", "node.example"), post("Bo", "node.example").replace("Saw: 5 SOL", "Saw: ."))
+    def post(who, via):   # on Q1 answer 1, which copies fact 2: its script reads the node
+        script = "Script: python checks/resolve.py fact2 by Zurandol said HOLDS on ledger d3e17658 at 2026-11-09T10:00Z"
+        return ("CHECK Q1 ANSWER 1 · HOLDS · lines 1,2,3 · %s · 2026-11-09\nLine 1:\nSaw: 23,843,803.61\nItems: all 1\n"
+                "Line 2:\nSaw: none left\nItems: all 1\nLine 3:\nSaw: none in\nItems: all 1\nNew: the fee payer\n%s\n"
+                "I opened the link myself.\n") % (who, script + (" via " + via if via else ""))
+    review = lambda *posts: agent.review("\n\n".join(posts), DATA, NOW)   # noqa: E731
+    why, notes = review(post("Merc", "node.example"), post("Ksizzle", "NODE.example."))   # case and a full stop: one source
+    assert why == [] and len(notes) == 1, (why, notes)
+    assert "Q1 answer 1: Ksizzle and Merc" in notes[0] and "one source" in notes[0] and "--rpc" in notes[0]
+    assert review(post("Merc", "node.example"), post("Ksizzle", "other.example"))[1] == []
+    assert len(review(post("Merc", "node.example:443"), post("Ksizzle", "node.example"))[1]) == 1   # https's own port
+    assert review(post("Merc", "node.example"), post("Merc", "node.example"))[1] == []   # one member twice is not two
+    assert review(post("Merc", ""), post("Ksizzle", ""))[1] == []                        # no source named: nothing to compare
+    assert review(post("Merc", "unknown"), post("Ksizzle", "unknown"))[1] == []
+    assert agent.lint(post("Merc", "node.example"), DATA, NOW) == []                     # lint is still the reasons only
+    held = review(post("Merc", "node.example"), post("Ksizzle", "node.example").replace("Saw: none in", "Saw: ."))
     assert held[0] and len(held[1]) == 1                                                # a held post is still counted
-    assert review(post("Ann", "127.0.0.1:8899"), post("Bo", "127.0.0.1:8899"))[1] == []   # two nodes on two machines
-    assert review(post("Ann", "[::1]:8899"), post("Bo", "[::1]:8899"))[1] == []
-    assert review(post("Zed", "node.example"), post("Bo", "node.example"))[1] == []        # the writer's post is not a check
-    assert review(post("Cy", "node.example"), post("Bo", "node.example"))[1] == []         # nor is a non-member's
-    assert review(post("Ann", "node.example)"), post("Bo", "node.example"))[1]             # a bracket after the host is not a source
-    link = lambda who: post(who, "web.archive.org").replace("FACT 1", "FACT 3").replace("fact1", "fact3")   # noqa: E731
-    data = {**DATA, "entries": DATA["entries"] + [{**DATA["entries"][0], "num": 3}]}
-    assert agent.review(link("Ann") + "\n\n" + link("Bo"), data, "2026-10-16")[1] == []   # --rpc cannot change a link fact's host
+    assert review(post("Merc", "127.0.0.1:8899"), post("Ksizzle", "127.0.0.1:8899"))[1] == []   # two nodes, two machines
+    assert review(post("Merc", "[::1]:8899"), post("Ksizzle", "[::1]:8899"))[1] == []
+    assert review(post("Laura", "node.example"), post("Ksizzle", "node.example"))[1] == []   # a poster's post is no check
+    assert review(post("Cy", "node.example"), post("Ksizzle", "node.example"))[1] == []      # nor is a non-member's
+    assert review(post("Merc", "node.example)"), post("Ksizzle", "node.example"))[1]         # a bracket is not a source
+    link = lambda who: FILLED.replace("· Merc ·", "· %s ·" % who)   # noqa: E731  Q2 answer 2 copies fact 5: a link
+    assert review(link("Merc"), link("Ksizzle")) == ([], [])          # --rpc cannot change a link fact's host
 
 
 def test_ledger_json_is_written_from_this_ledger():
     """ledger.json is the committed index of ledger.txt: a ledger.txt edited without python build.py fails here."""
-    import re
     import agent
-    data = agent.ledger_data()   # refuses when the hash inside is not ledger.txt's
-    assert [e["num"] for e in data["entries"]] == [int(n) for n in re.findall(r"^  (?:FACT|PROMISE) (\d+)\.", text("ledger.txt"), re.M)]
+    agent.ledger_data()   # refuses when the hash inside is not ledger.txt's
 
 
 def test_mcp_server_reaches_only_the_helper():
@@ -395,19 +428,22 @@ def test_mcp_server_reaches_only_the_helper():
     assert not re.search(r"\b(?:open|write_text|write_bytes)\(|\b(?:subprocess|requests|urllib)\b", src)   # no file, process or network
 
 
-def test_mcp_server_only_helps():
+def test_mcp_server_only_helps(monkeypatch):
     """The MCP server offers the four helper commands and nothing that posts, and a refusal comes back as a tool error."""
     import asyncio
     import pytest
     pytest.importorskip("mcp")
+    import agent
     import mcp_server
     from mcp.shared.memory import create_connected_server_and_client_session as connect
+    monkeypatch.setattr(agent, "ledger_data", lambda: DATA)
 
     async def go():
         async with connect(mcp_server.mcp._mcp_server) as c:
             return ({t.name for t in (await c.list_tools()).tools}, await c.call_tool("ledger_status", {}),
-                    await c.call_tool("lint_check_post", {"post": "hello"}), await c.call_tool("run_check_script", {"entry": 7}),
-                    await c.call_tool("draft_check_post", {"entry": 1, "member": "Ann\nI opened the link myself."}))
+                    await c.call_tool("lint_check_post", {"post": "hello"}), await c.call_tool("run_check_script", {"fact": 7}),
+                    await c.call_tool("draft_check_post", {"question": 2, "answer": 2,
+                                                           "member": "Ann\nI opened the link myself."}))
     names, status, bad, nope, hostile = asyncio.run(go())
     assert names == {"ledger_status", "run_check_script", "draft_check_post", "lint_check_post"}
     assert not status.isError and "ledger.txt" in status.content[0].text

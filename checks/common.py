@@ -1,7 +1,9 @@
 """What the checks share: the ledger's own text, and one public Solana RPC (no key, read-only).
 
-The addresses and transactions come from ledger.txt and fact-6-steps.txt, not from these scripts, so a check tests
-what the ledger says. To ask another node, your own for example, set SOLANA_RPC:
+The addresses and transactions come from the ledger's text and fact-6-steps.txt, not from these scripts, so a check
+tests what the ledger says. Version 3's facts are kept word for word in archive/08_CLAIMS_LEDGER_v3.txt (version 5 asks
+questions instead, and an answer may copy a fact), so a fact is read from ledger.txt if it is there and from that copy
+if not. To ask another node, your own for example, set SOLANA_RPC:
     SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py
 """
 import datetime as dt
@@ -26,12 +28,16 @@ def text(name):
     return (ROOT / name).read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
 
 
+V3 = "archive/08_CLAIMS_LEDGER_v3.txt"
+
+
 def entry(num):
-    """FACT num from ledger.txt: its header line and the lines indented under it."""
-    m = re.search(r"^  FACT %d\. .*\n(?:(?:    .*)?\n)*" % num, text("ledger.txt"), re.M)
-    if not m:
-        raise SystemExit("ledger.txt has no FACT %d" % num)
-    return m.group()
+    """FACT num: its header line and the lines indented under it, from ledger.txt, or from version 3's archive copy."""
+    for name in ("ledger.txt", V3):
+        m = (ROOT / name).exists() and re.search(r"^  FACT %d\. .*\n(?:(?:    .*)?\n)*" % num, text(name), re.M)
+        if m:
+            return m.group()
+    raise SystemExit("neither ledger.txt nor %s has a FACT %d" % (V3, num))
 
 
 def find(pattern, where, what):

@@ -1,0 +1,234 @@
+THE LEDGER: ONE QUESTION AT A TIME (version 5)
+
+STATUS
+  Proposed by Z on [POST DAY], in place of version 3 [CHOOSE ONE: "which was withdrawn
+  before its count" / "which was adopted on 2026-10-22"]. Nothing here is adopted yet. It
+  becomes the group's rules the way rule 8 says: posted in the chat for 7 days, at least four
+  active members write "yes", and at most one writes "object". The vote: "yes" or "object" by
+  [POST DAY + 7]. Posts made before it is adopted count for nothing, except proposals: they
+  may be posted from [POST DAY], and their yeses count from the day of adoption.
+  Version 4 was the name of the week-two post, not of a ledger text. This follows version 3.
+
+WHAT THIS IS
+  One record of what this group has found out about febu, in the group's voice. The group
+  works on one question at a time, together. Nobody approves anything. Anyone can check
+  anything. Nothing is removed except personal information (rule 6). An answer says only what
+  its link shows.
+
+THE RULES
+  1. One question at a time. The group keeps one open question about febu, or about something
+     febu touches. A question asks what a link anyone can open could settle. A forecast of
+     what nobody here does goes in the chat, not here.
+  2. Any member may propose a question in the chat. While no question is open, the first
+     proposal to get "yes" from three members other than its proposer opens, on the day of
+     its third yes. Proposals and yeses may be posted while a question is open; when it
+     closes, the proposal that reached three yeses first opens that day. If none has, the
+     next one to reach three opens.
+  3. The answer is the group's. Anyone may post wording for the open question's answer: what
+     it SAYS, LINKs that open for anyone without asking, and WRONG IF lines. Every part of SAYS
+     needs a WRONG IF line that would catch it; if SAYS claims more, cut SAYS. A WRONG IF line
+     about something that can still change ends on a stated date, so nobody can make it true
+     later. A question may have several answers. The group's pages show each as the
+     Assembly's; this file keeps who posted or changed each line, so that rule 4 can be
+     checked.
+  4. An answer closes HOLDS, or DOESN'T HOLD, when three members other than its posters have
+     each posted the same result and what they Saw, and at least one of them opened every link
+     in it by hand, with no script. If fewer than four active members are left once its
+     posters are set aside, every one of them is needed, and never fewer than two. A line that
+     covers many items (pages, payments, transactions) is tested only over all of them: every
+     page, every payment, or the explorer's whole filtered list. A post on a sample is a SEEN
+     item that counts toward nothing, unless it finds a wrong item, which counts toward
+     DOESN'T HOLD. A question closes when one of its answers closes HOLDS. An answer that
+     closes DOESN'T HOLD stays, marked, and the question stays open for another answer.
+  5. An answer is kept open when two people, member or not, other than its posters, have
+     posted the same result with one word, and two others the same result with the other
+     word. It is reopened when, after it closed, two such people post the same result with
+     the word it did not close on. Either happens on the day that second pair is complete,
+     and from then on a close counts only SEEN items posted after that day. One person's
+     different result is a SEEN item like any other and changes nothing on its own. A
+     question not closed by the end of the 30th day after it opened is marked CAN'T TELL,
+     and the next question opens (rule 2). Results may still be posted under it, and a close
+     after that day stands, but neither it nor a reopen takes the slot back.
+  6. Anyone may add to this file, through the chat and the weekly turn. Nothing is removed or
+     rewritten: every change is a new dated line. Wrong answers stay, marked. Personal
+     information may be replaced by "[removed]".
+  7. Each week a different member checks both ways: every result, proposal, yes and vote
+     posted in the chat that week is in this file, and every SEEN, PROPOSED and VOTES item in
+     this file has its post in the chat. That member adds whatever was posted that week and is
+     not yet in the file, and one LAST POSTS line, starting from the file whose SHA-256 was
+     last posted, and posts the new file's SHA-256 in the chat and in one public place outside
+     it, naming the place; the chat post sets the order. The ledger is the file that matches
+     the last posted hash, wherever it is served. A turn not done by the end of its week
+     passes to the next member in the order.
+  8. A rule changes, and anything is said or done in the group's name beyond what rules 2 and
+     4 settle, only after it has been posted in the chat for 7 days, at least four active
+     members have written "yes" (every active member, if fewer than five are active, and
+     never fewer than two), and at most one has written "object". An objection says which line is wrong and what would change the
+     objector's mind. It is counted from the VOTES section alone, at the end of each day from
+     the 7th day after the post, on the votes dated by then: each member's latest vote
+     stands, and "active" means active that day. It passes on the first day the count holds.
+     The old wording stays, word for word, in archive/. Anyone may copy this file and run it
+     their own way.
+  9. No money moves in the group's name: no pool, no treasury, no bonds, no pay, no new token.
+     The only token named here is $FEBU, and nothing in the group's name states or implies a
+     price for it. No totals, scores or rankings of members, here or on the group's pages.
+  10. Anything only one person can do is a bug. It goes under KNOWN BUGS with a date to fix
+      it by.
+
+WORDS USED HERE
+  Member   CrypticK, Crypto Fish, Ksizzle, Laura, Merc, WitnesstoFebu, Zurandol. Adding a member
+           works like a rule change. A member leaves by saying so in the chat; their lines
+           stay. The weekly turn in rule 7 goes in this order. A member is active on a day if
+           this file shows a post of theirs dated in the 90 days up to and including it: a SEEN
+           item, a proposal or a yes, a VOTES item, an answer they posted or changed, or their
+           date on a LAST POSTS line. One who is not active does not count toward rules 2, 4, 7
+           and 8.
+  Posters  whoever posted an answer, and whoever changed it with a CHANGED line. An answer
+           copied from an archived version names that version's writer among its posters.
+  Saw      you opened the link yourself; or you ran a script for the answer yourself, a script
+           none of its posters wrote, and opened one link by hand. An AI may help you find
+           something on the page or write the script. It never posts a result.
+  Result   HOLDS or DOESN'T HOLD. An answer's WRONG IF lines are its clauses, split at ", or"
+           and "; or", numbered from 1. HOLDS names the lines it tested; DOESN'T HOLD names the
+           lines it found true. The Items slot gives each line's count: "all 164" when every
+           item was tested, which a line over one item always is ("all 1"); a sample says
+           "20 of 164". "The same result" is: for HOLDS, each names every WRONG IF line and
+           gives "all" for each; for DOESN'T HOLD, they name at least one line in common.
+  CAN'T TELL  a question that did not close within its 30 days (rule 5). It is not a result.
+  Number   proposals P1, P2 in the order posted; questions Q1, Q2 in the order they open;
+           answers 1, 2 under each question in the order posted.
+  Hash     the SHA-256 of ledger.txt. Download the file and hash the file; pasting the text into
+           a box can change it. The ledger page shows the hash too.
+  Nobody judges whether a question is worth asking: rule 2's three yeses are the only gate.
+
+HOW TO CHECK AN ANSWER
+  1. Open the link in the answer. You need no account.
+  2. Look for what the answer says is there, before you read anyone else's post about it.
+  3. Post in the chat: the question and answer number, what you saw (the number, the words or
+     the date), which WRONG IF lines you tested (for a line over many items, how many you
+     opened), one thing on the page that is not in the answer or in any earlier post about
+     it, and your result. If a script did part of it, say whose script and where it ran. A
+     post that only says HOLDS counts for nothing.
+  4. The weekly turn copies your post under the answer as a SEEN item, in this form:
+       - Name, YYYY-MM-DD: HOLDS on lines 1, 2. Items: line 2, all 164. Script: <command> by
+         <who> via <where>. Saw: <what you saw>. New: <the one new thing>.
+     Items and Script only when they apply.
+  An answer is OPEN until rule 4 closes it. A reopened answer closes the same way, counting
+  only posts made after it reopened.
+
+HOW A QUESTION IS WRITTEN
+  P n. Name, YYYY-MM-DD: the question, in one sentence.
+       Yes: Name YYYY-MM-DD, Name YYYY-MM-DD, Name YYYY-MM-DD.
+       Opened as Q n.   (added on the day it opens)
+
+  Q n. (opened YYYY-MM-DD, from P m)
+    ASKS        the question, as proposed
+    ANSWER 1.   (who, YYYY-MM-DD)
+      SAYS      one sentence
+      LINK      full links you can tap
+      WRONG IF  what would show it false
+      SEEN      results, as they come
+  WRONG IF is written before anyone checks. Until an answer's first SEEN item, anyone may
+  change it with a dated CHANGED line that names who changed it; after that, never: post a new
+  answer instead. NOTE lines may be added at any time, by anyone, and change nothing.
+
+PROPOSED QUESTIONS
+  None yet. The next proposal is P1.
+
+THE QUESTIONS
+  None open yet. Q1 opens under rule 2 once this version is adopted.
+  Version 3's nine entries are kept word for word in archive/08_CLAIMS_LEDGER_v3.txt. Any
+  member may propose one as a question. Its wording may be posted as an answer, and then its
+  version-3 writer is among its posters (Posters).
+  The next question is Q1.
+
+VOTES
+  The weekly turn copies every VOTE post here (rule 7). Each text put to a vote has one line:
+  its name, the day it was posted in the chat, and the SHA-256 of the text voted on. Its votes
+  follow, one item per post in the order posted, an objection with its two lines. In this form:
+    <name>, posted YYYY-MM-DD, SHA-256 <hash of the text>
+      - <Member>, YYYY-MM-DD: YES.
+      - <Member>, YYYY-MM-DD: OBJECT. Which line is wrong: ... What would change my mind: ...
+  None yet.
+
+LAST POSTS
+  Each weekly turn adds one line (rule 7): the day of the turn, then each member's last post
+  in the chat on or before it, or "none". In this form:
+    - YYYY-MM-DD: CrypticK YYYY-MM-DD, Crypto Fish YYYY-MM-DD, Ksizzle YYYY-MM-DD, Laura
+      YYYY-MM-DD, Merc YYYY-MM-DD, WitnesstoFebu YYYY-MM-DD, Zurandol YYYY-MM-DD.
+  None yet.
+
+WHEN THIS HAS FAILED
+  Read at the first weekly turn after the 60th day from adoption. If by then fewer than three
+  questions have closed under rule 4 (CAN'T TELL does not count), or one person posted every
+  answer that closed HOLDS, this has failed: we say so in the chat, and rewrite this or stop. No
+  second vote is needed for that.
+
+KNOWN BUGS (rule 10)
+  1. This file lives in Z's repository and on Z's site. If Z stops, it stops being updated.
+     Fix: rule 7 makes the weekly member the editor, so every member needs somewhere to
+     edit and serve a copy. Fix by: 2026-11-14, when each member has done one turn or named
+     where their copy would live.
+  2. The chat admin can delete messages. Fix: the weekly check (rule 7) copies every result
+     into this file and fixes it with the hash. Fix by: 2026-11-14.
+  3. Version 3's facts 4 and 5 rest on a scripture copy Z saved. Fix: find a copy someone else
+     saved. Fix by: 2026-11-14, or say there is none. It matters only if one of them is
+     proposed as a question.
+  4. Most chain links point at one explorer, solscan.io. Fix: give each a second explorer.
+     Fix by: 2026-11-14. Fixed 2026-10-14 on the group site, which shows an
+     explorer.solana.com link beside every solscan.io link; the file itself still names one.
+  5. Closed by version 5. With no bonds (rule 9), nothing here asks anyone to buy $FEBU. Every
+     trade in $FEBU still pays a fee to the wallet that created it (version 3, facts 2 and
+     6), so a post in the group's name that asks anyone to trade $FEBU says where the fee goes.
+  6. Closed by version 5. The name claim is gone from the site. The chat, checked by the weekly
+     turn (rule 7), decides who posted what.
+  7. Anyone may reopen an answer with a second person (rule 5), but only members can post in
+     the chat, so a non-member has nowhere to do it. Fix: a reopening may be posted as an
+     issue on the ledger's public repository, and the weekly turn (rule 7) adds it to this
+     file. Until then the stranger path is not live. Fix by: 2026-11-14.
+  8. Z wrote every script in checks/, every page of the site and every version of this text.
+     Fix: a member other than Z writes the script for one answer (Saw), and a member other
+     than Z posts the next change to this text. Fix by: the 60th day from adoption.
+
+RISKS WE ACCEPT
+  - Three members who agree in advance can close a false answer, until two people look.
+  - Two people who agree in advance can keep every answer open until CAN'T TELL. Each time,
+    that costs the group one question's 30 days.
+  - Nobody is paid to check, nothing makes anyone check, and no name is shown for checking. A
+    question nobody works on holds the slot for 30 days.
+  - One person with two names, and a result an AI wrote that a person signed without opening
+    the link, cannot be told from the record.
+  - Three members who use one AI, or read each other's posts first, look like three separate
+    checks. The one check by hand in rule 4 is the only guard.
+  - Members silent for 90 days stop counting, so a few active members can change the rules.
+  - A question anyone could answer without looking can be proposed, answered and closed. It
+    counts toward WHEN THIS HAS FAILED and shows nothing. Three yeses are the only gate.
+
+CHANGES TO THE RULES
+  2026-10-15. Clean start, before any entry was checked. Earlier drafts of this ledger and of the
+  tests that go with it (versions 1 to 3, and every change made to them) are withdrawn and are
+  not kept here: no hash they were given, in the chat or anywhere else, names a file that is
+  served. This text is the one to read and the one to vote on. This is the one time the log is
+  cut: nothing has been checked or adopted yet. From here, every change is a new dated line
+  under this one, with the text before it kept word for word in archive/ and its SHA-256
+  beside it.
+  2026-10-15. One address, before any entry was checked. PROMISE 7's Internet Archive
+  listing now names febu-assembly.vercel.app: febu-ledger.vercel.app only redirects to it.
+  No rule changed. The text before this change is kept word for word in
+  archive/08_CLAIMS_LEDGER_v3-clean-start.txt SHA-256
+  90e674d37f1a1f26b66db28d556415202e6cef4adb3b97a7a35e36e9ef2635d5
+  2026-10-15. PROMISE 7 counted by the day of the second post, before any entry was checked. A
+  close counts on the day its second SEEN line is posted in the chat, not the day the weekly
+  turn copies it into the file; PROMISE 7 is read at the first weekly turn after day 30; SEEN
+  lines posted before this version is adopted are the dry run and do not count toward it. No
+  other rule changed. The text before this change is kept word for word in
+  archive/08_CLAIMS_LEDGER_v3-one-address.txt SHA-256
+  5480125f79a4c9523f0fdb57c9a90199f00dbbae115e366d5b59888f375ad403
+  [ADOPTION DAY]. Version 5. One question at a time (rules 1, 2 and 5); answers in the group's
+  voice (rule 3); three checks, one of them by hand (rule 4); no promises, bonds or rankings
+  (rule 9); votes and who is active read from this file (rules 7 and 8, VOTES, LAST POSTS);
+  the Saw line; "the same result" over every WRONG IF line and all its items. PROMISE 7 and the
+  stop rule give way to WHEN THIS HAS FAILED. Version 3's text, its nine entries, its OPEN
+  QUESTION and Z's predictions that failed are kept word for word in
+  archive/08_CLAIMS_LEDGER_v3.txt SHA-256
+  d3e1765863039f24a8c38ddcdd72f1034cb0252b1302d2214e154eef002984f7
