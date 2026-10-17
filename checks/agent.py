@@ -259,18 +259,25 @@ def source_notes(posts, data):
 WORDS = re.compile(r"[a-z0-9$][a-z0-9$.-]*[a-z0-9]")   # a word or a figure as written: 2,939.10  2026-09-22  apwpkd8  $febu
 
 
+STOP = frozenset("""that this with from have were they them their then than what when which where there these those into each
+after before about under over only more most some such also just like said says made make goes gets first last then
+line lines entry entries page saw new looked fine matches matched opened open checked check here your yours mine very
+will would could should been being does doing done both same many much other another every again still while""".split())
+
+
 def words(text):
-    """The words of a text, a figure whole (it names an entry) and a plain word cut to 5 letters, so transaction and
-    transactions are one. A comma between words is a break, a comma inside a figure (2,939.10) is not."""
+    """The words of a text that can tell one entry from another: a figure whole (it names an entry), a plain word cut to 5
+    letters so transaction and transactions are one, and none of the plain English any reading uses (STOP). A comma between
+    words is a break, a comma inside a figure (2,939.10) is not."""
     found = WORDS.findall(re.sub(r",(?!\d)", " ", text.lower()).replace(",", ""))
-    return {w if re.search(r"[\d$]", w) else w[:5] for w in found if len(w) >= 4}
+    return {w if re.search(r"[\d$]", w) else w[:5] for w in found if len(w) >= 4 and w not in STOP}
 
 
 def swap_notes(posts, data):
     """The swap test. A reading of an entry names something only that entry has. Take each post's Saw: and New: and ask
-    which entry's own words it uses (words found in no other entry's text or WRONG IF lines): none of its own, or more of
-    another's, means the text would read the same on another entry, which is a frame and not a reading. Two posts on two
-    entries that share most of their words say it too. Notes only: nothing is held back.
+    which entry's words it uses. None of this entry's, or at least 2 of another entry's own (found in no other entry's text
+    or WRONG IF lines) and more than this entry's, means the text would read the same on another entry: a frame, not a
+    reading. Two posts on two entries that share most of their words say it too. Notes only: nothing is held back.
     # ponytail: word overlap, not meaning, and the words come from the ledger, not from what the page showed. A post can
     # use the right words and not have read the page. Upgrade: compare against the script's own output."""
     bag = {e["num"]: words(" ".join([str(e.get("says", ""))] + [str(w) for w in e.get("wrong_if", [])])) for e in data["entries"]}
@@ -287,9 +294,9 @@ def swap_notes(posts, data):
         if hits[best] >= 2 and hits[best] > hits[p["num"]]:   # one shared word ("says") is chance, two is a lean
             notes.append("%s: its Saw: and New: use more of entry %d's own words than of this entry's. Say what was on "
                          "this entry's page." % (label, best))
-        elif own[p["num"]] and not hits[p["num"]]:
-            notes.append("%s: its Saw: and New: use none of the words only this entry has (for example %s). They would "
-                         "read the same on another entry: say what was on the page." % (label, ", ".join(sorted(own[p["num"]])[:3])))
+        elif bag[p["num"]] and not w & bag[p["num"]]:   # not one word of this entry's text, own or shared: it could be about any entry
+            notes.append("%s: its Saw: and New: use none of this entry's words (for example %s). They would read the same "
+                         "on another entry: say what was on the page." % (label, ", ".join(sorted(own[p["num"]] or bag[p["num"]])[:3])))
     for i, (p, w) in enumerate(seen):
         for q, v in seen[i + 1:]:
             if p["num"] != q["num"] and min(len(w), len(v)) >= 5 and len(w & v) / len(w | v) >= 0.6:
