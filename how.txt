@@ -1,77 +1,96 @@
-HOW IT WORKS (the ledger in plain words, written 2026-10-14 by Z, revised 2026-10-15, checked by nobody yet)
+HOW IT WORKS (the ledger in plain words, written 2026-10-14 by Z, revised for version 5, checked by nobody yet)
 ONE SENTENCE
-  A claim costs a link and a line saying what would prove it wrong; a check costs a look by two
-  people who did not write it; the result goes in one text file that anyone can copy and nobody
-  can quietly edit.
+  An answer costs a link and a line saying what would prove it wrong; a close costs a look by
+  three people who did not post it, one of them by hand; the result goes in one text file that
+  anyone can copy and nobody can quietly edit.
 
 WHERE IT STANDS
-  Version 3 of the ledger is proposed, not adopted, and nobody but its writer has checked anything
-  in it. Until 2026-10-22 the seven members post "yes" or "object" in the chat on three things:
-  the ledger as served, the Saw line (running a script the entry's writer did not write, then
-  opening one link by hand, may count as looking), and the stop rule (the 30-day test, E0 to
-  E3). The same week is a dry run: facts 1, 3 and 9 are the cheapest to check, and a post says
-  how many minutes it took. Posts made before adoption close nothing and do not count toward
-  PROMISE 7. Until the vote closes, ledger.txt and process.md do not change. The 30 days start
-  at adoption.
+  Version 5 of the ledger replaced version 3 on the day it was adopted: STATUS and CHANGES TO THE
+  RULES in ledger.txt give the date. On that day nothing had been checked. The group works on one
+  question at a time. A proposal opens as the next question once three members other than its
+  proposer have written "yes"; proposals posted before adoption stand, and their yeses count
+  from adoption. Version 3's nine entries are kept word for word in
+  archive/08_CLAIMS_LEDGER_v3.txt. Any member may propose one as a question, and its wording may
+  be posted as an answer, with its version-3 writer among the answer's posters.
 
 THE PICTURE
-  One entry, four steps, on top: written, checked, a result, a record. Febu's pages below, in the
-  same four slots. The third slot is the one febu never ran. Everything in the picture that is not
-  that slot exists to keep it honest. The lower row is Z's reading of febu's pages and tweets, not
-  entries; the one entry in it is the 09-22 sale (FACT 2), and nobody has checked it.
+  One answer, four steps, on top: written, checked, a result, a record. Febu's pages below, in
+  the same four slots. The third slot is the one febu never ran. Everything in the picture that
+  is not that slot exists to keep it honest. The lower row is Z's reading of febu's pages and
+  tweets, not answers. The picture was drawn for version 3: where it says entry, read answer;
+  two checkers are now three, one of them by hand; its promise, its bond and PROMISE 7 are gone
+  (rule 9, WHEN THIS HAS FAILED).
 
 HOW IT CONNECTS
-  Five places, left to right. The record outside the group is what a claim is about: a
-  transaction, an archived page, a dated file. A writer turns it into an entry and posts it in the
-  chat. Two members who did not write it open its link and post what they saw; if the Saw line
-  passes, they may instead run a script its writer did not write and open one link by hand. Members
-  vote on a rule change. Once a week one member makes sure every result posted in the chat is in
-  the file and every SEEN line has its chat post, then posts the file's hash in the chat and in one
-  named public place. Two matching results close an entry. For PROMISE 7 a close counts on the
-  day of its second post; the file catches up at the next weekly turn. Anyone may add a SEEN line
-  to the file. The site is built from the texts and adds no rule: where it and ledger.txt differ,
-  ledger.txt wins.
+  Five places, left to right. The record outside the group is what a question is about: a
+  transaction, an archived page, a dated file. A member proposes a question in the chat, and
+  the first proposal to get three yeses from other members opens; it is the only open question
+  until it closes. Anyone posts an answer to it in the chat. Members who did not post it open
+  its links and post what they saw; a script none of its posters wrote may count, with one link
+  opened by hand (Saw). Three matching results close an answer, and at least one of the three
+  opened every link by hand. An answer that closes HOLDS closes the question, and the next
+  proposal opens. Members vote on a rule change in the chat. Once a week one member makes sure
+  every result, proposal, yes and vote posted in the chat is in the file and every one in the
+  file has its chat post, adds a LAST POSTS line, then posts the file's hash in the chat and in
+  one named public place. Anyone may add to the file through the chat and the weekly turn. The
+  site is built from the texts and adds no rule: where it and ledger.txt differ, ledger.txt
+  wins. The picture was drawn for version 3: its ENTRY post is now an ANSWER post, a PROPOSE or
+  YES post opens a question, a close takes three checks, not two, and PROMISE 7 is now WHEN
+  THIS HAS FAILED.
 
 THE FOUR PARTS
-  1. The loop (rules 1 to 4). An entry is a FACT or a PROMISE. A fact says what is true now,
-     gives a link anyone can open, and carries a WRONG IF line, fixed before any check, saying
-     what would show it false. A promise says what its writer will do, by when, and the link
-     anyone will open then; it may name a bond. Two members who did not write the entry open the
-     link and post what they saw and one thing on the page nobody had written; a post that only
-     says HOLDS counts for nothing. The same result twice closes it. One person's disagreement is
-     a note under it. Two people, member or not, who post the same different result reopen it
-     (a non-member has nowhere to post it yet: KNOWN BUGS 7). 30 days without a close is CAN'T
-     TELL. A line over many items (pages, payments) counts toward HOLDS only if tested over all
-     of them. The writer may correct an entry with a dated CHANGED line until its first SEEN
-     line, never after. Nobody approves an entry and nobody checks their own. An AI may help
-     someone look; it never posts a result.
+  1. The loop (rules 1 to 5). One question at a time, about febu or something febu touches,
+     asking what a link anyone can open could settle. Any member proposes one in the chat;
+     three yeses from other members open it, and the first proposal to reach three opens next.
+     Nobody judges whether a question is worth asking. Anyone posts an answer to the open
+     question: what it SAYS, LINKs that open for anyone, and a WRONG IF line for every part of
+     SAYS, fixed before any check. A WRONG IF line about something that can still change ends
+     on a stated date. The answer is the group's: the pages show it as the Assembly's, and the
+     file keeps who posted it so that rule 4 can be checked. Three members who did not post it
+     each open the links and post what they saw, which lines they tested, and one thing on the
+     page nobody had written; at least one of them opens every link by hand, with no script. A
+     post that only says HOLDS counts for nothing. Three matching results close it HOLDS or
+     DOESN'T HOLD. HOLDS closes the question; DOESN'T HOLD stays, marked, and the question waits
+     for another answer. A line over many items (pages, payments) counts toward HOLDS only if
+     tested over all of them. Two people, member or not, against two others keep an answer
+     open; two who post the result it did not close on reopen it (a non-member has nowhere to
+     post it yet: KNOWN BUGS 7). A question not closed in 30 days is CAN'T TELL, and the next
+     one opens. Anyone may change an answer with a dated CHANGED line until its first SEEN item,
+     never after. Nobody approves anything and nobody checks an answer they posted. An AI may
+     help someone look; it never posts a result.
 
-  2. The keeping (rule 6). One file, ledger.txt. Each week the next member in the list checks
-     both ways, adds what is missing, and posts the new file's SHA-256 in the chat and in one
-     named public place outside it. The ledger is whichever copy matches the last posted hash.
-     Three records sit outside the group: that posted hash, a daily request to the Internet
-     Archive to save ledger.txt, and a Bitcoin timestamp (OpenTimestamps) of the current
-     version, in Bitcoin block 971607. GitHub holds the history too, but the repository is Z's
-     (KNOWN BUGS 1) and its history was cut once, on 2026-10-15, when the ledger started clean.
-     None of these stops an edit. Together they make an edit visible, with a date no member set.
+  2. The keeping (rules 6 and 7). One file, ledger.txt. Nothing is removed or rewritten: every
+     change is a new dated line. Each week the next member in the list checks both ways, adds
+     what is missing and one LAST POSTS line, and posts the new file's SHA-256 in the chat and
+     in one named public place outside it. The ledger is whichever copy matches the last posted
+     hash. Three records sit outside the group: that posted hash, a daily request to the
+     Internet Archive to save ledger.txt, and a Bitcoin timestamp (OpenTimestamps), so far of
+     version 3's last text, in Bitcoin block 971607. GitHub holds the history too, but the
+     repository is Z's (KNOWN BUGS 1) and its history was cut once, on 2026-10-15, when the
+     ledger started clean. None of these stops an edit. Together they make an edit visible,
+     with a date no member set.
 
-  3. The changing (rules 7 and 8). A rule changes, and anything is done in the group's name,
-     only after 7 days in the chat, four yeses from active members (every active member, if fewer
-     than five are active) and at most one "object". The old wording stays. Anything only one
-     person can do is a bug, listed under KNOWN BUGS with a date to fix it by. Today that
-     includes: Z holds the file and the site. A member silent for 90 days stops counting until
-     they post again.
+  3. The changing (rules 8 and 10). A rule changes, and anything is said or done in the group's
+     name beyond opening questions and closing answers, only after 7 days in the chat, four
+     yeses from active members (every active member, if fewer than five are active, and never
+     fewer than two) and at most one "object". An objection says which line is wrong and what
+     would change the objector's mind. The votes are counted from the file's VOTES section, and
+     the old wording stays, word for word, in archive/. Anything only one person can do is a
+     bug, listed under KNOWN BUGS with a date to fix it by. Today that includes: Z holds the
+     file and the site, and Z wrote every script. A member counts as active while the file
+     shows a post of theirs from the last 90 days.
 
-  4. The test (PROMISE 7 and the stop rule). Thirty days after adoption, unpaid, on the seven. The
-     group's goal, PROMISE 7: close three entries besides itself, at least one not written by Z.
-     Miss it and it is BROKEN: we say so, then rewrite or stop. The stop rule adds four tests, E0
-     to E3, each with its failing number written first and what happens when it fails. The
-     first honest numbers on what a check costs in minutes come out of this part.
+  4. The test (WHEN THIS HAS FAILED). Read at the first weekly turn after the 60th day from
+     adoption, unpaid, on the seven. If by then fewer than three questions have closed under
+     rule 4 (CAN'T TELL does not count), or one person posted every answer that closed HOLDS,
+     it has failed: we say so in the chat, and rewrite it or stop. No second vote is needed.
+     It replaces version 3's PROMISE 7 and its stop rule, E0 to E3: the one check by hand in
+     every close does the work the script tests were for.
 
-  Money is not a part. The group holds none: no pool, no treasury, no new token. A promise may
-  name a bond in $FEBU; if it ends BROKEN its writer sends the bond to the incinerator and the
-  transaction is the link. A fact never carries a bond. The group pays nobody; a member may pay
-  another only by their own promise.
+  Money is not a part. The group holds none and moves none in its name: no pool, no treasury,
+  no bonds, no pay, no new token (rule 9). $FEBU is the only token named, and nothing in the
+  group's name states or implies a price for it. No totals, scores or rankings of members, in
+  the file or on the group's pages.
 
 WHAT IT RUNS ON
   GitHub for the history (Z's repository), Vercel for the pages and two small daily jobs (the
@@ -79,34 +98,46 @@ WHAT IT RUNS ON
   RPC and explorer links for chain facts, web.archive.org for the daily capture, and the group
   chat for posts. It runs on free tiers. If Vercel or GitHub vanish, the file survives in every
   copy anyone made. If the Internet Archive vanishes, a Bitcoin timestamp still shows the file
-  existed (timestamps/ holds one for the current version). If the chat vanishes, the posts move;
-  the ledger does not.
+  existed (timestamps/ holds one, for version 3's last text). If the chat vanishes, the posts
+  move; the ledger does not.
 
   Bitcoin is used for one thing: a timestamp no member could have forged. Not for money, not
   for agreement, not for identity. That is the whole lean.
 
 WHAT IT CANNOT DO
-  - Hold a claim with no public record. "Febu is honest" cannot be an entry. "The fee account
-    paid nothing out from 09-15 to the end of 10-14" can. A claim a stranger could make false
-    (a dust transfer, the fee claim anyone may send) needs an end date; facts 2, 6 and 8 were
-    changed for that.
+  - Ask a question with no public record. "Is febu honest?" cannot be a question. "Did the fee
+    account pay anything out from 09-15 to the end of 10-14?" can. An answer about something a
+    stranger could change (a dust transfer, the fee claim anyone may send) needs a WRONG IF
+    line that ends on a stated date (rule 3).
   - Settle what a link means. It settles what a link shows. Interpretation stays in the chat.
-  - Work among strangers. It cannot tell one person from two names, or a real check from a copied
-    one beyond the "one new thing" rule.
-  - Make anyone look. The group pays nobody. If the seven do not check, PROMISE 7 breaks, and
-    that is the honest result. The dry run's minutes will say what a check costs.
-  - Stop an edit. Anyone with the repository can edit; the edit cannot be hidden. A capture and a
-    stamp prove what the file was, not that the file was right.
-  - Bind anyone. No entity, no contract, no legal weight. A bond is kept by the rule and by shame,
-    not by code.
+  - Work among strangers. It cannot tell one person from two names, or a real check from a
+    copied one beyond the "one new thing" rule and the one check by hand.
+  - Make anyone look. The group pays nobody. A question nobody works on holds the slot for its
+    30 days. If the seven do not check, WHEN THIS HAS FAILED says so, and that is the honest
+    result.
+  - Stop an edit. Anyone with the repository can edit; the edit cannot be hidden. A capture and
+    a stamp prove what the file was, not that the file was right.
+  - Bind anyone. No entity, no contract, no legal weight. The rules are kept by the record and
+    by shame, not by code.
   - Detect a machine. A check written by a model and posted by a person is undetectable; the AI
     line is a rule, not a filter.
-  - Show that anyone outside the seven wants it. Seven people and 30 days will say about the
+  - Keep out easy questions. One anyone could answer without looking can be proposed, answered
+    and closed. It counts toward WHEN THIS HAS FAILED and shows nothing: three yeses are the
+    only gate.
+  - Show that anyone outside the seven wants it. Seven people and 60 days will say about the
     seven, not about outsiders.
 
+WHAT IT IS WORTH
+  The group does not decide what anything is worth. It makes one thing cheap, finding out
+  whether an answer is true, and leaves the price to whoever wants the answer. Bitcoin works the
+  same way: its rules fix what a check costs, and nothing in them says what the coin is worth.
+  Nobody is paid for a check, a script or anything else (rule 9). Version 3's shape for a member
+  who pays for scripts (paid.md) is not part of version 5; bringing pay back is a rule change
+  (rule 8).
+
 HOW IT ANSWERS FEBU
-  This section is Z's reading of febu's pages and tweets. None of it is an entry yet, except the
-  09-22 sale (FACT 2).
+  This section is Z's reading of febu's pages and tweets. None of it is a question yet. The
+  09-22 sale was version 3's fact 2.
 
   Febu's pages name eleven problems: corrupt leaders, invented debt, repeating history, arrogance,
   war, dependence on machines, machines that imitate, hidden systems, hollow law, misinformation,
@@ -124,86 +155,58 @@ HOW IT ANSWERS FEBU
 
   febu says                              the ledger does
   -------------------------------------  ------------------------------------------------------
-  nothing to believe, only to verify     no fact without a link anyone can open and a WRONG IF
-                                         line fixed before the check; a promise names the link
-                                         anyone will open then
+  nothing to believe, only to verify     no answer without a link anyone can open and a WRONG
+                                         IF line fixed before the check
   hidden systems                         one plain file, every change a dated line with the old
                                          text kept, every step only one person can do listed as a
                                          bug with a date
   hollow law                             a rule changes only after 7 days, four yeses and at most
-                                         one objection; the group's own failure test is an entry,
-                                         PROMISE 7
-  corrupt leaders                        nobody approves; nobody checks their own entry; the file
-                                         is whichever copy matches the last posted hash. Not
-                                         solved yet: Z holds the file and the site, KNOWN
+                                         one objection; the group's own failure test is written
+                                         in the file, WHEN THIS HAS FAILED
+  corrupt leaders                        nobody approves; nobody checks an answer they posted;
+                                         the file is whichever copy matches the last posted hash.
+                                         Not solved yet: Z holds the file and the site, KNOWN
                                          BUGS 1
-  financial illusion                     no pool, no treasury, no new token, no price talk, and
-                                         the group pays nobody; $FEBU is only a bond that burns
-                                         on a broken promise. Buying it still pays its fee to the
-                                         wallet that created it: KNOWN BUGS 5
+  financial illusion                     no pool, no treasury, no bonds, no pay, no new token, no
+                                         price talk. Every $FEBU trade still pays its fee to the
+                                         wallet that created it, so a post in the group's name
+                                         that asks anyone to trade says where the fee goes
+                                         (KNOWN BUGS 5)
   machines that imitate                  a rule, not a filter: an AI may help someone look and
-                                         never posts a result. A check an AI wrote and a person
-                                         signed unread cannot be told from the record: see OPEN
-                                         QUESTION
-  repeating history                      no record a stranger could open for this yet: see OPEN
-                                         QUESTION. What it keeps: a result cannot be un-posted,
+                                         never posts a result, and one check in every close is by
+                                         hand. A check an AI wrote and a person signed unread
+                                         cannot be told from the record (RISKS WE ACCEPT)
+  repeating history                      no record a stranger could open for this yet, so no
+                                         question. What it keeps: a result cannot be un-posted,
                                          and CAN'T TELL after 30 days is itself a record
 
 FOUR QUESTIONS FROM THE CHAT
-  WitnesstoFebu read it as: a claim with a link, a WRONG IF and a bond; a cheap check; a result
-  set by what the link shows; a record that builds up. Right, except the bond: only a promise
-  can carry one. A fact never does. A wrong fact costs its writer the DOESN'T HOLD line.
+  WitnesstoFebu read version 3 as: a claim with a link, a WRONG IF and a bond; a cheap check; a
+  result set by what the link shows; a record that builds up. Version 5 keeps all of it but the
+  bond. A wrong answer costs nothing but its DOESN'T HOLD line, and that line stays.
 
-  1. How big is a bond? The promiser picks it, in $FEBU, with no minimum. A reader weighs the
-     promise by it: a promise backed by 10 $FEBU says less than one backed by a million. The
-     group never says what that is worth in money (rule 5).
-  2. Does a smart contract burn it? No. Within 7 days of a promise closing BROKEN, the promiser
-     sends the bond to the incinerator, or burns it, and the transaction is the link. A contract
-     holding bonds in advance would be a pool, which rule 5 forbids, and code someone has to
-     write and run is a step only that person can do, which rule 8 lists as a bug. Unpaid after
-     7 days, the entry says UNPAID, and its owner posts no new promise until it is paid. That is
-     all the enforcement there is.
-  3. Why take part? The group pays nobody, and reputation here is a list, not a score: nothing
-     is summed. A writer gets a fact anyone can cite without trusting them, once two others close
-     it. A promiser gets believed: a promise with a date and a bond counts for more than a chat
-     message. A checker gets something to rely on without taking anyone's word. If seven people
-     will not check unpaid, PROMISE 7 breaks, and the dry run's minutes say what a check costs.
-     What anything is worth, and who would be paid later, is the next section.
-  4. Can I enter "the sun will rise tomorrow"? No. It is a forecast of something nobody here
-     does, so it is neither a fact (true now, and a link shows it) nor a promise (something you
-     will do). An easy fact that fits ("febu's site is up") can be entered: nobody approves or
-     refuses anything. It costs two checkers a minute and earns nothing, because nothing is
-     added up. Usefulness is decided by whether anyone bothers to check: an entry nobody needs
-     stays OPEN. An easy entry could still count toward PROMISE 7 (RISKS WE ACCEPT).
-
-WHAT IT IS WORTH, AND WHO WOULD BE PAID
-  The group does not decide what anything is worth. It makes one thing cheap, finding out whether
-  a claim is true, and leaves the price to whoever wants the answer. Bitcoin works the same way:
-  its rules fix what a check costs, and nothing in them says what the coin is worth.
-  - A check. What it costs in minutes is measured in the first weeks (process.md, section 7).
-    That is the floor for any pay. Below it nobody checks; far above it people check things that
-    cannot be false.
-  - A task. Someone who wants it done posts their own promise, with a bond, naming what they will
-    pay for a script that two others reproduce (paid.md). Anyone may post a competing promise.
-    If nobody takes the work, it was worth less than that to everyone else. The group holds no
-    money and sets no price.
-  - Creative work, a book or a video. The ledger cannot judge it. It can show that it was
-    published, when, and that its author did what they said they would. Its worth is for the
-    audience to say.
-  Until day 30 nobody is paid: you get a record anyone can cite, and a promise that counts for
-  more because of its bond. After day 30, if the 30-day test says keep, pay opens for scripts
-  only, and two tests say whether pay changes anything and whether anyone besides the funder
-  wants to pay. The loop where it pays for itself closes only if people other than the funder
-  post bounties. Nobody knows that yet.
+  1. How big is a bond? There are none now (rule 9). Version 3 let a promise name one in $FEBU;
+     version 5 has no promises and moves no money in the group's name.
+  2. Does a smart contract burn it? There is nothing to burn. A contract holding money would be
+     a pool, which rule 9 forbids, and code someone has to write and run is a step only that
+     person can do, which rule 10 lists as a bug.
+  3. Why take part? The group pays nobody, and nothing is summed: no totals, scores or rankings
+     (rule 9). You get an answer anyone can cite without trusting whoever posted it, once three
+     others close it, and something to rely on without taking anyone's word. If seven people
+     will not check unpaid, WHEN THIS HAS FAILED says so at day 60.
+  4. Can I ask "will the sun rise tomorrow"? No. A question asks what a link anyone can open
+     could settle; a forecast of what nobody here does goes in the chat (rule 1). An easy
+     question that fits ("is febu's site up?") can be proposed: nobody judges whether a question
+     is worth asking, and three yeses are the only gate. It costs the group a slot and earns
+     nothing, because nothing is added up. It could still count toward WHEN THIS HAS FAILED
+     (RISKS WE ACCEPT).
 
 WHAT IT COULD BECOME
-  - A dated record of what febu said and did, built from entries, that a holder can check
-    without trusting the Assembly.
+  - A dated record of what febu said and did, built one question at a time, that a holder can
+    check without trusting the Assembly.
   - A template. The file and the rules copy in a minute; any small group whose members know each
     other can run its own.
-  - A bond behind a promise, in $FEBU: a use that is not trading. Buying $FEBU for one still pays
-    its fee to the wallet that created it (KNOWN BUGS 5).
-  - If febu returns, a member can give each new page a day-one entry: what it claims, what would
-    show it wrong.
-  - Promise records without a scoreboard: KEPT and BROKEN lines with links, nothing summed.
-  - The first real numbers on what a check costs in minutes, from the cheapest entries first.
+  - If febu returns, a member can propose a question about each new page: what it claims, and
+    what would show it wrong.
+  - A record without a scoreboard: HOLDS and DOESN'T HOLD lines with links, nothing summed.
+  - The first real numbers on how long a question takes to close, from the first ones.

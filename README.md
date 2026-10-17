@@ -1,21 +1,21 @@
 # febu Assembly: the ledger
 
-The febu Assembly's ledger of promises and facts about febu, the texts that go with it, and the script that
+The febu Assembly's ledger, one question at a time about febu, the texts that go with it, and the script that
 turns them into the Assembly's pages on https://febu-assembly.vercel.app (assembly, the ledger, four tests).
 
 | File | What it is |
 |---|---|
-| `ledger.txt` | The ledger. Edit this one. It is served byte for byte, and its SHA-256 is the hash in rule 6. |
-| `fact-6-steps.txt` | Fact 6 as four steps, each a link, with all 44 payments. |
+| `ledger.txt` | The ledger, version 5: proposals, the questions they open, and the answers under each. Edit this one. It is served byte for byte, and its SHA-256 is the hash in rule 7. |
+| `fact-6-steps.txt` | Version 3's fact 6 as four steps, each a link, with all 44 payments. `checks/fact6.py` reads it; no page shows it. |
 | `tests.txt` | The four tests. Reading, not the experiment: served at `/tests.html`, not linked from the front page. |
-| `process.md` | The whole process in one file: the ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule; where it and `ledger.txt` differ, the ledger wins. Shown as the "the process" tab (`process.html`, needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
-| `paid.md` | The shape for a member who wants to pay for scripts: their own promise, the cap, two tests of its own. Not linked from the site, not part of the vote. |
-| `archive/` | Empty at the clean start of 2026-10-15. Each later change to `ledger.txt` puts the text before it here, word for word. Add to it; never edit or delete. |
-| `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. One so far, for the current `ledger.txt`; the archive files have none (see "Records outside the group"). |
+| `process.md` | Version 3's whole process in one file: its ledger, the scripts, money, the 30-day clock and its stop rule, the decisions waiting. Adds no rule, and describes the version before this one: version 5's rules are all in `ledger.txt`. Shown as the "the process" tab (`process.html`, needs the `markdown` package, otherwise the committed page is kept while `process.md` is unchanged). |
+| `paid.md` | Version 3's shape for a member who wants to pay for scripts. Rule 9 of version 5 has no pay. Not linked from the site. |
+| `archive/` | Empty at the clean start of 2026-10-15. Each later change to `ledger.txt` puts the text before it here, word for word: version 3's last text is `archive/08_CLAIMS_LEDGER_v3.txt`, with its nine entries. Add to it; never edit or delete. |
+| `timestamps/` | OpenTimestamps proofs that `ledger.txt` and the archive files existed by a Bitcoin block. One so far, for version 3's `ledger.txt` (`d3e17658`); the archive files have none (see "Records outside the group"). |
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
-| `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. `agent.py` and `mcp_server.py` let a member's AI run them and draft a check post (see `AGENTS.md`). |
-| `ledger.json` | Written by `build.py`: a read-only index of `ledger.txt` for an agent (its hash, the members, the open votes, each entry's writer, WRONG IF clauses and results). No links, addresses cut to 7 characters; `ledger.txt` wins. |
-| `build.py` | Write the pages from the texts, and each entry's state under rules 3 and 4 (`standing`, also in `ledger.json`). `test_build.py` tests how the build reads SEEN lines, the worked version-5 ledger in `checks/fixtures/`, the states against `checks/states.json`, and adoption day in a copy of the repo. |
+| `checks/` | Scripts that re-read version 3's facts 1 to 6, 8 and 9 from public sources, for anyone to run. An answer that copies one of those facts can be checked with them. `lint.py` tests the file against its own rules, `closers.py` reads who closes the answers. `agent.py` and `mcp_server.py` let a member's AI run the scripts and draft a check post (see `AGENTS.md`). |
+| `ledger.json` | Written by `build.py`: a read-only index of `ledger.txt` for an agent (its hash, the members and their dated posts, the proposals and their yeses, each question with its answers' posters, WRONG IF clauses, results and state, the votes). No links, addresses cut to 7 characters; `ledger.txt` wins. |
+| `build.py` | Write the pages from the texts, and the state of every answer under rules 4 and 5, every question under rules 2 and 5, and every vote under rule 8 (`model`, also in `ledger.json`). `test_build.py` tests how the build reads SEEN items, the worked version-5 ledger in `checks/fixtures/`, the states against `checks/states.json`, and adoption day in a copy of the repo. |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat, and its copy of `standing` against the same `checks/states.json`. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
 | `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
@@ -50,35 +50,48 @@ This repo is the whole of the Assembly: the pages, the ledger, the two daily job
 
 Each turns one job into one page and one message for the chat. None of them posts, stores or sends anything.
 
-- **Check card** (front page, under each entry rule 3 has not closed): tick the WRONG IF lines you tested, say what you
-  saw on each, name one new thing on the page, pick your result. Copy waits until the new thing is filled in. The post's
-  first line is the part a machine reads: `CHECK FACT 8 · HOLDS · lines 1,3 · Laura · 2026-10-15`. WRONG IF lines are
-  numbered by clause, split at ", or" and "; or", the way `checks/resolve.py` names them.
-- **Your week** (front page): pick your name to see four numbered steps. Check: the entries open to you. Vote: what is
-  open, with its closing date (the version from STATUS and the last "yes" or "object" date in the ledger; more subjects
-  from one STATUS line `Also up for the vote by 2026-10-22: the Saw line; the stop rule.`). Weekly turn: when yours comes,
-  counted from the first date in STATUS in Member order, on the reader's own clock. Write. Under the steps, a reminder
-  post of what is due for anyone to paste into the chat, and `assembly.ics`: the vote's closing day, twelve weekly turns
-  and each known bug's fix-by day as all-day calendar events. The banner's Due line shows the same dates. The
-  device remembers the name picked and any unfinished check card (localStorage, cleared when the post is copied);
-  `#me=Name` in the address picks a name, so each member has a link of their own. Nothing leaves the page.
-- **The weekly turn** (`weekly.html`, rule 6): paste the week's chat. It reads the CHECK, VOTE and ENTRY posts and lists
-  the SEEN lines to add in the ledger's layout, the SEEN lines with no post, the entries rule 3 would close, the votes
-  against rule 7, and every line it could not read. You paste its blocks into `ledger.txt` (Editing in the browser).
-- **Write an entry** (`write.html`): SAYS, LINK and one WRONG IF line per part of SAYS, laid out for `ledger.txt` and as
-  a chat post. Facts only; write a promise by hand from HOW AN ENTRY IS WRITTEN.
+- **Check card** (front page, under each answer to the open question that rule 4 has not closed): tick the WRONG IF
+  lines you tested, say what you saw on each and, for a line over many items, how many you opened, name one new thing
+  on the page, pick your result. Copy waits until the new thing is filled in. The post's first line is the part a
+  machine reads: `CHECK Q1 ANSWER 2 · HOLDS · lines 1,3 · Laura · 2026-11-02`. WRONG IF lines are numbered by clause,
+  split at ", or" and "; or" (Result, in WORDS USED HERE).
+- **Your week** (front page): pick your name to see five numbered steps. Check: the open answers you did not post and
+  have no SEEN item on yet. Propose and say yes: the proposals not yours that have no yes of yours (rule 2). Vote: what
+  is open, with its date (while STATUS says Proposed, this version and the last "yes" or "object" date in STATUS;
+  after, each text in VOTES that has not passed, counted from its 7th day). Weekly turn: when yours comes, counted from
+  the first date in STATUS in Member order, on the reader's own clock. Write. Under the steps, a reminder post of what
+  is due for anyone to paste into the chat, and `assembly.ics`: each vote's day, twelve weekly turns and each known
+  bug's fix-by day as all-day calendar events. The banner's Due line shows the same dates. The device remembers the
+  name picked and any unfinished check card (localStorage, cleared when the post is copied); `#me=Name` in the address
+  picks a name, so each member has a link of their own. Nothing leaves the page.
+- **The weekly turn** (`weekly.html`, rule 7): paste the week's chat. It reads the CHECK, PROPOSE, YES, VOTE and ANSWER
+  posts and lists, in the ledger's layout, the SEEN items to add, the new proposals and yeses, the question rule 2
+  opens, the new answers, the VOTES items with each count under rule 8, and one LAST POSTS line; then the answers rule
+  4 would close or rule 5 would keep open or reopen, and every line it could not read. You paste its blocks into
+  `ledger.txt` (Editing in the browser).
+- **Write an answer** (`write.html`): SAYS, LINK and one WRONG IF line per part of SAYS, for the open question, laid out
+  for `ledger.txt` and as a chat post that starts `ANSWER Q1 · Laura · 2026-11-04`.
 
-A SEEN line the weekly page writes reads `- Laura, 2026-10-15: HOLDS on lines 1, 3. Saw: ... New: ... 14 minutes.`,
-the first replacing "nobody yet". The build reads that form back to decide which entries rule 3 has closed; a SEEN line
-written another way still shows, but is left to a person to count.
+The other posts' first lines: `PROPOSE · the question, in one sentence · Laura · 2026-11-02`, `YES P4 · Laura ·
+2026-11-03`, and `VOTE YES · rule 4 wording · Laura · 2026-11-03` (an OBJECT adds the lines "Which line is wrong:" and
+"What would change my mind:"). "|" or "•" work in place of "·".
 
-## Add an entry
+A SEEN item the weekly page writes reads `- Laura, 2026-11-02: HOLDS on lines 1, 3. Items: line 3, all 164. Saw: ...
+New: ...`, the first replacing "nobody yet", with `Script: <command> by <who> via <where>.` before `Saw:` when a script
+did part of it. The build reads that form back to decide which answers rules 4 and 5 have closed, kept open or
+reopened; a SEEN item written another way still shows, but is left to a person to count.
 
-1. In `ledger.txt`, under THE ENTRIES, write it the way HOW AN ENTRY IS WRITTEN shows, lined up like the
-   entries above it. Use the number the line "The next entry is number n." gives, then raise that number.
-2. Nothing is removed or rewritten (rule 2). A result is a SEEN line. A change to an entry before anyone
-   checks it is a CHANGED line inside the entry. Anything else gets a dated line under CHANGES TO THE RULES.
-3. Before rewording what is already there, or changing a rule (rule 7), copy the served `ledger.txt` into
+## Add an answer
+
+1. In `ledger.txt`, under THE QUESTIONS, put it under its question after the last answer, the way HOW A QUESTION IS
+   WRITTEN shows, lined up like the answers above it, numbered in the order posted. A proposal goes under PROPOSED
+   QUESTIONS with the number the line "The next proposal is P n." gives; a question opened under rule 2 goes under THE
+   QUESTIONS with the number "The next question is Q n." gives, with "Opened as Q n." under its proposal. Then raise
+   that number.
+2. Nothing is removed or rewritten (rule 6). A result is a SEEN item. A change to an answer before its first SEEN
+   item is a CHANGED line inside the answer that names who changed it. NOTE lines may be added at any time. Anything
+   else gets a dated line under CHANGES TO THE RULES.
+3. Before rewording what is already there, or changing a rule (rule 8), copy the served `ledger.txt` into
    `archive/` (for example `archive/ledger-before-2026-11-04.txt`) and cite that copy's SHA-256 under CHANGES TO
    THE RULES, the way the lines already there do. The build stops if a cited hash doesn't match the file.
 4. Keep lines to 92 characters. A short line meant to stand on its own keeps to 80; a longer one runs on into
@@ -101,9 +114,11 @@ python build.py
 
 It prints `ledger.txt`'s SHA-256. It stops with a message, and writes nothing, if a page would show notation
 the ledger keeps off its pages, if a wallet address or transaction signature would appear anywhere but
-the ledger page, if a SHA-256 the ledger cites doesn't match its archive file, or if fact 6's rows aren't
-numbered 1 to n or don't add up to its total. Without `markdown`, it keeps `process.html` as it is if that was
-built from the same `process.md`, and stops if `process.md` has changed since.
+the ledger page, if a SHA-256 the ledger cites doesn't match its archive file, if the text is not laid out the way
+version 5 is (one PROPOSED QUESTIONS section and one THE QUESTIONS section, an answer with no SAYS line), or if an
+answer copies a version-3 fact or promise that `archive/08_CLAIMS_LEDGER_v3.txt` does not have. It cannot read a
+version-3 `ledger.txt`. Without `markdown`, it keeps `process.html` as it is if that was built from the same
+`process.md`, and stops if `process.md` has changed since.
 
 Next to every solscan.io link on the ledger page, the build adds the same record on explorer.solana.com, so no
 check rests on one explorer (known bug 4). `ledger.txt` itself keeps only the links it has.
@@ -120,20 +135,24 @@ Open `ledger.txt` on GitHub, press the pencil (Edit this file), make the change,
 rebuilds the pages from it in a minute or two. If the edit breaks something the build checks (the list under
 Rebuild), the build stops, that deployment fails, and the site keeps serving the version before it. GitHub then
 shows a red cross beside the commit, with Vercel's message behind it. The broken commit stays in the history
-(rule 2); fix it with another commit. The build checks only that list: any other edit goes live as written.
+(rule 6); fix it with another commit. The build checks only that list: any other edit goes live as written.
 
 After such an edit the pages in the repository lag behind `ledger.txt` until someone runs the build and commits
 them. The site does not lag, because Vercel builds its own.
 
 ## Rerunnable checks
 
-`checks/` re-reads the facts a machine can read, with Python 3 and nothing else: no packages, no account, no key. (Two
-helpers for a member's AI need more: `agent.py lint` needs node, and `mcp_server.py` needs `pip install "mcp>=1.26,<2"`. Neither posts.)
-Each takes its addresses and transactions from `ledger.txt` and `fact-6-steps.txt`, so it tests what the ledger
-says, and prints what it saw. `resolve.py` also names which WRONG IF lines tripped. None of them posts anything:
-a person reads the output, compares it with the entry's WRONG IF lines, opens a link by hand, and posts (HOW TO
-CHECK AN ENTRY). Say in your post that you ran a script. Until the Saw line is adopted (rule 7), a script run alone
-is not a Saw.
+`checks/` re-reads version 3's facts a machine can read, with Python 3 and nothing else: no packages, no account, no
+key. (Two helpers for a member's AI need more: `agent.py lint` needs node, and `mcp_server.py` needs `pip install "mcp>=1.26,<2"`. Neither posts.)
+Each takes its addresses and transactions from the fact's text, in `ledger.txt` if it is there and in
+`archive/08_CLAIMS_LEDGER_v3.txt` if not, and from `fact-6-steps.txt`, so it tests what the text says, and prints
+what it saw. `resolve.py` also names which WRONG IF lines tripped. None of them posts anything: a person reads the
+output, compares it with the answer's WRONG IF lines, opens a link by hand, and posts (HOW TO CHECK AN ANSWER). Say
+in your post whose script you ran and where it ran (the `Script:` line). A script run is a Saw only when none of the
+answer's posters wrote the script and you opened one link by hand (Saw, in WORDS USED HERE), and rule 4 needs one of
+the three closers to open every link by hand. Z wrote every script here and every version-3 fact, and an answer
+copied from version 3 names its writer among its posters, so on such an answer these scripts show where to look
+and count toward nothing (KNOWN BUGS 8).
 
 | Script | Reads | Takes |
 |---|---|---|
@@ -148,8 +167,8 @@ is not a Saw.
 | `python checks/resolve.py test9` | Fact 9 on the real transaction, then on one-change copies and four lazy versions it must catch | seconds |
 | `python checks/resolve.py claimsim` | Whether a stranger can send the fee claim: a dry run the node simulates, nothing sent | seconds |
 | `python checks/release.py --posted d3e17658` | The release: the served `ledger.txt` against this checkout and git, the hash a post names (and which archived version it is, if not the served file), the headers, the Internet Archive's captures, and whether each timestamp proof is pending or in a block. CAN'T TELL when a read is incomplete | seconds |
-| `python checks/lint.py` | The file against its own rules, run by the weekly turn before it commits (`--rev HEAD~1` after): every line of git HEAD's version still there unless CHANGES TO THE RULES archives it, entries numbered in order, no check by an entry's writer, no SEEN item from the dry run or the future, no checked entry changed, every SEEN item readable, results and WRONG IF lines that exist, every archive/ copy there with its hash. Nine lines, I1 to I9 | seconds |
-| `python checks/closers.py` | Who closes the entries: for every entry rule 3 has closed, its writer, its two closers and the day, then the closes per closer and per pair, and the busiest pair's and closer's share. A FLAG line when one pair made at least half the closes, or one writer wrote at least half the closed entries. A reading for the weekly turn to paste, not a rule: exit 2 while nothing has closed | seconds |
+| `python checks/lint.py` | The file against its own rules, run by the weekly turn before it commits (`--rev HEAD~1` after; `--prev FILE` against a saved copy, such as `archive/08_CLAIMS_LEDGER_v3.txt` on adoption day): every line of the earlier version still there unless CHANGES TO THE RULES archives it (I1), proposals, questions and answers numbered in order and each question opened the day rule 2 gives (I2), no SEEN item by one of its answer's posters or on a script one of them wrote (I3), none while STATUS says Proposed, before its answer's first day or in the future (I4), no checked answer changed and every CHANGED line naming who and when (I5), every SEEN item readable (I6), results and WRONG IF lines that exist (I7), every archive/ copy there with its hash (I9). Eight lines; there is no I8, since version 3's bonds are gone | seconds |
+| `python checks/closers.py` | Who closes the answers: for every answer rule 4 has closed, its posters, its closers and the day, then the answers posted and closed per poster, the closes per closer and per set of closers, and the busiest set's and closer's share. A FLAG line when one set made at least half the closes, or one poster is on at least half the closed answers. A reading for the weekly turn to paste in the chat, not a rule (rule 9 keeps totals off the file and the pages): exit 2 while nothing has closed | seconds |
 
 - The chain checks ask the public node https://api.mainnet-beta.solana.com. To ask another, your own for example,
   set `SOLANA_RPC` (`SOLANA_RPC=http://127.0.0.1:8899 python checks/fact6.py`). The public node turns away fast
@@ -165,7 +184,7 @@ is not a Saw.
 - Never send the fee claim to see what happens. It pays the creator wallet and makes a WRONG IF line true.
 - `python checks/test_checks.py` tests the scripts' own reading of the texts, offline.
 
-## Records outside the group (rule 6)
+## Records outside the group (rule 7)
 
 Two kinds of dated record that nobody in the group controls. Both start from the clean-start text of
 2026-10-15; copies dated before then are of drafts that were withdrawn.
@@ -231,9 +250,9 @@ not match original!" means the file is not the one stamped.
 Z adds them on GitHub: Settings, Collaborators, Add people, role Write. They can then edit in the browser, or
 clone, edit, build and push the same way Z does. On Vercel's free plan a collaborator's push deploys only because
 this repository is public. Anyone else can propose a change as a pull request, or copy the whole thing and run it their own way
-(rule 7).
+(rule 8).
 
-## Checking the history (rule 2)
+## Checking the history (rule 6)
 
 `git log -p -- ledger.txt` shows every change to the ledger since the clean start of 2026-10-15; the history
 before it was cut along with the drafts it described. From here on, earlier versions are in `archive/`, with the
@@ -242,9 +261,9 @@ SHA-256 the ledger cites for each one.
 
 ## One write path
 
-A result, a second or a vote reaches the ledger one way: a post in the chat, which the weekly turn copies into
-`ledger.txt` (rules 3, 6 and 7). The site reads and prepares posts; it stores nothing and signs nobody in. A sign-in
+A result, a proposal, a yes, an answer or a vote reaches the ledger one way: a post in the chat, which the weekly
+turn copies into `ledger.txt` (rules 6 and 7). The site reads and prepares posts; it stores nothing and signs nobody in. A sign-in
 (a one-time name claim) and a live record of seconds and checks were built for a second way and removed on 2026-10-15
 before any rule came to depend on them: nothing on the site called the record, and the ledger counts only what the
-chat shows. A second way to write would have given rule 8 a second thing only one person could run. The code is in git:
+chat shows. A second way to write would have given rule 10 a second thing only one person could run. The code is in git:
 `git log --diff-filter=D -- api/claim.js` finds the commit that removed it.
