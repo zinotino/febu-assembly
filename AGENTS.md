@@ -58,4 +58,4 @@ promise, or one nobody has written a script for) there is only the link: help th
 `ledger.txt` is the record and wins over every other file. `process.md` is the whole process in one file; `how.txt` is
 the plain-words version; `checks/` holds the scripts (they read `ledger.txt`, so they test what the ledger says);
 `assets/claims.js` is the weekly page's reading of a pasted chat; `README.md` has the rest. Tests: `python -m pytest`,
-`node test_claims.js`, `python test_routes.py`.
+`node test_claims.js`, `python test_routes.py`, `python test_agree.py` (needs node: runs build.py and claims.js on thousands of random entries and SEEN lines, and says where they differ).

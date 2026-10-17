@@ -36,6 +36,7 @@ This repo is the whole of the Assembly: the pages, the ledger, the two daily job
 | `/` , `index.html`, `assets/index-*.js`, `assets/index-reconstructed.css`, `assets/shim.js`, `assets/community.json`, `assets/scripture.json` | The den: the 2026-08-14 imfebu front end, patched to talk to our Supabase. Its app routes (`/library/scripture` and the rest) fall back to `index.html`. See `DEN.md`. |
 | `scripture.html` | Plain-text scripture reader. |
 | `api/keepalive.js` | A daily read so the free Supabase project is not paused. |
+| `test_agree.py` | Runs `build.py` and `assets/claims.js` on thousands of random entries (rules 3 and 4) and SEEN lines, and fails where the two copies differ or a line the page writes does not read back the same. Also checks that no line of `ledger.txt` is dropped in parsing. Needs node. |
 | `test_routes.py` | Checks `vercel.json`: the Assembly's security headers sit on the Assembly's files only (the den needs inline styles and Supabase), `/` is the den here and the front page on the old domain, unknown paths reach the den. |
 
 **One address.** The Assembly and the den share https://febu-assembly.vercel.app, so they share browser storage. The Assembly keeps nothing there that anyone could use (the name a member picked and unfinished posts, on the device; no token, no key), but a script that ran in the den could still read those, and one that ran could be made to do worse. What keeps one in from the other:
