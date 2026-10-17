@@ -77,12 +77,19 @@ class Agree(unittest.TestCase):
         rng = random.Random(1069)
         cls.cases = [standing_case(rng) for _ in range(4000)]
         cls.posts = [seen_post(rng) for _ in range(1500)]
-        cls.js = run_node({"standing": cls.cases, "seen": [{"post": p} for p in cls.posts]})
+        cls._js = None
+
+    @classmethod
+    def js(cls):
+        """claims.js on the same input, run once; skips the test that asks for it when node is missing."""
+        if cls._js is None:
+            cls._js = run_node({"standing": cls.cases, "seen": [{"post": p} for p in cls.posts]})
+        return cls._js
 
     def test_standing_matches_claims_js(self):
         """build.standing and claims.js standing say the same about every random entry."""
         off = []
-        for case, got in zip(self.cases, self.js["standing"]):
+        for case, got in zip(self.cases, self.js()["standing"]):
             want = build.standing([tuple(r) for r in case["results"]], case["writer"], case["members"], case["start"])
             if want != got:
                 off.append((case, want, got))
@@ -91,7 +98,7 @@ class Agree(unittest.TestCase):
     def test_seen_line_round_trips(self):
         """What the weekly page writes into SEEN, build.py reads back as the same result (build.results)."""
         off = []
-        for post, lines in zip(self.posts, self.js["seen"]):
+        for post, lines in zip(self.posts, self.js()["seen"]):
             body = ["  FACT 1. (Zed, 2026-10-12)", "    SAYS      x", "    WRONG IF  y"] + lines
             fields = build.entries(body)[0][4]
             sample = tuple(sorted({it["line"] for it in post["items"] if it["n"] != it["of"]}))
@@ -114,7 +121,8 @@ class Agree(unittest.TestCase):
             full, less = stand(case), stand(case, kept)
             if full != less:
                 late = less["until"] and any(r[1] > less["until"] for r in case["results"] if r not in kept)
-                self.assertTrue(late and full["state"] == "CAN'T TELL" and less["state"] == "OPEN", what)
+                self.assertTrue(late and full["state"] == "CAN'T TELL" and less["state"] == "OPEN"
+                                and full["since"] == build.days_after(less["until"], 1), what)
 
         for case in self.cases:
             same_but_the_clock(case, [r for r in case["results"] if r[0] != case["writer"]], "the writer's own result counts for nothing")
@@ -123,8 +131,28 @@ class Agree(unittest.TestCase):
             self.assertEqual(stand(case, before), stand(case), "a result dated before the first day counts for nothing")
             self.assertEqual(stand(case, members=case["members"][::-1]), stand(case), "the Member line's order does not matter")
 
+    def test_rules_at_their_edges(self):
+        """Rules 3 and 4 at the numbers they name, written out, so a misreading both copies share still fails."""
+        ms, w = ["Ann", "Bo", "Cy", "Di"], "Zed"
+        st = lambda *rs: build.standing(list(rs), w, ms, "2026-10-23")
+        one = ("Ann", "2026-10-24", "HOLDS", (1,), (), None)
+        two = ("Bo", "2026-10-25", "HOLDS", (1,), (), None)
+        self.assertEqual(st(one)["state"], "OPEN")
+        self.assertEqual(st(one, two)["state"], "HOLDS")
+        self.assertEqual(st(one, ("Out", "2026-10-25", "HOLDS", (1,), (), None))["state"], "OPEN")   # not on the Member line
+        self.assertEqual(st(one, ("Bo", "2026-10-25", "HOLDS", (2,), (), None))["state"], "OPEN")    # other WRONG IF lines
+        self.assertEqual(st(one, (w, "2026-10-25", "HOLDS", (1,), (), None))["state"], "OPEN")       # the writer
+        self.assertEqual(st(("Ann", "2026-10-24", "DOESN'T HOLD", (1,), (1,), None),
+                            ("Bo", "2026-10-25", "DOESN'T HOLD", (1,), (1,), None))["state"], "DOESN'T HOLD")   # a sample finding a wrong item counts
+        dispute = [("Cy", "2026-10-26", "DOESN'T HOLD", (1,), (), None), ("Di", "2026-10-27", "DOESN'T HOLD", (1,), (), None)]
+        held = st(one, two, *dispute)
+        self.assertEqual((held["state"], held["until"]), ("OPEN", "2026-11-26"))   # 30 days from the post that made it two words
+        late = lambda d: st(one, two, *dispute, ("Ann", d, "HOLDS", (1,), (), None))["state"]
+        self.assertEqual(late("2026-11-26"), "OPEN")        # day 30 can still close it: not yet CAN'T TELL
+        self.assertEqual(late("2026-11-27"), "CAN'T TELL")  # day 31
+
     def test_real_ledger_loses_no_line(self):
-        """build.sections and build.entries hand back every non-blank line of ledger.txt, in order: a line the parser
+        """build.sections and build.entries hand back every non-blank line of ledger.txt, whole and in order: a line the parser
         drops or moves would change what an entry says without anyone seeing it."""
         text = build.LEDGER.read_text(encoding="utf-8")
         title, secs = build.sections(text)
@@ -134,14 +162,14 @@ class Agree(unittest.TestCase):
         got = []
         for it in build.entries(body):
             if it[0] == "text":
-                got += [l.rstrip() for l in it[1]]
+                got += [("", l.rstrip()) for l in it[1] if l.strip()]
                 continue
-            got.append("  %s %s." % (it[1], it[2]))
-            got += [ln.raw for _, lines in it[4] for ln in lines if ln.txt]
+            got.append(("", "  %s %s." % (it[1], it[2]) + (" (%s)" % it[3] if it[3] else "")))
+            got += [(ln.raw, ln.raw + ("   (%s)" % ln.tag if ln.tag else "")) for _, lines in it[4] for ln in lines if ln.txt]
         want = [l.rstrip() for l in body if l.strip()]
         self.assertEqual(len(got), len(want))
-        for g, w in zip(got, want):
-            self.assertTrue(w.startswith(g.split(" (")[0]), (g, w))   # the header's (writer, date) and a note set off to the right (Ln.tag) are not in g
+        for (raw, rebuilt), w in zip(got, want):
+            self.assertTrue(w == rebuilt or (w.startswith(raw) and build.TAG.fullmatch(w[len(raw):])), (rebuilt, w))   # a note set off to the right (Ln.tag) is cut from raw
 
 
 if __name__ == "__main__":
