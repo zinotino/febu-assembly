@@ -101,6 +101,28 @@ class Agree(unittest.TestCase):
                 off.append((post, lines, build.results(fields)))
         self.assertEqual(off[:2], [], "%d of %d differ; first two shown" % (len(off), len(self.posts)))
 
+    def test_standing_keeps_to_the_rules_as_written(self):
+        """Agreeing is not being right: two copies can share a misreading. These are the rules themselves, each a
+        change to an entry that must change nothing (process.md rules 3 and 4), run through build.standing."""
+        def stand(case, results=None, members=None):
+            r = case["results"] if results is None else results
+            return build.standing([tuple(x) for x in r], case["writer"], members or case["members"], case["start"])
+
+        def same_but_the_clock(case, kept, what):
+            """A line that counts for nothing changes nothing, except that its date can show the 30 days ran out: standing()
+            reads that off any dated line, as the file has no other clock (so the state is CAN'T TELL, not OPEN until)."""
+            full, less = stand(case), stand(case, kept)
+            if full != less:
+                late = less["until"] and any(r[1] > less["until"] for r in case["results"] if r not in kept)
+                self.assertTrue(late and full["state"] == "CAN'T TELL" and less["state"] == "OPEN", what)
+
+        for case in self.cases:
+            same_but_the_clock(case, [r for r in case["results"] if r[0] != case["writer"]], "the writer's own result counts for nothing")
+            same_but_the_clock(case, [r for r in case["results"] if not (r[2] == "HOLDS" and r[4])], "a sampled HOLDS counts for nothing")
+            before = [r for r in case["results"] if not (case["start"] and r[1] < case["start"])]
+            self.assertEqual(stand(case, before), stand(case), "a result dated before the first day counts for nothing")
+            self.assertEqual(stand(case, members=case["members"][::-1]), stand(case), "the Member line's order does not matter")
+
     def test_real_ledger_loses_no_line(self):
         """build.sections and build.entries hand back every non-blank line of ledger.txt, in order: a line the parser
         drops or moves would change what an entry says without anyone seeing it."""
