@@ -1,28 +1,26 @@
 """Build the Assembly's pages, next to this file, from the texts beside them. All share one set of tabs.
 
-  febu-assembly.html  the front page: status, a check card under each open entry (it writes the result post),
-                      "your next move" by name, every entry and whether anyone has checked it, and the ledger's
-                      HOW TO CHECK AN ENTRY (#check; /start.html redirects there)
-  weekly.html   the weekly turn (rule 6): paste the week's chat, get the SEEN lines to add, the entries that would
-                close, the vote counts and the lines left to read; it never edits ledger.txt
-  write.html    the entry form: a fact laid out for ledger.txt and for the chat
-  ledger.html   ledger.txt as a page, in the text's own order: STATUS as a banner, each entry as a card
-                (#fact-6, with #6 kept for links made before version 2), and under the fact that
-                fact-6-steps.txt is about, its steps and every row with a link
+  febu-assembly.html  the front page: status, the open question with a check card under each of its open answers (it
+                      writes the result post), the proposals waiting for yeses, "your week" by name, every question,
+                      and the ledger's HOW TO CHECK AN ANSWER (#check; /start.html redirects there)
+  weekly.html   the weekly turn (rule 7): paste the week's chat, get the SEEN items, proposals, yeses and votes to add,
+                the answers that would close, a LAST POSTS line and the lines left to read; it never edits ledger.txt
+  write.html    the answer form: an answer to the open question laid out for ledger.txt and for the chat
+  ledger.html   ledger.txt as a page, in the text's own order: STATUS as a banner, each question with its answers as
+                cards (#q-1, #q-1-answer-2), shown as the Assembly's (rule 3)
   how.html      how.txt: the ledger in plain words, with assets/how-it-works.svg and how-it-connects.svg
   process.html  process.md: the whole process in one file, the clock and the tests (needs the markdown package;
                 otherwise the committed page is kept while process.md is unchanged)
   tests.html    tests.txt as a page       (background: no tab, and nothing on the front page links it)
-  people.html   each name ledger.txt gives as a writer or in a SEEN line: what they wrote, what they checked
-                (reached from the front page's "who" window, not a tab)
   ledger.json   not a page: the ledger's state as data for an agent (ledger_json): the text's hash, the members, the
-                votes, each entry's writer, headline, WRONG IF clauses and results; addresses cut, no links
+                proposals, each question and its answers' posters, WRONG IF clauses, results and state, the votes;
+                addresses cut, no links
 
-ledger.txt and archive/ are served as they are; ledger.html prints their SHA-256 (rule 6 relies on that hash).
+ledger.txt and archive/ are served as they are; ledger.html prints their SHA-256 (rule 7 relies on that hash).
 The pages follow the texts' headings, not their line numbers: reword the texts and re-run.
     python build.py
 They load nothing from other sites. Styling is assets/findings.css plus assets/ledger.css; the browser side is
-assets/claims.js (tap to copy, and the hash checks).
+assets/claims.js (tap to copy, the hash checks, and the same rules 2, 4, 5 and 8 for the weekly page).
 """
 import datetime
 import hashlib
@@ -32,13 +30,11 @@ import json
 import re
 import sys
 from collections import namedtuple
-from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 LEDGER = ROOT / "ledger.txt"
 TESTS = ROOT / "tests.txt"
-STEPS = ROOT / "fact-6-steps.txt"
 HOW = ROOT / "how.txt"
 PROCESS = ROOT / "process.md"
 
@@ -128,7 +124,7 @@ def titled(title):
 
 
 class Doc:
-    """How text becomes inline HTML on one page: links to the ledger's sections, rules, facts and files."""
+    """How text becomes inline HTML on one page: links to the ledger's sections, rules, known bugs and files."""
 
     def __init__(self, ledger_sections, base, files=None):
         self.base = base
@@ -138,7 +134,7 @@ class Doc:
         self.inline = re.compile(
             r"(?P<url>https?://[^\s<>\"]+)|(?P<file>\b(?:archive/)?\w[\w.-]*\.(?:txt|py)\b)|(?P<tok>\b[0-9A-Za-z]{32,}\b)"
             r"|(?P<bug>\bKNOWN BUGS \d+)|(?P<sec>\b(?:%s)(?![\w-]))|(?P<rule>\b[Rr]ules? \d+(?:(?:, | and | to )\d+)*)"
-            r"|(?P<fact>\b(?:[Ff]acts?|entry) \d+(?:(?:, | and | to )\d+)*)" % names)
+            % names)
 
     def fmt(self, text):
         out, pos, e = [], 0, html.escape
@@ -159,7 +155,7 @@ class Doc:
             elif kind == "sec":
                 out.append('<a href="%s#%s">%s</a>' % (self.base, self.secs[s], e(s)))
             else:
-                anchor = {"rule": "rule-", "bug": "bug-", "fact": "fact-"}[kind]
+                anchor = {"rule": "rule-", "bug": "bug-"}[kind]
                 out.append(re.sub(r"\d+", lambda d: '<a href="%s#%s%s">%s</a>' % (self.base, anchor, d.group(), d.group()), s))
         out.append(e(text[pos:]))
         return "".join(out)
@@ -308,59 +304,73 @@ def starts_block(L, j):
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# The ledger's own parts: entries, fact 6's steps and rows, the carried-over predictions.
+# The ledger's own parts (version 5): proposals, questions and their answers, VOTES and LAST POSTS, and where each
+# stands under rules 2, 4, 5 and 8. model() reads them all; the pages, ledger.json, checks/lint.py and checks/closers.py
+# read model(), so none of them can disagree.
 
-ENTRY = re.compile(r"  (FACT|PROMISE) (\d+)\.\s*(?:\((.*)\))?\s*$")
-FIELD = re.compile(r"([A-Z]+(?: [A-Z]+)?)(?: {2,}| (?=[a-z\d])|$)")   # "SAYS      one", "IF BROKEN what", "WITHDRAWN 2026-"
-HEADLINE = {"FACT": "SAYS", "PROMISE": "WILL"}
-
-# What the site adds beside an entry, never in it. Fact 1: Solscan's $FEBU filter on the creator wallet's transfers
-# shows nothing (not even fact 2's sale), so point at the wallet's $FEBU account; checks/resolve.py fact1 derives it.
-FACT1_ACCOUNT = "https://solscan.io/account/6PeGko4hvJn8EioYxKera24TrKMfkGUVM7egzrRwNVTo"
-SITE_NOTES = {("FACT", "1"): (
-    '<p class="hint">Beside the entry, not part of it: Solscan&rsquo;s $FEBU filter on this wallet&rsquo;s transfers '
-    'shows nothing, not even the 09-22 sale (fact 2). The wallet&rsquo;s $FEBU account lists its $FEBU swaps, with the '
-    'sale as a control: <a href="%s" rel="noopener noreferrer">%s</a> <a class="alt" href="%s" rel="noopener noreferrer">'
-    '(explorer.solana.com)</a></p>' % (FACT1_ACCOUNT, FACT1_ACCOUNT, explorer(FACT1_ACCOUNT)))}
-CARD_NOTES = {("FACT", "1"): 'Solscan&rsquo;s $FEBU filter on this wallet&rsquo;s transfers shows nothing, not even the '
-                             '09-22 sale: use the wallet&rsquo;s $FEBU account, <a href="ledger.html#fact-1">linked under '
-                             'fact 1 on the ledger page</a>.'}
-W_ITEM = re.compile(r"  (W\d+)\. ")                         # a prediction carried over from version 1
-VERDICT = re.compile(r"\b(FAILED|HELD|HOLDS|DOESN'T HOLD|KEPT|BROKEN|CAN'T TELL)((?: (?:in|on) [a-z]+)?)[.:]\s*")
-VERDICT_CLASS = {"HELD": "yes", "HOLDS": "yes", "KEPT": "yes", "FAILED": "no", "DOESN'T HOLD": "no", "BROKEN": "no"}
-
-
-def anchor(kind, num):
-    return "%s-%s" % (kind.lower(), num)
+PROPOSAL = re.compile(r"  P ?(\d+)\.\s+([^,:]+?), (\d{4}-\d\d-\d\d): (.*?)\s*$")   # "  P1. Ann, 2026-10-24: Did ...?"
+QUESTION = re.compile(r"  Q ?(\d+)\.\s*(?:\((.*)\))?\s*$")                        # "  Q1. (opened 2026-10-30, from P1)"
+ANSWER = re.compile(r" {3,}ANSWER (\d+)\.\s*(?:\((.*)\))?\s*$")                    # "    ANSWER 1.   (Ann, 2026-10-31)"
+OPENED = re.compile(r"\bopened (\d{4}-\d\d-\d\d), from P ?(\d+)\b")
+WHO = re.compile(r"\s*([^,:]+?), (\d{4}-\d\d-\d\d)\b")    # "Ann, 2026-10-31": who posted an answer, or wrote a CHANGED line
+# "(Ann, 2026-10-31, version 3's fact 6)", or "facts 2 and 6": a copied answer, whose writers are posters (Posters)
+COPIED = re.compile(r"\b(fact|promise)s? (\d+(?:(?:,| and|, and) \d+)*)\b", re.I)
+YES = re.compile(r"(.+?) (\d{4}-\d\d-\d\d)")             # "Crypto Fish 2026-10-25", one item of a Yes: line
+VOTE_HEAD = re.compile(r"\s+(.+?), posted (\d{4}-\d\d-\d\d), SHA-256 ([0-9a-f]{64})\s*$")
+VOTE_ITEM = re.compile(r"\s+- (.+?), (\d{4}-\d\d-\d\d): (YES|OBJECT)\b")
+LAST = re.compile(r"( +)- (\d{4}-\d\d-\d\d): (.*?)\s*$")
+FIELD = re.compile(r"([A-Z]+(?: [A-Z]+)?)(?: {2,}| (?=[a-z\d])|$)")   # "SAYS      one", "WRONG IF  what", "ASKS    it"
+V3 = "archive/08_CLAIMS_LEDGER_v3.txt"   # version 3's entries, word for word: a copied answer's writer is read from it
+DAYS = 30                                # rule 5: a question not closed by the end of the 30th day after it opened
+ACTIVE_DAYS = 90                         # WORDS USED HERE, Member: a post dated in the 90 days up to and including the day
+BOTH = ["DOESN'T HOLD", "HOLDS"]
 
 
-def entries(body):
-    """THE ENTRIES in order: ('entry', kind, number, who, [(label, [Ln])]) or ('text', [raw lines]) for lines between."""
-    out, fcol = [], None
+def nest(body, head):
+    """body split at each line `head` matches: ("item", match, the lines indented further than it) in order, and
+    ("text", None, raw lines) for what comes between."""
+    out = []
     for raw in body:
-        m = ENTRY.match(raw)
+        m = head.match(raw)
+        cur = out[-1] if out else None
         if m:
-            out.append(("entry", m.group(1), m.group(2), m.group(3) or "", []))
-            fcol = None
-            continue
+            out.append(("item", m, []))
+        elif cur and cur[0] == "item" and (not raw.strip() or indent(raw) > indent(cur[1].string)):
+            cur[2].append(raw)
+        elif cur and cur[0] == "text":
+            cur[2].append(raw)
+        else:
+            out.append(("text", None, [raw]))
+    return out
+
+
+def fields_of(raws, what):
+    """An item's labelled fields in order, [(label, [Ln])]: a field starts at the first line's indent ("SAYS      one"),
+    and every other line continues the field above it."""
+    out, fcol = [], None
+    for raw in raws:
         if not raw.strip():
             continue
-        cur = out[-1] if out and out[-1][0] == "entry" else None
-        if cur and (fcol is None or indent(raw) >= fcol):
-            fcol = indent(raw) if fcol is None else fcol
-            f = FIELD.match(raw[fcol:]) if indent(raw) == fcol else None
-            if f:
-                tcol = fcol + f.end()
-                cur[4].append((f.group(1), [Ln(tcol, raw[tcol:].strip(), None, raw.rstrip())]))
-            elif cur[4]:
-                cur[4][-1][1].extend(to_lines([raw]))
-            else:
-                sys.exit("%s %s: a line before its first field: %r" % (cur[1], cur[2], raw))
-        elif out and out[-1][0] == "text":
-            out[-1][1].append(raw)
+        fcol = indent(raw) if fcol is None else fcol
+        f = FIELD.match(raw[fcol:]) if indent(raw) == fcol else None
+        if f:
+            tcol = fcol + f.end()
+            out.append((f.group(1), [Ln(tcol, raw[tcol:].strip(), None, raw.rstrip())]))
+        elif out:
+            out[-1][1].append(Ln(indent(raw), raw.strip(), None, raw.rstrip()))
         else:
-            out.append(("text", [raw]))
+            sys.exit("%s: a line before its first field: %r" % (what, raw))
     return out
+
+
+def text_of(fields, label):
+    """Every line of the fields with this label, as one line of text."""
+    return " ".join(ln.txt for lab, lines in fields if lab == label for ln in lines if ln.txt)
+
+
+def checked(fields):
+    """Whether anyone has posted what they saw on this answer (its SEEN lines say more than "nobody yet")."""
+    return bool(re.sub(r"(?i)\bnobody yet\b", "", text_of(fields, "SEEN")).strip())
 
 
 def single(html_text):
@@ -370,153 +380,459 @@ def single(html_text):
     return html_text
 
 
-def site_note(notes, kind, num, fields):
-    """The site's note beside an entry, until the entry's own LINK names the account the note points at."""
-    return "" if FACT1_ACCOUNT.rsplit("/", 1)[1] in text_of(fields, "LINK") else notes.get((kind, num), "")
+def section(secs, name, need=True):
+    bodies = [b for h, b in secs if short(h) == name]
+    if len(bodies) > 1:
+        sys.exit("the ledger has %d %s sections: one, please" % (len(bodies), name))
+    body = bodies[0] if bodies else None
+    if body is None and need:
+        sys.exit("the ledger has no %s section: version 5 keeps proposals under PROPOSED QUESTIONS and questions "
+                 "under THE QUESTIONS" % name)
+    return body or []
 
 
-def text_of(fields, label):
-    """Every line of the entry's fields with this label, as one line of text."""
-    return " ".join(ln.txt for lab, lines in fields if lab == label for ln in lines if ln.txt)
-
-
-def seen(fields):
-    """The entry's SEEN lines as one line of text."""
-    return text_of(fields, "SEEN")
-
-
-def checked(fields):
-    """Whether anyone has posted what they saw on this entry (its SEEN lines say more than "nobody yet")."""
-    return bool(re.sub(r"(?i)\bnobody yet\b", "", seen(fields)).strip())
-
-
-def entry_li(kind, num, fields, state):
-    """One entry as a line of the front page's list: its number, what it says, where it stands, a link to it."""
-    says = " ".join(ln.txt for ln in dict(fields)[HEADLINE[kind]] if ln.txt)
-    return ('<li><a href="ledger.html#%s"><span class="num">%s %s</span><span class="says">%s</span>'
-            '<span class="state">%s</span></a></li>' % (anchor(kind, num), kind.lower(), num, html.escape(says), state))
-
-
-def entry_html(kind, num, who, fields, doc, st, extra=""):
-    f = dict(fields)
-    head = HEADLINE[kind]
-    if head not in f:
-        sys.exit("%s %s has no %s line" % (kind, num, head))
-    verdict = state_text(st, kind, fields) or ("checks posted, see SEEN" if checked(fields) else "not yet checked")
-    aid, name = anchor(kind, num), "%s %s" % (kind.lower(), num)
-    meta = ['<span>cite as: ledger %s, %s</span>' % (name, verdict), '<span><a href="#%s">link to this %s</a></span>'
-            % (aid, kind.lower())]
-    if who:
-        meta.insert(0, '<span>posted by %s</span>' % html.escape(who))
-    rows = "".join('<div><dt>%s</dt><dd>%s</dd></div>' % (label, doc.blocks(lines, lines[0].ind))
-                   for label, lines in fields if label != head)
-    alias = '<span class="alias" id="%s"></span>' % num if kind == "FACT" else ""   # ledger.html#6, from version 1
-    return ('%s<article class="claim entry v-open" id="%s"><div class="mark"><span class="num">%s</span>'
-            '<strong class="verdict">%s</strong></div><div class="body"><h3>%s</h3><dl class="fields">%s</dl>%s'
-            '<p class="meta">%s</p></div></article>'
-            % (alias, aid, name, verdict, single(doc.blocks(f[head], f[head][0].ind)), rows, extra, "".join(meta)))
-
-
-SIG = r"[1-9A-HJ-NP-Za-km-z]{60,90}"   # a Solana transaction signature
-ROW = re.compile(r"\s*(\d+)\s+(\d{4}-\d\d-\d\d \d\d:\d\d)\s+(\d+(?:\.\d+)?)\s+((?:https://solscan\.io/tx/)?%s)(\s+\*)?\s*$" % SIG)
-TOTAL = re.compile(r"\s*total\s+(\d+(?:\.\d+)?)\s*$")
-
-
-def rows_html(head, body, aid, doc):
-    """'THE 44 COLLECTIONS ...': every row with a link to it, checked here so a row cannot go missing unseen."""
-    want = int(re.match(r"THE (\d+) ", head).group(1))
-    rows, total, cols, notes = [], None, None, []
-    for raw in body:
-        m, t = ROW.match(raw), TOTAL.match(raw)
-        if m:
-            rows.append(m.groups())
-        elif t:
-            total = Decimal(t.group(1))
-        elif raw.strip() and not rows:
-            cols = re.split(r"\s{2,}", raw.strip())
-        elif raw.strip():
-            notes.append(raw)
-    nums = [int(r[0]) for r in rows]
-    if nums != list(range(1, want + 1)):
-        sys.exit("%s: rows numbered %s, not 1 to %d" % (head, nums, want))
-    got = sum(Decimal(r[2]) for r in rows)
-    if total is None or got.quantize(total) != total:   # the total line is rounded; compare to as many places
-        sys.exit("%s: the rows add up to %s, the total line says %s" % (head, got, total))
-    if not cols or len(cols) != 4:
-        sys.exit("%s: the line above the rows should name its four columns" % head)
-    th = "".join('<th%s>%s</th>' % (' class="n"' if k == 2 else "", html.escape(c)) for k, c in enumerate(cols))
-    tr = "".join('<tr id="%s-row-%s"><td>%s</td><td>%s</td><td class="n">%s%s</td><td><a href="https://solscan.io/tx/%s" '
-                 'rel="noopener noreferrer" title="open row %s on solscan.io">%s&hellip;</a> <a class="alt" href="%s" '
-                 'rel="noopener noreferrer" title="open row %s on explorer.solana.com">explorer</a></td></tr>'
-                 % (aid, n, n, d, sol, " *" if star else "", sig, n, sig[:8], explorer("https://solscan.io/tx/" + sig), n)
-                 for n, d, sol, sig, star in ((n, d, sol, link.rsplit("/", 1)[-1], star) for n, d, sol, link, star in rows))
-    foot = '<tfoot><tr><td></td><td>total</td><td class="n">%s</td><td></td></tr></tfoot>' % total
-    rest = head[len(short(head)):].strip()
-    return ('<details class="win rows" id="%s-rows"><summary><span class="t">%s</span>%s</summary><div class="win-body">'
-            '<p class="hint">Each row opens on solscan.io, where the link shows the start of the transaction\'s '
-            'signature (the whole of it is in the link), and on explorer.solana.com.</p>'
-            '<div class="tbl"><table><thead><tr>%s</tr></thead><tbody>%s</tbody>%s</table></div>%s</div></details>'
-            % (aid, html.escape(short(head).capitalize()), ' <span class="q">%s</span>' % html.escape(rest) if rest else "",
-               th, tr, foot,
-               doc.blocks(to_lines(notes), min(indent(n) for n in notes)) if notes else ""))
-
-
-def steps_fact(text):
-    m = re.match(r"FACT (\d+) AS STEPS", text)
-    if not m:
-        sys.exit("%s should start 'FACT n AS STEPS'" % STEPS.name)
-    return m.group(1)
-
-
-def steps_html(text, doc):
-    """Fact n's steps file as HTML: its own words, each STEP as a small window, the rows as a table."""
-    title, secs = sections(text)
-    aid = anchor("FACT", steps_fact(text))
-    parts = []
-    for head, body in secs:
-        st, n = re.match(r"STEP (\d+)\s+(.*)", head), re.match(r"THE \d+ ", head)
-        if head.startswith("THE FACT"):
-            continue   # the fact itself is the card this sits in
-        if st:
-            parts.append('<section class="win step" id="%s-step-%s"><h4 class="bar"><span class="n">%s</span>%s</h4>'
-                         '<div class="win-body">%s</div></section>'
-                         % (aid, st.group(1), st.group(1), doc.fmt(st.group(2)), doc.blocks(to_lines(body), 2)))
-        elif n:   # "THE 44 COLLECTIONS": every row checked, or the build stops
-            parts.append(rows_html(head, body, aid, doc))
-        else:
-            parts.append('<h4 class="walk-h">%s</h4>%s' % (html.escape(head), doc.blocks(to_lines(body), 2)))
-    return '<div class="walk" id="%s-steps"><h4 class="walk-title">%s</h4>%s</div>' % (
-        aid, html.escape(titled(title)[0].capitalize()), "".join(parts))
-
-
-def w_items(L):
-    """Where the W items start in the lines L, and each one: (number, what it said, its result, "in part" or "",
-    what follows the result)."""
-    starts = [i for i, ln in enumerate(L) if ln.txt and W_ITEM.match(ln.raw)]
+def proposals(body):
+    """PROPOSED QUESTIONS in order: number, who, date, what it asks, its yeses [(name, date)], the question it opened as
+    (or None), any Yes: item that does not read as "Name YYYY-MM-DD" (lint lists those), and every Yes: item as written
+    (`said`, which lint compares)."""
     out = []
-    for a, b in zip(starts, starts[1:] + [len(L)]):
-        item = [ln for ln in L[a:b] if ln.txt]
-        num, rest = item[0].txt.split(". ", 1)
-        said = " ".join([rest] + [ln.txt for ln in item[1:]])
-        m = VERDICT.search(said)
-        said, after = (said[:m.start()].strip(), said[m.end():].strip()) if m else (said, "")
-        word, qual = (m.group(1), m.group(2).strip()) if m else ("see text", "")
-        out.append((num, said, word, qual, after))
-    return (starts[0] if starts else len(L)), out
+    for kind, m, under in nest(body, PROPOSAL):
+        if kind != "item":
+            continue
+        asks, yes, opened = [m.group(4)], None, None
+        for s in (r.strip() for r in under if r.strip()):
+            o = re.match(r"Opened as Q ?(\d+)\b", s)
+            if o:
+                opened = int(o.group(1))
+            elif s.startswith("Yes:"):
+                yes = [s[4:]]
+            elif yes is not None and opened is None:
+                yes.append(s)
+            else:
+                asks.append(s)
+        items = [y.strip() for y in " ".join(yes or []).strip().rstrip(".").split(",") if y.strip()]
+        out.append({"num": int(m.group(1)), "who": m.group(2).strip(), "date": m.group(3), "asks": " ".join(asks),
+                    "yes": [YES.fullmatch(y).groups() for y in items if YES.fullmatch(y)],
+                    "unread": [y for y in items if not YES.fullmatch(y)], "said": items, "opened": opened})
+    return out
 
 
-def predictions(body, doc):
-    """The intro, then each W item as a window with its result in the title bar."""
-    L = to_lines(body)
-    first, items = w_items(L)
-    out = [doc.blocks(L[:first], 2)]
-    for num, said, word, qual, after in items:
-        cls = "part" if qual == "in part" else VERDICT_CLASS.get(word, "open")
-        out.append('<article class="claim pred v-%s" id="%s"><div class="mark"><span class="num">%s</span>%s'
-                   '<strong class="verdict">%s</strong></div><div class="body"><h3>%s</h3>%s</div></article>'
-                   % (cls, num, num, '<span class="qual">%s</span>' % qual if qual else "", word, doc.fmt(said),
-                      "<p>%s</p>" % doc.fmt(after) if after else ""))
-    return "".join(out)
+def questions(body):
+    """THE QUESTIONS in order: number, the day it opened and the proposal it came from, what it asks, its own fields
+    (ASKS, NOTE), and its answers: number, who posted it and when, the rest of its header, its fields."""
+    out = []
+    for kind, m, under in nest(body, QUESTION):
+        if kind != "item":
+            continue
+        num, head = int(m.group(1)), m.group(2) or ""
+        o, own, answers = OPENED.search(head), [], []
+        for k, a, lines in nest(under, ANSWER):
+            if k == "text":
+                own += lines
+                continue
+            w = WHO.match(a.group(2) or "")
+            answers.append({"num": int(a.group(1)), "head": a.group(2) or "", "who": w.group(1).strip() if w else "",
+                            "date": a_day(w.group(2)) if w else None,
+                            "fields": fields_of(lines, "Q%d answer %s" % (num, a.group(1)))})
+        fields = fields_of(own, "Q%d" % num)
+        out.append({"num": num, "head": head, "opened": a_day(o.group(1)) if o else None,
+                    "from": int(o.group(2)) if o else None, "asks": text_of(fields, "ASKS"), "fields": fields,
+                    "answers": answers})
+    return out
+
+
+def changes(fields):
+    """Each CHANGED line's (who, date), written "CHANGED   Bo, 2026-11-02: what changed"; (None, None) for one that
+    names nobody that way (lint I5)."""
+    return [(w.group(1).strip(), w.group(2)) if w else (None, None)
+            for w in (WHO.match(lines[0].txt) for lab, lines in fields if lab == "CHANGED")]
+
+
+def v3_writer(kind, num, members):
+    """Who wrote version 3's FACT or PROMISE num, from its archive copy: the name before its date, or for an entry in the
+    group's name the member its text says proposed it."""
+    path = ROOT / V3
+    if not path.exists():
+        sys.exit("an answer copies version 3's %s %s, and %s is not there to say who wrote it" % (kind.lower(), num, V3))
+    m = re.search(r"^  %s %s\. \(([^,)]*)[^\n]*\n((?:(?: {4}.*)?\n)*)" % (kind, num), raw_text(path).decode("utf-8"), re.M)
+    if not m:
+        sys.exit("an answer copies version 3's %s %s, which %s does not have" % (kind.lower(), num, V3))
+    name = m.group(1).strip()
+    said = " ".join(m.group(2).split())
+    return name if name in members else next(
+        (x for x in members if re.search(r"(?<!\w)%s proposed it" % re.escape(x), said)), name)
+
+
+def posters(a, members):
+    """Rule 4's posters (Posters): who posted the answer, who changed it with a CHANGED line, and for an answer copied from
+    version 3 (its header names the entry: "(Ann, 2026-10-31, version 3's fact 6)"), that entry's writer."""
+    out = {a["who"]} | {w for w, _ in changes(a["fields"]) if w}
+    for c in COPIED.finditer(a["head"]):
+        out |= {v3_writer(c.group(1).upper(), n, members) for n in re.findall(r"\d+", c.group(2))}
+    return out - {""}
+
+
+# A SEEN item as the weekly page writes it: "- Laura, 2026-10-30: HOLDS on lines 1, 2. Items: line 1, all 1; line 2,
+# all 164. Saw: ... New: ...", with "Script: python checks/x.py by Ann via host." before Saw: when a script ran. A slot
+# word in that place written any other way ("items:", "Item:", a count with no full stop) leaves the whole item to a
+# person (lint I6), so a sample cannot pass for a full check by being misspelt, and so does anything else between the
+# result and Saw: ("Scripts: ...", "Ran x.py."). A count is 1 or more. KEPT and BROKEN are read so that lint can say they
+# are no result here (I7).
+ITEMS = r"(?:line [1-9]\d*, )?(?:all [1-9]\d*|\d+ of [1-9]\d*)"
+SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\."
+                       r"(?: Items: (%s(?:; %s)*)\.|(?!\s*(?i:items?)\b))" % (ITEMS, ITEMS) +
+                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.)?(?= Saw:)")
+ITEM = re.compile(r"(?:line (\d+), )?(?:all (\d+)|(\d+) of (\d+))")
+CLAUSE = re.compile(r"[;,] or ")                            # "a, or b; or c": one WRONG IF line per clause
+DATE = re.compile(r"\b\d{4}-\d\d-\d\d\b")
+CHAT = "  ·  "                                         # between the parts of a post's first line
+
+
+def wrong_if(fields):
+    """The answer's WRONG IF lines, one per clause, in the order written. A check names them by number, from 1."""
+    text = text_of(fields, "WRONG IF").rstrip(".")
+    return [c.strip() for c in CLAUSE.split(text) if c.strip()]
+
+
+def seen_items(fields):
+    """The SEEN items as written, each joined into one line: an item starts with "- " at the first item's indent."""
+    items, col = [], None
+    for ln in (ln for lab, lines in fields if lab == "SEEN" for ln in lines if ln.txt):
+        if ln.txt.startswith("- ") and (col is None or ln.ind <= col):
+            col = ln.ind if col is None else col
+            items.append(ln.txt)
+        elif items:
+            items[-1] += " " + ln.txt
+    return items
+
+
+def items_of(text):
+    """An Items slot as (line, opened, of) parts: "line 2, all 164" is (2, 164, 164), "20 of 164" with no line is
+    (0, 20, 164)."""
+    return tuple((int(ln or 0), int(a or n), int(a or of)) for ln, a, n, of in ITEM.findall(text or ""))
+
+
+def results(fields):
+    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers, Items parts, and
+    (script, author, host) or None). A SEEN item written another way is left to a person to read."""
+    found = (SEEN_ITEM.match(it.replace("’", "'")) for it in seen_items(fields))
+    return [(m.group(1), m.group(2), m.group(3), tuple(sorted({int(n) for n in re.findall(r"\d+", m.group(4) or "")})),
+             items_of(m.group(5)), m.group(6) and (m.group(6), m.group(7), m.group(8)))
+            for m in found if m]
+
+
+def full(lines, items, n):
+    """A HOLDS that is "the same result" (Result): it names every one of the n WRONG IF lines and its Items slot says
+    "all" for each, with no sample anywhere. An Items part with no "line n," stands for every line."""
+    every, alls = set(range(1, n + 1)), {ln for ln, k, of in items if k == of}
+    return n > 0 and set(lines) == every and all(k == of for _, k, of in items) and (every <= alls or 0 in alls)
+
+
+def days_after(d, n):
+    """The date n days after d, stopping at the calendar's ends."""
+    try:
+        return (datetime.date.fromisoformat(d) + datetime.timedelta(days=n)).isoformat()
+    except OverflowError:
+        return (datetime.date.max if n > 0 else datetime.date.min).isoformat()
+
+
+def a_day(d):
+    """d if it is a real date, else None."""
+    try:
+        return days_after(d, 0)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def active(posts, name, day):
+    """Whether the file shows a post of theirs dated in the 90 days up to and including day (WORDS USED HERE, Member)."""
+    first = days_after(day, 1 - ACTIVE_DAYS)
+    return any(first <= d <= day for d in posts.get(name, ()))
+
+
+def standing(found, posters, members, start, n, posts=None):
+    """Where an answer stands under rules 4 and 5, from its results in date order (the file's order within a day).
+    It closes HOLDS, or DOESN'T HOLD, on the day three members other than its posters, each active that day, have
+    posted the same result, at least one of them by hand (no Script slot); with fewer than four active members left
+    once the posters are set aside, every one of them is needed, and never fewer than two. The same result: for HOLDS,
+    every WRONG IF line with "all" for each (full); for DOESN'T HOLD, one line in common. A check run on a poster's
+    script is no Saw and counts for nothing. Two people, member or not, other than the posters, with one result and
+    two others with the other keep it open; after a close, two posting the word it did not close on reopen it. Either
+    way, from then on only results posted after that day count. `held` is the first day it closed HOLDS, which closes
+    its question (rule 4) even if it reopens later. Results dated before `start` count for nothing, and none count
+    while it is None. `posts` gives each name's other dated posts, for "active". assets/claims.js has the same
+    function; checks/states.json holds the cases both must pass."""
+    out = {"state": "OPEN", "lines": [], "since": None, "by": [], "both": [], "held": None}
+    dated = {k: set(v) for k, v in (posts or {}).items()}
+    for r in found:
+        if a_day(r[1]):
+            dated.setdefault(r[0], set()).add(r[1])
+    every, members, holds, wrong = set(range(1, n + 1)), list(members), {}, {}
+    for name, date, word, lines, items, script in sorted(
+            (r for r in found if start and a_day(r[1]) and r[1] >= start), key=lambda r: r[1]):
+        if name in posters or (script and script[1] in posters) or (out["both"] and date <= out["since"]):
+            continue
+        hand = not script
+        if word == "HOLDS" and full(lines, items, n):
+            holds[name] = holds.get(name) or hand
+        elif word == "DOESN'T HOLD" and set(lines) & every:
+            for ln in set(lines) & every:
+                by = wrong.setdefault(ln, {})
+                by[name] = by.get(name) or hand
+        else:
+            continue                                                       # a sample, or no result here: a SEEN item
+        pair = [ln for ln in sorted(wrong) if len(wrong[ln]) >= 2]
+        if out["state"] != "OPEN":
+            if pair if out["state"] == "HOLDS" else len(holds) >= 2:            # reopened (rule 5)
+                out, holds, wrong = dict(out, state="OPEN", lines=[], since=date, by=[], both=BOTH), {}, {}
+            continue
+        if any(len(holds) >= 2 and len(set(holds) | set(wrong[ln])) >= 4 for ln in pair):   # kept open (rule 5)
+            out, holds, wrong = dict(out, since=date, both=BOTH), {}, {}
+            continue
+        others = [m for m in members if m not in posters and active(dated, m, date)]
+        need = 3 if len(others) >= 4 else max(2, len(others))
+        ok = lambda ns: sorted(m for m in ns if m in members and m not in posters and active(dated, m, date))  # noqa: E731
+        shut = [ln for ln in sorted(wrong) if len(ok(wrong[ln])) >= need and any(wrong[ln][m] for m in ok(wrong[ln]))]
+        if len(ok(holds)) >= need and any(holds[m] for m in ok(holds)):
+            out = dict(out, state="HOLDS", lines=sorted(every), since=date, by=ok(holds), both=[], held=out["held"] or date)
+        elif shut:
+            out = dict(out, state="DOESN'T HOLD", lines=shut, since=date, by=ok(wrong[shut[0]]), both=[])
+        else:
+            continue
+        holds, wrong = {}, {}
+    return out
+
+
+def question_state(opened, answers, as_of):
+    """Rule 5 for a question: CLOSED on the day one of its answers first closes HOLDS within the 30 days after it opened
+    (`until` is the last of them); CAN'T TELL from the day after, if none has and the file has a later date; OPEN
+    otherwise. A close after that day stands for its answer, and the question stays CAN'T TELL."""
+    until = days_after(opened, DAYS) if opened else None
+    out = {"state": "OPEN", "since": None, "until": until, "answer": None}
+    held = min(((a["state"]["held"], a["num"]) for a in answers if a["state"]["held"]), default=None)
+    if not until:
+        return out
+    if held and held[0] <= until:
+        return dict(out, state="CLOSED", since=held[0], answer=held[1])
+    if as_of and as_of > until:
+        return dict(out, state="CAN'T TELL", since=days_after(until, 1))
+    return out
+
+
+def reach(p, members, adopted):
+    """Rule 2: the day a proposal has "yes" from three members other than its proposer, counting yeses from the day of
+    adoption (STATUS) and not before the proposal itself; None until it has."""
+    got = []
+    for name, date in sorted(p["yes"], key=lambda y: y[1]):
+        if (adopted and a_day(date) and date >= max(adopted, p["date"]) and name in members and name != p["who"]
+                and name not in got):
+            got.append(name)
+            if len(got) == 3:
+                return date
+    return None
+
+
+def slot(props, frees, adopted):
+    """Rule 2 in order: [(proposal number, the day it opens)], the first for Q1. frees[k] is the day Q k+1 left the slot
+    (closed, or CAN'T TELL after its 30 days), None while it holds it. When the slot is free, the proposal that reached
+    three yeses first opens, that day; if none has, the next to reach three, on its day. A tie goes to the one posted
+    first. Each proposal's "reach" is reach()."""
+    seq, free, used = [], adopted, set()
+    while free:
+        ready = sorted((p["reach"], p["num"]) for p in props if p["reach"] and p["num"] not in used)
+        if not ready:
+            break
+        r, num = ready[0]
+        seq.append((num, max(r, free)))
+        used.add(num)
+        free = frees[len(seq) - 1] if len(seq) <= len(frees) else None
+    return seq
+
+
+def freed(q_state):
+    """The day a question left the slot, or None while it holds it."""
+    return q_state["since"] if q_state["state"] in ("CLOSED", "CAN'T TELL") else None
+
+
+def vote_list(body):
+    """VOTES in order: each text put to a vote (its name, the day it was posted, its SHA-256) with its votes
+    [(member, date, YES or OBJECT)] in the order written."""
+    out = []
+    for raw in body:
+        h, v = VOTE_HEAD.match(raw), VOTE_ITEM.match(raw)
+        if h:
+            out.append({"subject": h.group(1).strip(), "posted": h.group(2), "sha": h.group(3), "votes": []})
+        elif v and out:
+            out[-1]["votes"].append((v.group(1).strip(), v.group(2), v.group(3)))
+    return out
+
+
+def vote_state(v, members, posts, as_of):
+    """Rule 8, counted from VOTES alone: at the end of each day from the 7th after the post, on the votes dated by then,
+    each member's latest vote standing, among the members active that day. `passed` is the first day it holds, up to the
+    file's last date (a later day is not the file's to say); yes and object are the count that day, or on the last day
+    counted."""
+    out = {"passed": None, "yes": [], "object": []}
+    first = days_after(v["posted"], 7) if a_day(v["posted"]) else None
+    if not first or not as_of or as_of < first:
+        return out
+    posts = {k: set(ds) for k, ds in posts.items()}
+    for name, date, _ in v["votes"]:                                     # a vote is a post (Member)
+        if a_day(date):
+            posts.setdefault(name, set()).add(date)
+    # the count changes only on a day a vote is dated, or a post starts or leaves someone's 90 days
+    days = {first} | {d for ds in posts.values() for p in ds for d in (p, days_after(p, ACTIVE_DAYS))}
+    for day in sorted(d for d in days if first <= d <= as_of):
+        latest = {name: word for name, date, word in sorted(v["votes"], key=lambda x: x[1]) if date <= day}
+        act = [m for m in members if active(posts, m, day)]
+        out = {"passed": None, "yes": [m for m in act if latest.get(m) == "YES"],
+               "object": [m for m in act if latest.get(m) == "OBJECT"]}
+        if len(out["yes"]) >= (4 if len(act) >= 5 else max(2, len(act))) and len(out["object"]) <= 1:
+            return dict(out, passed=day)
+    return out
+
+
+def last_posts(body):
+    """LAST POSTS lines in order: (the turn's day, {member: the date of their last post, or None for "none"}). A line
+    may wrap: what is further in continues it."""
+    out, cur = [], None
+    for raw in body:
+        m = LAST.match(raw)
+        if m:
+            cur = [m.group(2), m.group(3), len(m.group(1))]
+            out.append(cur)
+        elif raw.strip():
+            if cur and indent(raw) > cur[2]:
+                cur[1] += " " + raw.strip()
+            else:
+                cur = None
+    rows = []
+    for day, text, _ in out:
+        got = {}
+        for part in text.rstrip(".").split(","):
+            p = re.fullmatch(r"\s*(.+?) (\d{4}-\d\d-\d\d|none)\s*", part)
+            if p:
+                got[p.group(1)] = a_day(p.group(2))
+        rows.append((day, got))
+    return rows
+
+
+def posts_of(props, qs, votes, last):
+    """Every dated post the file shows, by name, for "active" (WORDS USED HERE, Member): proposals and yeses, answers
+    posted or changed, SEEN items, VOTES items, and each member's date on a LAST POSTS line."""
+    out = {}
+
+    def add(name, date):
+        if name and a_day(date):
+            out.setdefault(name, set()).add(date)
+    for p in props:
+        add(p["who"], p["date"])
+        for n, d in p["yes"]:
+            add(n, d)
+    for q in qs:
+        for a in q["answers"]:
+            add(a["who"], a["date"])
+            for n, d in changes(a["fields"]) + [r[:2] for r in a["results"]]:
+                add(n, d)
+    for v in votes:
+        for n, d, _ in v["votes"]:
+            add(n, d)
+    for _, row in last:
+        for n, d in row.items():
+            add(n, d)
+    return out
+
+
+def model(secs):
+    """The ledger's state from its sections: members, adoption, proposals, questions and their answers, votes, LAST
+    POSTS, each name's dated posts, the file's last date (`as_of`) and rule 2's order of openings (`slot`)."""
+    names, on = member_names(secs), adopted(secs)
+    props = proposals(section(secs, "PROPOSED QUESTIONS"))
+    qs = questions(section(secs, "THE QUESTIONS"))
+    votes = vote_list(section(secs, "VOTES", need=False))
+    last = last_posts(section(secs, "LAST POSTS", need=False))
+    for q in qs:
+        for a in q["answers"]:
+            a.update(posters=posters(a, names), lines=wrong_if(a["fields"]), results=results(a["fields"]))
+    posts = posts_of(props, qs, votes, last)
+    as_of = max([d for ds in posts.values() for d in ds] + [q["opened"] for q in qs if q["opened"]]
+                + [d for d, _ in last if a_day(d)] + [v["posted"] for v in votes if a_day(v["posted"])], default=None)
+    for q in qs:
+        for a in q["answers"]:
+            a["start"] = max(q["opened"], a["date"]) if on and q["opened"] and a["date"] else None
+            a["state"] = standing(a["results"], a["posters"], names, a["start"], len(a["lines"]), posts)
+        q["state"] = question_state(q["opened"], q["answers"], as_of)
+    for p in props:
+        p["reach"] = reach(p, names, on)
+    for v in votes:
+        v.update(vote_state(v, names, posts, as_of))
+    return {"members": names, "adopted": on, "proposals": props, "questions": qs, "votes": votes, "last": last,
+            "posts": {k: sorted(v) for k, v in posts.items()}, "as_of": as_of,
+            "slot": slot(props, [freed(q["state"]) for q in qs], on),
+            "next": {"proposal": next_number(secs, "PROPOSED QUESTIONS", "proposal is P", props),
+                     "question": next_number(secs, "THE QUESTIONS", "question is Q", qs)}}
+
+
+def next_number(secs, name, said, items):
+    """The number the section says comes next ("The next proposal is P2."), or one past the highest."""
+    m = re.search(r"The next %s ?(\d+)" % said, " ".join(section(secs, name)))
+    return int(m.group(1)) if m else 1 + max([x["num"] for x in items] or [0])
+
+
+def open_question(m):
+    return next((q for q in m["questions"] if q["state"]["state"] == "OPEN"), None)
+
+
+def answer_id(q, a):
+    return "q-%d-answer-%d" % (q, a)
+
+
+def state_text(st):
+    """An answer's state in a few words, or None while it is OPEN with nothing to add to its SEEN lines."""
+    s = st["state"]
+    if s == "DOESN'T HOLD":
+        return "DOESN'T HOLD on line%s %s" % ("s" if len(st["lines"]) > 1 else "", ", ".join(map(str, st["lines"])))
+    if s != "OPEN":
+        return s
+    if st["both"]:
+        return "both results posted twice by %s: only posts after it count (rule 5)" % st["since"]
+    return None
+
+
+def question_text(q):
+    """Where a question stands, in a line."""
+    st = q["state"]
+    head = "opened %s, from P%s" % (q["opened"], q["from"]) if q["opened"] else "not opened"
+    if st["state"] == "CLOSED":
+        return "%s; closed %s: answer %d HOLDS" % (head, st["since"], st["answer"])
+    if st["state"] == "CAN'T TELL":
+        return "%s; CAN'T TELL from %s (rule 5)" % (head, st["since"])
+    return "%s; open, CAN'T TELL after %s unless an answer closes HOLDS" % (head, st["until"]) if st["until"] else head
+
+
+def answer_html(q, a, doc):
+    """One answer as a card on the ledger page, shown as the Assembly's (rule 3): the file keeps who posted it."""
+    f = dict(a["fields"])
+    if "SAYS" not in f:
+        sys.exit("Q%d answer %d has no SAYS line" % (q["num"], a["num"]))
+    aid, name = answer_id(q["num"], a["num"]), "Q%d answer %d" % (q["num"], a["num"])
+    verdict = state_text(a["state"]) or ("checks posted, see SEEN" if checked(a["fields"]) else "not yet checked")
+    rows = "".join('<div><dt>%s</dt><dd>%s</dd></div>' % (label, doc.blocks(lines, lines[0].ind))
+                   for label, lines in a["fields"] if label != "SAYS")
+    return ('<article class="claim entry v-open" id="%s"><div class="mark"><span class="num">answer %d</span>'
+            '<strong class="verdict">%s</strong></div><div class="body"><h3>%s</h3><dl class="fields">%s</dl>'
+            '<p class="meta"><span>the Assembly&rsquo;s answer</span><span>cite as: ledger %s, %s</span>'
+            '<span><a href="#%s">link to this answer</a></span></p></div></article>'
+            % (aid, a["num"], html.escape(verdict), single(doc.blocks(f["SAYS"], f["SAYS"][0].ind)), rows, name,
+               html.escape(verdict), aid))
+
+
+def question_html(q, doc):
+    rows = "".join('<div><dt>%s</dt><dd>%s</dd></div>' % (label, doc.blocks(lines, lines[0].ind))
+                   for label, lines in q["fields"] if label != "ASKS")
+    return ('<section class="question" id="q-%d"><h3>Q%d. %s</h3><p class="meta"><span>%s</span></p>%s%s</section>'
+            % (q["num"], q["num"], doc.fmt(q["asks"]), html.escape(question_text(q)),
+               '<dl class="fields">%s</dl>' % rows if rows else "", "".join(answer_html(q, a, doc) for a in q["answers"])))
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -595,12 +911,13 @@ def vetted(name, out):
 
 def page(name, title, h1, sub, body, mast="", foot=QUIET, connect="'none'", source="", description="", share=""):
     """`share` is the title a chat shows for the page; by default "febu assembly: " and the page's title."""
-    description = description or "The febu Assembly: a public ledger of promises and facts about febu that anyone can check."
+    description = description or ("The febu Assembly: a public ledger of what a group has found out about febu, one "
+                                  "question at a time, that anyone can check.")
     return vetted(name, SHELL.format(
         title=html.escape(title), h1=html.escape(h1), sub=html.escape(sub), tabs=tabs_html(name), mast=mast, body=body,
         foot=foot, connect=connect, source=source, edit="the text" if source else "the script",
         description=html.escape(description), meta=meta_tags(share or "febu assembly: " + title.lower(), description),
-        bar=BAR % "rules and entries by one author, not yet adopted or checked by anyone else"))
+        bar=BAR % "rules by one author, not yet adopted or checked by anyone else"))
 
 
 PROCESS_DESC = ("The Assembly's whole process in one file: the ledger, the scripts that check it, money, the 30-day "
@@ -661,18 +978,19 @@ def status(secs):
     return body, bool(re.search(r"\bProposed\b", " ".join(body)))
 
 
-def entries_section(secs):
-    """The one section holding entries ('  FACT 1. (who, date)'), whatever its heading says."""
-    found = [(h, b) for h, b in secs if any(ENTRY.match(r) for r in b)]
-    if len(found) != 1:
-        sys.exit("the ledger should have one section with entries in it (lines like '  FACT 1. (who, date)'); "
-                 "found %d" % len(found))
-    return found[0]
+ADOPTED = re.compile(r"\bAdopted on (\d{4}-\d\d-\d\d)")
+
+
+def adopted(secs):
+    """The day STATUS says this version was adopted ("Adopted on 2026-10-22"), or None while it says Proposed."""
+    body, proposed = status(secs)
+    m = ADOPTED.search(" ".join(" ".join(body).split()))
+    return None if proposed or not m else a_day(m.group(1))
 
 
 def status_banner(secs, doc, brief=False, task=""):
     """The STATUS section as a banner. Proposed rules say so first, in plain words. On the front page (brief) the
-    banner is the immediate task and the group's goal, which assembly_page writes as `task`."""
+    banner is the immediate task, which assembly_page writes as `task`."""
     body, proposed = status(secs)
     head = "Proposed, not yet adopted" if proposed else "Status"
     inner = (task + '<p><a href="%s">What happens next, step by step</a> &middot; <a href="ledger.html#status">'
@@ -708,78 +1026,53 @@ def files_html(current, archives):
         v = re.search(r"_v(\d+(?:\.\d+)?)\.txt$", path)
         rows.append(item("version %s" % v.group(1) if v else "archived", path, raw, digest))
     return ('<section id="the-text"><h2>THE TEXT ITSELF</h2>'
-            '<p>This page is laid out from a plain text file, and the file is the ledger. The hash in rule 6 is this '
-            'file\'s SHA-256. Anyone may keep a copy: two copies with the same SHA-256 are the same, letter for letter.</p>'
+            '<p>This page is laid out from a plain text file, and the file is the ledger. The hash the weekly turn posts '
+            '(rule 7) is this file\'s SHA-256. Anyone may keep a copy: two copies with the same SHA-256 are the same, '
+            'letter for letter.</p>'
             '<dl class="kv files">%s</dl>'
             '<div class="tool compare"><label for="copy-file">Compare a copy you hold</label>'
             '<input type="file" id="copy-file" accept=".txt,text/plain"><p class="hint">The file is read on your device. '
             'Nothing is sent.</p><p class="msg" id="copy-result" role="status"></p></div></section>' % "".join(rows))
 
 
-def ledger_page(text, raw, steps_text):
+def ledger_page(text, raw, m):
     title, secs = sections(text)
     archives = archived(text)
-    num6 = steps_fact(steps_text)
-    files = {p: p for p, _, _ in archives}
-    files[STEPS.name] = "#%s-steps" % anchor("FACT", num6)
-    doc = Doc(secs, "", files)
-    walk = steps_html(steps_text, doc)
-
-    by = {short(h): (h, b) for h, b in secs}
-    ent_head = entries_section(secs)[0]
-    w_heads = [h for h, b in secs if any(W_ITEM.match(r) for r in b)]
-    items = entries(dict(secs)[ent_head])
-    st = entry_states(secs)
-    found = {(it[1], it[2]) for it in items if it[0] == "entry"}
-    if ("FACT", num6) not in found:
-        sys.exit("%s is about fact %s, which the ledger does not have" % (STEPS.name, num6))
-
-    def entries_html():
-        out = []
-        for it in items:
-            if it[0] == "text":
-                out.append(doc.blocks(to_lines(it[1]), 2))
-            else:
-                _, kind, num, who, fields = it
-                out.append(entry_html(kind, num, who, fields, doc, st[num], (walk if (kind, num) == ("FACT", num6) else "")
-                                      + site_note(SITE_NOTES, kind, num, fields)))
-        return "".join(out)
-
-    ids = {"THE RULES": "rule-", "KNOWN BUGS": "bug-"}
-    body, strip, wins = [], [], []
+    doc = Doc(secs, "", {p: p for p, _, _ in archives})
+    qs = iter(m["questions"])
+    ids = {"THE RULES": "rule-", "KNOWN BUGS": "bug-", "PROPOSED QUESTIONS": "prop-"}
+    body, wins = [], []
     for head, b in secs:
         s = short(head)
         if s in ("STATUS", "WHAT THIS IS"):
             continue   # both are in the masthead
-        if head == ent_head:
-            inner = entries_html()
-            strip += ['<a class="v-open" href="#%s" title="%s %s">%s%s</a>' % (anchor(k, n), k.capitalize(), n,
-                      "" if k == "FACT" else k[0], n) for _, k, n, _, _ in (it for it in items if it[0] == "entry")]
-        elif head in w_heads:
-            inner = predictions(b, doc)
-            strip += ['<a class="v-no" href="#%s" title="%s: failed">%s</a>' % (w, w, w)
-                      for w in (W_ITEM.match(r).group(1) for r in b if W_ITEM.match(r))]
+        if s == "THE QUESTIONS":
+            inner = "".join(question_html(next(qs), doc) if kind == "item" else doc.blocks(to_lines(lines), 2)
+                            for kind, _, lines in nest(b, QUESTION))
         else:
             inner = doc.blocks(to_lines(b), 2, ids.get(s, ""))
         body.append('<section id="%s"><h2>%s</h2>%s</section>' % (slug(head), html.escape(head), inner))
         wins.append((slug(head), s.lower()))
     body.append(files_html((raw, hashlib.sha256(raw).hexdigest()), archives))
 
+    strip = "".join('<a class="v-open" href="#q-%d" title="Question %d">Q%d</a>' % ((q["num"],) * 3)
+                    for q in m["questions"])
     jump = '<nav class="jump" aria-label="On this page">%s<a href="#the-text">the text and its hash</a></nav>' % "".join(
         '<a href="#%s">%s</a>' % w for w in wins)
-    intro = by.get("WHAT THIS IS")
-    mast = (status_banner(secs, doc) + '<nav class="strip nums" aria-label="Every entry, in order">%s</nav>' % "".join(strip)
-            + jump + ('<div class="intro" id="what-this-is">%s</div>' % doc.blocks(to_lines(intro[1]), 2) if intro else ""))
+    intro = next((b for h, b in secs if short(h) == "WHAT THIS IS"), None)
+    mast = (status_banner(secs, doc) + ('<nav class="strip nums" aria-label="Every question, in order">%s</nav>' % strip
+                                        if strip else "")
+            + jump + ('<div class="intro" id="what-this-is">%s</div>' % doc.blocks(to_lines(intro), 2) if intro else ""))
     h1, sub = titled(title)
     return page("ledger.html", "The ledger", h1.lower(), sub, "\n".join(body), mast=mast, connect="'self'",
-                source=" from ledger.txt and %s" % STEPS.name,
-                description="The Assembly's promises and facts about febu, each with a link anyone can open, and the "
-                "rules for checking them." + (" Proposed, not yet adopted." if status(secs)[1] else ""),
+                source=" from ledger.txt",
+                description="The Assembly's questions about febu, one at a time, each answer with a link anyone can "
+                "open, and the rules for checking them." + (" Proposed, not yet adopted." if status(secs)[1] else ""),
                 foot='Built from <a href="ledger.txt">ledger.txt</a>. ' + QUIET), archives
 
 
-def check_section(secs, doc, steps_num):
-    """HOW TO CHECK AN ENTRY, word for word from the ledger, as one window (#check on the front page)."""
+def check_section(secs, doc):
+    """HOW TO CHECK AN ANSWER, word for word from the ledger, as one window (#check on the front page)."""
     head, b = next(((h, b) for h, b in secs if "CHECK" in short(h) and any(NUM.match(r.strip()) for r in b)),
                    (None, None))
     if head is None:
@@ -787,15 +1080,10 @@ def check_section(secs, doc, steps_num):
                  "the front page shows it")
     L = to_lines(b)
     steps = [i for i, ln in enumerate(L) if ln.txt and ln.ind == 2 and NUM.match(ln.txt)]
-    if not steps:
-        sys.exit("HOW TO CHECK AN ENTRY has no numbered steps")
     after = deeper(L, steps[-1] + 1, 4)
     return ('<section class="win howto" id="check" aria-labelledby="howto-h"><h2 class="bar" id="howto-h">%s</h2>'
-            '<div class="win-body">%s<div class="after">%s</div>'
-            '<p class="go"><a href="ledger.html#fact-%s-steps">Fact %s has its own steps and every row, on the ledger page</a></p>'
-            '</div></section>'
-            % (html.escape(head.capitalize()), doc.blocks(L[steps[0]:after], 2), doc.blocks(L[after:], 2),
-               steps_num, steps_num))
+            '<div class="win-body">%s<div class="after">%s</div></div></section>'
+            % (html.escape(head.capitalize()), doc.blocks(L[steps[0]:after], 2), doc.blocks(L[after:], 2)))
 
 
 def tests_page(text, ledger_secs):
@@ -850,208 +1138,61 @@ def member_names(secs):
     by = {short(h): b for h, b in secs}
     m = re.search(r"\bMember\s{2,}(.+?)\.\s", " ".join(by.get("WORDS USED HERE", [])))
     if not m:
-        sys.exit("WORDS USED HERE has no Member line; the assembly and people pages read the members from it")
+        sys.exit("WORDS USED HERE has no Member line; the pages read the members from it")
     return [n.strip() for n in m.group(1).split(",")]
 
 
-CHEAPEST = re.compile(r"entries ((?:\d+(?:, | and )?)+) are the cheapest", re.I)
-
-
-def cheapest(secs, items):
-    """The entries STATUS calls the cheapest to check, in its order; without that sentence, the first three facts
-    nobody has checked."""
-    m = CHEAPEST.search(re.sub(r"\s+", " ", " ".join(status(secs)[0])))
-    found = {it[2]: it for it in items if it[0] == "entry"}
-    return [found[n] for n in re.findall(r"\d+", m.group(1)) if n in found] if m else [
-        it for it in items if it[0] == "entry" and it[1] == "FACT" and not checked(it[4])][:3]
-
-
 # ---------------------------------------------------------------------------------------------------------------
-# Member flows: the check card, your next move, the weekly page and the entry form. Each one writes text for a member
-# to paste into the chat or into ledger.txt; none of them posts, stores or sends anything (claims.js does the typing).
-
-RESULTS = {"FACT": ("HOLDS", "DOESN'T HOLD"), "PROMISE": ("KEPT", "BROKEN")}
-# A SEEN item as the weekly page writes it: "- Laura, 2026-10-16: HOLDS on lines 1, 2. Saw: ... New: ... 9 minutes.",
-# with two slots before Saw: when the post had them: "Items: line 1, 20 of 164." for a line over many items (rule 3),
-# and "Script: python checks/x.py by Ann via host." naming whose script ran. A slot word in that place written any
-# other way ("items:", "Item:", a count with no full stop) leaves the whole item to a person (lint I6), so a sample
-# cannot pass for a full check by being misspelt.
-ITEMS = r"(?:line \d+, )?(?:all \d+|\d+ of \d+)"
-SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\."
-                       r"(?: Items: (%s(?:; %s)*)\.|(?!\s*(?i:items?)\b))" % (ITEMS, ITEMS) +
-                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.(?= Saw:)|(?!\s*(?i:script)\b))")
-ITEM = re.compile(r"(?:line (\d+), )?(?:all (\d+)|(\d+) of (\d+))")
-CLAUSE = re.compile(r"[;,] or ")                            # "a, or b; or c": one WRONG IF line per clause
-DATE = re.compile(r"\b\d{4}-\d\d-\d\d\b")
-CHAT = "  ·  "                                         # between the parts of a post's first line
+# Member flows: the check card, your week, the weekly page and the answer form. Each one writes text for a member to
+# paste into the chat or into ledger.txt; none of them posts, stores or sends anything (claims.js does the typing).
 
 
-def wrong_if(fields):
-    """The entry's WRONG IF lines, one per clause, in the order written. A check names them by number, from 1."""
-    text = text_of(fields, "WRONG IF").rstrip(".")
-    return [c.strip() for c in CLAUSE.split(text) if c.strip()]
+def open_votes(title, secs, m):
+    """What waits on a vote, as (subject, day, how): while STATUS says Proposed, this version, "by" the last date the
+    ledger gives for "yes" or "object"; after, each text in VOTES that has not passed, "counted from" its 7th day
+    (rule 8). Proposals that live only in the chat are not listed; the weekly page counts any VOTE post."""
+    if status(secs)[1]:
+        flat = re.sub(r"\s+", " ", " ".join(r for _, b in secs for r in b))
+        dates = re.findall(r'"yes" or "object" by (\d{4}-\d\d-\d\d)', flat)
+        return [(titled(title)[1] or "this version", dates[-1] if dates and a_day(dates[-1]) else None, "by")]
+    return [(v["subject"], days_after(v["posted"], 7), "counted from") for v in m["votes"]
+            if not v["passed"] and a_day(v["posted"])]
 
 
-def seen_items(fields):
-    """The SEEN items as written, each joined into one line: an item starts with "- " at the first item's indent."""
-    items, col = [], None
-    for ln in (ln for lab, lines in fields if lab == "SEEN" for ln in lines if ln.txt):
-        if ln.txt.startswith("- ") and (col is None or ln.ind <= col):
-            col = ln.ind if col is None else col
-            items.append(ln.txt)
-        elif items:
-            items[-1] += " " + ln.txt
-    return items
+def turn_start(secs):
+    """The first date in STATUS: the weekly turns (rule 7) are counted in weeks from it, in Member order."""
+    return next((d for d in DATE.findall(" ".join(status(secs)[0])) if a_day(d)), None)
 
 
-def sampled(items):
-    """The lines an Items slot says were not tested over all their items ("20 of 164"; a count past the total is no full
-    check either), 0 for one that names no line."""
-    return tuple(sorted({int(ln or 0) for ln, _, n, of in ITEM.findall(items or "") if n and int(n) != int(of)}))
+def calendar_ics(votes, members, start, secs):
+    """The ledger's dates as a calendar file, all-day events only: each vote's day, the weekly turns for twelve weeks
+    from the first date in STATUS in Member order (rule 7), and each known bug's fix-by day."""
+    def day(d):
+        return d.replace("-", "")
 
-
-def results(fields):
-    """The SEEN items in the weekly page's form, in order: (name, date, result, WRONG IF line numbers, the lines tested
-    on a sample, and (script, author, host) or None). A SEEN line written another way is left to a person to read."""
-    found = (SEEN_ITEM.match(it.replace("’", "'")) for it in seen_items(fields))
-    return [(m.group(1), m.group(2), m.group(3), tuple(sorted({int(n) for n in re.findall(r"\d+", m.group(4) or "")})),
-             sampled(m.group(5)), m.group(6) and (m.group(6), m.group(7), m.group(8)))
-            for m in found if m]
-
-
-def writer(who, fields, members):
-    """Who wrote the entry, for rule 3: the name before its date, or for an entry in the group's name the member its
-    text says proposed it."""
-    name = who.split(",")[0].strip()
-    if name in members:
-        return name
-    said = " ".join(ln.txt for _, lines in fields for ln in lines)
-    return next((m for m in members if re.search(r"(?<!\w)%s proposed it" % re.escape(m), said)), name)
-
-
-ADOPTED = re.compile(r"\bAdopted on (\d{4}-\d\d-\d\d)")
-DAYS_AFTER = re.compile(r"(\d{1,4}) days after this version is adopted")
-DISPUTE_DAYS = 30                                           # rule 4: a disputed entry not closed in 30 days
-CLOSED = ("HOLDS", "DOESN'T HOLD", "KEPT", "BROKEN")
-
-
-def days_after(d, n):
-    """The date n days after d, stopping at the calendar's ends."""
-    try:
-        return (datetime.date.fromisoformat(d) + datetime.timedelta(days=n)).isoformat()
-    except OverflowError:
-        return (datetime.date.max if n > 0 else datetime.date.min).isoformat()
-
-
-def a_day(d):
-    """d if it is a real date, else None."""
-    try:
-        return days_after(d, 0)
-    except (TypeError, ValueError, OverflowError):
-        return None
-
-
-def adopted(secs):
-    """The day STATUS says this version was adopted ("Adopted on 2026-10-22"), or None while it says Proposed."""
-    body, proposed = status(secs)
-    m = ADOPTED.search(" ".join(" ".join(body).split()))
-    return None if proposed or not m else a_day(m.group(1))
-
-
-def due(fields, adopted_on):
-    """A promise's BY date: the date it names, or N days after adoption when it says so; None if neither."""
-    by = text_of(fields, "BY")
-    m = DATE.search(by)
-    if m:
-        return a_day(m.group())
-    m = DAYS_AFTER.search(by)
-    return days_after(adopted_on, int(m.group(1))) if m and a_day(adopted_on) else None
-
-
-def first_day(kind, who, fields, adopted_on):
-    """The first day an entry's results count: the day after adoption (posts count from the next day), and not before
-    the entry's own date, or a promise's BY date. None while none count."""
-    if not a_day(adopted_on):
-        return None
-    days = [days_after(adopted_on, 1)] + [d for d in DATE.findall(who)[:1] if a_day(d)]
-    if kind == "PROMISE":
-        days.append(due(fields, adopted_on))
-    return None if None in days else max(days)
-
-
-def standing(found, author, members, start):
-    """Where an entry stands under rules 3 and 4, from its results in date order (the file's order within a day).
-    Two members other than the writer posting the same result on the same WRONG IF lines close it, on the day of the
-    second post. Two people, member or not, posting the same other word keep it open or reopen it: it carries both
-    results, only later posts count, and 30 days on without a close it is CAN'T TELL (`until` is the last day it can
-    close). An entry nobody disputes stays OPEN however long it waits (WORDS USED HERE). Results dated before `start`
-    count for nothing, and none count while it is None. A HOLDS that names a sample counts for nothing either (rule 3:
-    it stays a SEEN line); a sample that found a wrong item counts toward DOESN'T HOLD. A result's fifth part, if it
-    has one, is the lines it tested on a sample. assets/claims.js has the same function; checks/states.json holds the
-    cases both must pass.
-    ponytail: everyone on the Member line counts as active; the 90-day silence is in the chat, not the file."""
-    out = {"state": "OPEN", "lines": [], "since": None, "by": [], "both": [], "until": None}
-    people, members = {}, set(members)
-    for name, date, word, lines, *rest in sorted((r for r in found if start and a_day(r[1]) and r[1] >= start),
-                                                 key=lambda r: r[1]):
-        if out["until"] and date > out["until"]:
-            return dict(out, state="CAN'T TELL", since=days_after(out["until"], 1), until=None)
-        if name == author or (word == "HOLDS" and rest and rest[0]):
-            continue
-        people.setdefault((word, tuple(lines)), set()).add(name)
-        words = sorted({w for (w, _), names in people.items() if len(names) >= 2})
-        if out["state"] != "OPEN":
-            if set(words) - {out["state"]}:                        # reopened (rule 3)
-                out, people = dict(out, state="OPEN", lines=[], by=[], both=words, since=date,
-                                   until=days_after(date, DISPUTE_DAYS)), {}
-            continue
-        done = next(((w, ls, names & members) for (w, ls), names in people.items() if len(names & members) >= 2), None)
-        if done and len(words) > 1:                # kept open (rule 3); a second dispute keeps the first one's clock
-            out, people = dict(out, both=words, since=out["since"] if out["until"] else date,
-                               until=out["until"] or days_after(date, DISPUTE_DAYS)), {}
-        elif done:
-            out = {"state": done[0], "lines": list(done[1]), "since": date, "by": sorted(done[2]), "both": [],
-                   "until": None}
-    return out
-
-
-def entry_state(kind, who, fields, members, adopted_on):
-    """standing() for one entry of the file, with `start` added; a promise's WITHDRAWN line decides it: up to 7 days
-    before its date it is WITHDRAWN, later it counts as BROKEN (HOW AN ENTRY IS WRITTEN)."""
-    start = first_day(kind, who, fields, adopted_on)
-    st = standing(results(fields), writer(who, fields, members), members, start)
-    w = DATE.search(text_of(fields, "WITHDRAWN")) if kind == "PROMISE" and a_day(adopted_on) else None
-    if w and a_day(w.group()):
-        by = due(fields, adopted_on)
-        late = by is not None and w.group() > days_after(by, -7)
-        st = {"state": "BROKEN" if late else "WITHDRAWN", "lines": [], "since": w.group(), "by": [], "both": [],
-              "until": None}
-    return dict(st, start=start)
-
-
-def entry_states(secs):
-    """entry_state() for every entry, by number."""
-    names, on = member_names(secs), adopted(secs)
-    return {n: entry_state(k, w, f, names, on)
-            for _, k, n, w, f in (it for it in entries(entries_section(secs)[1]) if it[0] == "entry")}
-
-
-def state_text(st, kind, fields):
-    """An entry's state in a few words, or None while it is OPEN with nothing to add to its SEEN lines. A close on some
-    of a fact's WRONG IF lines says so: the text lets one stand on any lines (ASSEMBLY_SPEC section 5, gap 1)."""
-    s, ls, of = st["state"], st["lines"], len(wrong_if(fields)) if kind == "FACT" else 0
-    if s in CLOSED and ls and not set(range(1, of + 1)) <= set(ls):
-        return "%s on line%s %s only, of %d" % (s, "s" if len(ls) > 1 else "", ", ".join(map(str, ls)), of)
-    if s != "OPEN":
-        return s
-    if st["both"]:
-        return "disputed, %s: CAN'T TELL after %s unless it closes" % (" and ".join(st["both"]), st["until"])
-    return None
-
-
-def checkable(kind, fields):
-    """A fact can be checked any time; a promise once its BY line names a date (its results come on or after it)."""
-    return kind == "FACT" or bool(DATE.search(text_of(fields, "BY")))
+    ev = []
+    for by in sorted({b for _, b, _ in votes if b}):
+        ev.append((by, days_after(by, 1), "Assembly vote: " + "; ".join("%s (%s %s)" % (v, h, b) for v, b, h in votes
+                                                                         if b == by), "vote-" + by))
+    close = max((b for _, b, h in votes if b and h == "by"), default="")
+    if start:
+        for w in range(12):
+            d = days_after(start, 7 * w)
+            dry = ", a dry run: the vote is open" if days_after(d, 7) <= close else ""   # process.md section 10, the freeze
+            ev.append((d, days_after(d, 7), "Assembly weekly turn: %s (rule 7)%s" % (members[w % len(members)], dry),
+                       "turn-" + d))
+    bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
+    for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
+        if a_day(d):
+            ev.append((d, days_after(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
+    def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
+        return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+    out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
+    for a, b, what, uid in ev:                      # the UID's domain is only an id: changing it would double every event already imported
+        out += ["BEGIN:VEVENT", "UID:%s@febu-ledger.vercel.app" % uid, "DTSTAMP:%sT000000Z" % day(start or a),
+                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + text(what), "URL:" + FRONT,
+                "END:VEVENT"]
+    return "\r\n".join(out + ["END:VCALENDAR"]) + "\r\n"
 
 
 def short_addr(text):
@@ -1064,138 +1205,81 @@ def name_options(members):
             % "".join('<option>%s</option>' % html.escape(m) for m in members))
 
 
-def check_card(kind, num, author, fields, members):
-    """The check card: tick the WRONG IF lines you tested, say what you saw on each (and for a line over many items,
-    how many you opened), one new thing on the page, the minutes, your name and your result. claims.js writes the chat
-    post from it; Copy waits for the new thing."""
-    aid = anchor(kind, num)
-    if kind == "FACT":
-        tests = ('<fieldset class="cc-set"><legend>Which WRONG IF lines did you test? Say what you saw on each.</legend>'
-                 '<ol class="lns">%s</ol></fieldset>' % "".join(
-                     '<li><label class="ln"><input type="checkbox" class="ln-on" value="%d"><span class="n">%d</span>'
-                     '<span class="t">%s</span></label><input type="text" class="saw" data-line="%d" autocomplete="off" '
-                     'aria-label="What you saw on line %d" placeholder="What you saw: the number, the words or the date" '
-                     'hidden><input type="text" class="items" data-line="%d" autocomplete="off" aria-label="Items you '
-                     'opened on line %d, if it covers many" placeholder="If it covers many items, how many you opened: '
-                     'all 164, or 20 of 164" hidden></li>' % (i, i, html.escape(short_addr(t)), i, i, i, i)
-                     for i, t in enumerate(wrong_if(fields), 1)))
-    else:
-        tests = ('<label class="f">What you saw at the KNOWN BY link, on or after %s<input type="text" class="saw" '
-                 'autocomplete="off" placeholder="The number, the words or the date"></label>'
-                 % html.escape(text_of(fields, "BY")))
-    yes, no = RESULTS[kind]
-    who = ('<span class="by">%s wrote it, so %s cannot check it (rule 3).</span>' % ((html.escape(author),) * 2)
-           if author in members else "")
-    if site_note(CARD_NOTES, kind, num, fields):
-        who += " " + CARD_NOTES[(kind, num)]
+def check_card(q, a, members):
+    """The check card: tick the WRONG IF lines you tested, say what you saw on each and how many of its items you opened,
+    one new thing on the page, your name and your result. claims.js writes the chat post from it, and says so when a
+    HOLDS does not name every line with "all" for each (Result): it still goes in, and counts toward nothing."""
+    aid = answer_id(q["num"], a["num"])
+    tests = ('<fieldset class="cc-set"><legend>Which WRONG IF lines did you test? Say what you saw on each.</legend>'
+             '<ol class="lns">%s</ol></fieldset>' % "".join(
+                 '<li><label class="ln"><input type="checkbox" class="ln-on" value="%d"><span class="n">%d</span>'
+                 '<span class="t">%s</span></label><input type="text" class="saw" data-line="%d" autocomplete="off" '
+                 'aria-label="What you saw on line %d" placeholder="What you saw: the number, the words or the date" '
+                 'hidden><input type="text" class="items" data-line="%d" autocomplete="off" aria-label="Items you '
+                 'opened on line %d" placeholder="How many of its items you opened: all 1, all 164, or 20 of 164" '
+                 'hidden></li>' % (i, i, html.escape(short_addr(t)), i, i, i, i) for i, t in enumerate(a["lines"], 1)))
     return (
-        '<div class="cc" id="check-%s" data-kind="%s" data-num="%s" data-writer="%s" hidden>'
-        '<p class="cc-lead">Open the entry\'s link and look before you read anyone\'s post about it. Fill this in and '
-        'the post writes itself below. %s</p>%s'
-        '<label class="f">One thing on the page that is not in the entry or in any earlier post <b>needed</b>'
+        '<div class="cc" id="check-%s" data-q="%d" data-a="%d" data-lines="%d" data-posters="%s" hidden>'
+        '<p class="cc-lead">Open the answer\'s links and look before you read anyone\'s post about it. Fill this in and '
+        'the post writes itself below. Whoever posted or changed the answer does not check it (rule 4).</p>%s'
+        '<label class="f">One thing on the page that is not in the answer or in any earlier post <b>needed</b>'
         '<input type="text" class="new" autocomplete="off" placeholder="A number, a name, a date, a word"></label>'
-        '<div class="cc-pair"><label class="f">Minutes it took<input type="number" class="min" min="1" step="1" '
-        'inputmode="numeric" placeholder="12"></label><label class="f">Your name<select class="who">%s</select>'
+        '<div class="cc-pair"><label class="f">Your name<select class="who">%s</select>'
         '<input type="text" class="other" autocomplete="off" placeholder="Your name in the chat" '
         'aria-label="Your name in the chat" hidden></label></div>'
         '<fieldset class="res"><legend>Your result</legend>'
-        '<label class="pill yes"><input type="radio" name="res-%s" value="%s"><span>%s</span></label>'
-        '<label class="pill no"><input type="radio" name="res-%s" value="%s"><span>%s</span></label></fieldset>'
-        '<label class="tick"><input type="checkbox" class="opened">I opened the link myself. No AI wrote this result.'
+        '<label class="pill yes"><input type="radio" name="res-%s" value="HOLDS"><span>HOLDS</span></label>'
+        '<label class="pill no"><input type="radio" name="res-%s" value="DOESN\'T HOLD"><span>DOESN\'T HOLD</span>'
+        '</label></fieldset>'
+        '<label class="tick"><input type="checkbox" class="opened">I opened the links myself. No AI wrote this result.'
         '</label><div class="post-box"><p class="post-h">Your post, as the chat will show it</p>'
         '<pre class="post" aria-live="polite"></pre></div><p class="need" id="need-%s"></p>'
         '<p class="acts"><button type="button" class="btn primary cc-copy" disabled aria-describedby="need-%s">'
         'Copy the post</button></p><p class="hint">Paste it in the chat yourself: this page sends nothing. That '
-        'week\'s member copies it into the ledger as a SEEN line (rule 6), from the first turn after the vote.</p></div>'
-        % (aid, kind, num, html.escape(author), who, tests, name_options(members), aid, yes, yes, aid, no, no, aid, aid))
+        'week\'s member copies it into the ledger as a SEEN item (rule 7).</p></div>'
+        % (aid, q["num"], a["num"], len(a["lines"]), html.escape("|".join(sorted(a["posters"]))), tests,
+           name_options(members), aid, aid, aid, aid))
 
 
-def pick_li(kind, num, fields, author, members, st):
-    """One entry as a card on the front page: what it says, where it stands (st, from entry_state), a way in, and while
-    it is OPEN, the check card that writes the result post."""
-    says = text_of(fields, HEADLINE[kind])
-    found = results(fields)
-    done = st["state"] != "OPEN"
-    state = state_text(st, kind, fields)
-    if done:
-        state = ("closed: " if st["state"] in CLOSED else "") + state
-    elif not state:
-        state = ("%d result%s posted" % (len(found), "" if len(found) == 1 else "s") if found
-                 else "checks posted" if checked(fields) else "not yet checked")
-    card = check_card(kind, num, author, fields, members) if checkable(kind, fields) and not done else ""
+def answer_state_text(a):
+    st = a["state"]
+    found = len(a["results"])
+    return (state_text(st) or ("%d result%s posted" % (found, "" if found == 1 else "s") if found
+                               else "checks posted" if checked(a["fields"]) else "not yet checked"))
+
+
+def pick_li(q, a, members):
+    """One answer as a card on the front page: what it says, where it stands, a way in, and while it is OPEN, the check
+    card that writes the result post. No name: the answer is the Assembly's (rule 3)."""
+    done = a["state"]["state"] != "OPEN"
+    card = "" if done else check_card(q, a, members)
+    aid = answer_id(q["num"], a["num"])
     toggle = ('<button type="button" class="btn primary cc-open" aria-expanded="false" aria-controls="check-%s">'
-              'Check it here</button>' % anchor(kind, num) if card else "")
-    return ('<li class="pick" id="pick-%s"><div class="top"><span class="num">%s %s</span><span class="chip%s">%s</span>'
-            '</div><p class="says">%s</p><p class="acts"><a class="btn%s" href="ledger.html#%s">Open the entry</a>%s</p>'
-            '%s</li>' % (anchor(kind, num), kind.lower(), num, " done" if done else "", html.escape(state),
-                         html.escape(says), "" if card else " primary", anchor(kind, num), toggle, card))
+              'Check it here</button>' % aid if card else "")
+    return ('<li class="pick" id="pick-%s"><div class="top"><span class="num">Q%d answer %d</span><span class="chip%s">'
+            '%s</span></div><p class="says">%s</p><p class="acts"><a class="btn%s" href="ledger.html#%s">Open the '
+            'answer</a>%s</p>%s</li>' % (aid, q["num"], a["num"], " done" if done else "",
+                                         html.escape(("closed: " if done else "") + answer_state_text(a)),
+                                         html.escape(short_addr(text_of(a["fields"], "SAYS"))), "" if card else " primary", aid,
+                                         toggle, card))
 
 
-def open_votes(title, secs):
-    """What waits on a rule 7 vote, from ledger.txt: while STATUS says proposed, the version in the title, closing on
-    the last date the ledger gives for "yes" or "object". Proposals that live only in the chat are not listed; the
-    weekly page counts any VOTE post."""
-    if not status(secs)[1]:
-        return []
-    flat = re.sub(r"\s+", " ", " ".join(r for _, b in secs for r in b))
-    dates = re.findall(r'"yes" or "object" by (\d{4}-\d\d-\d\d)', flat)
-    by = dates[-1] if dates else None
-    votes = [(titled(title)[1] or "this version", by)]
-    # STATUS may add: 'Also up for the vote by 2026-10-22: the Saw line; the stop rule.' (one line, subjects by ';')
-    m = re.search(r"Also up for the vote by (\d{4}-\d\d-\d\d): ([^.]+)\.", re.sub(r"\s+", " ", " ".join(status(secs)[0])))
-    if m:
-        votes += [(sub.strip(), m.group(1)) for sub in m.group(2).split(";") if sub.strip()]
-    return votes
+def yes_count(p, members, adopted_on):
+    """(the yeses that count toward rule 2 so far, the day it reached three or None)"""
+    got = {n for n, d in p["yes"] if n in members and n != p["who"] and adopted_on and a_day(d)
+           and d >= max(adopted_on, p["date"])}
+    return len(got), p["reach"]
 
 
-def turn_start(secs):
-    """The first date in STATUS: the weekly turns (rule 6) are counted in weeks from it, in Member order."""
-    m = DATE.search(" ".join(status(secs)[0]))
-    return m.group() if m else None
+def next_move(members, m, todo, waiting, votes, start, remind):
+    """Pick your name, see your week as five numbered steps: check (the open answers you did not post and have no SEEN
+    item on yet), propose and say yes (the proposals not yours that have no yes of yours), vote (what is open), the
+    weekly turn (yours when the order reaches you) and write. One panel per name, written here; claims.js shows the one
+    picked, counts the days to each date and works out the turns from the device's date. The device remembers the name
+    (claims.js), and #me=Name in the address picks it, so each member has a link. Under the steps: a post that reminds
+    the group what is due, for anyone to send, and the dates as a calendar file (assembly.ics). No totals: rule 9."""
+    q = open_question(m)
 
-
-def calendar_ics(votes, members, start, secs):
-    """The ledger's dates as a calendar file, all-day events only: each vote's closing day, the weekly turns for
-    twelve weeks from the first date in STATUS in Member order (rule 6), and each known bug's fix-by day."""
-    def day(d):
-        return d.replace("-", "")
-
-    ev = []
-    for by in sorted({b for _, b in votes if b}):
-        ev.append((by, days_after(by, 1), "Assembly vote closes: " + "; ".join(v for v, b in votes if b == by),
-                   "vote-" + by))
-    close = max((b for _, b in votes if b), default="")
-    if start:
-        for w in range(12):
-            d = days_after(start, 7 * w)
-            dry = ", a dry run: the vote is open" if days_after(d, 7) <= close else ""   # process.md section 10, the freeze
-            ev.append((d, days_after(d, 7), "Assembly weekly turn: %s (rule 6)%s" % (members[w % len(members)], dry),
-                       "turn-" + d))
-    bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
-    for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
-        ev.append((d, days_after(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
-    def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
-        return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
-    out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
-    for a, b, what, uid in ev:                      # the UID's domain is only an id: changing it would double every event already imported
-        out += ["BEGIN:VEVENT", "UID:%s@febu-ledger.vercel.app" % uid, "DTSTAMP:%sT000000Z" % day(start or a),
-                "DTSTART;VALUE=DATE:" + day(a), "DTEND;VALUE=DATE:" + day(b), "SUMMARY:" + text(what), "URL:" + FRONT,
-                "END:VEVENT"]
-    return "\r\n".join(out + ["END:VCALENDAR"]) + "\r\n"
-
-
-def next_number(items):
-    m = re.search(r"next entry is number (\d+)", " ".join(" ".join(it[1]) for it in items if it[0] == "text"))
-    return int(m.group(1)) if m else 1 + max([int(it[2]) for it in items if it[0] == "entry"] or [0])
-
-
-def next_move(members, todo, votes, start, posted, remind):
-    """Pick your name, see your week as four numbered steps: check (the entries open to you: not yours, no SEEN line
-    of yours yet), vote (what is open, with its closing date), the weekly turn (yours when the order reaches you) and
-    write. One panel per name, written here; claims.js shows the one picked, counts the days to each date and works
-    out the turns from the device's date. The device remembers the name (claims.js), and #me=Name in the address
-    picks it, so each member has a link. Under the steps: a post that reminds the group what is due, for anyone to
-    send, and the dates as a calendar file (assembly.ics)."""
     def chip(text, cls="", **attrs):
         return '<span class="chip%s"%s>%s</span>' % (" " + cls if cls else "", "".join(
             ' data-%s="%s"' % (k, html.escape(v)) for k, v in attrs.items()), html.escape(text))
@@ -1203,74 +1287,84 @@ def next_move(members, todo, votes, start, posted, remind):
     def step(n, title, chip_html, body):
         return '<li class="st"><span class="n">%d</span><div><h3>%s %s</h3>%s</div></li>' % (n, title, chip_html, body)
 
+    def copy(label, text):
+        return '<button type="button" class="btn copy" data-copy="%s">%s</button>' % (html.escape(text), label)
+
     def panel(name):
-        mine = [t for t in todo if name == "*" or (t[3] != name and not re.search(r"(?<!\w)%s(?!\w)" % re.escape(name), t[4]))]
-        rows = "".join('<li><a href="#check-%s"><span class="num">%s %s</span><span class="says">%s</span></a></li>'
-                       % (anchor(k, n), k.lower(), n, html.escape(s)) for k, n, s, _, _ in mine)
+        mine = [(qq, a) for qq, a in todo if name == "*" or (name not in a["posters"]
+                                                               and name not in {r[0] for r in a["results"]})]
+        rows = "".join('<li><a href="#check-%s"><span class="num">Q%d answer %d</span><span class="says">%s</span></a>'
+                       '</li>' % (answer_id(qq["num"], a["num"]), qq["num"], a["num"],
+                                  html.escape(short_addr(text_of(a["fields"], "SAYS")))) for qq, a in mine)
         if rows:
             check, c = '<ul class="todo">%s</ul>' % rows, chip("%d open to you" % len(mine), "due")
-        elif name != "*" and todo and all(t[3] == name for t in todo):
-            check, c = ("<p>None: you wrote every open entry, and nobody checks their own (rule 3). Write one for the "
-                        "others.</p>", chip("none: all yours"))
         else:
             check, c = "<p>None open to you right now.</p>", chip("none open")
         if name == "*":
-            check = ('<p class="hint">Your result counts toward keeping an entry open or reopening it, not toward '
-                     'closing it (rule 3). Post it in the chat; any member adds the line.</p>') + check
-            vote, v = "<p>Only members vote (rule 7).</p>", chip("members only")
-            turn, t = "<p>Only members take the turn (rule 6).</p>", chip("members only")
+            check = ('<p class="hint">Your result counts toward keeping an answer open or reopening it, not toward '
+                     'closing it (rule 5). Post it in the chat; any member adds the line.</p>') + check
+            yes, y = "<p>Only members propose and say yes (rule 2).</p>", chip("members only")
+            vote, v = "<p>Only members vote (rule 8).</p>", chip("members only")
+            turn, t = "<p>Only members take the turn (rule 7).</p>", chip("members only")
         else:
-            w, p = posted.get(name, (0, 0))
-            if w or p:
-                check = '<p class="hint">You have written %d entr%s and posted %d check%s so far.</p>' % (
-                    w, "y" if w == 1 else "ies", p, "" if p == 1 else "s") + check
+            open_to = [p for p in waiting if p["who"] != name and name not in {n for n, _ in p["yes"]}]
+            yes = "".join('<p>P%d: %s</p><p class="acts">%s</p>' % (
+                p["num"], html.escape(short_addr(p["asks"])), copy("Copy a yes", CHAT.join(("YES P%d" % p["num"], name, "{today}"))))
+                for p in open_to) or "<p>No proposal waits for your yes.</p>"
+            yes += ('<p>Propose a question a link anyone can open could settle (rule 1). The first proposal with three '
+                    'yeses from other members opens next (rule 2).</p><p class="acts">%s</p>'
+                    % copy("Copy a proposal", CHAT.join(("PROPOSE P%d" % m["next"]["proposal"],
+                                                      "<the question, in one sentence>", name, "{today}"))))
+            y = chip("%d waiting" % len(open_to), "due") if open_to else chip("any time")
             if votes:
                 vote = "".join(
-                    '<p>Ledger %s: &ldquo;yes&rdquo; or &ldquo;object&rdquo; %s (rule 7).</p><p class="acts">'
-                    '<button type="button" class="btn copy" data-copy="%s">Copy a yes</button>'
-                    '<button type="button" class="btn copy" data-copy="%s">Copy an objection</button></p>'
-                    % (html.escape(v), "by %s" % by if by else "within 7 days of the post that showed it",
-                       html.escape(CHAT.join(("VOTE YES", v, name, "{today}"))),
-                       html.escape(CHAT.join(("VOTE OBJECT", v, name, "{today}")) + "\nWhich line is wrong: \n"
-                                   "What would change my mind: ")) for v, by in votes)
-                v = chip("by " + votes[0][1], "due", due=votes[0][1]) if votes[0][1] else chip("7 days from the post", "due")
+                    '<p>%s: &ldquo;yes&rdquo; or &ldquo;object&rdquo;%s (rule 8).</p><p class="acts">%s%s</p>'
+                    % (html.escape(s), " %s %s" % (how, by) if by else "", copy("Copy a yes", CHAT.join(
+                        ("VOTE YES", s, name, "{today}"))), copy("Copy an objection", CHAT.join(
+                            ("VOTE OBJECT", s, name, "{today}")) + "\nWhich line is wrong: \nWhat would change my mind: "))
+                    for s, by, how in votes)
+                v = (chip("by " + votes[0][1], "due", due=votes[0][1]) if votes[0][1] and votes[0][2] == "by"
+                     else chip("open", "due"))
             else:
                 vote, v = "<p>Nothing is up for a vote in the ledger.</p>", chip("none open")
             turn = ('<p class="turn-me" data-name="%s">Yours when the order reaches you%s.</p><p class="turn-you" hidden>'
                     '<b>That is you this week.</b><a class="btn primary" href="weekly.html">Do the weekly turn</a></p>'
-                    '<p class="hint">Paste the week\'s chat. The page lists the SEEN lines to add, the entries that '
-                    'would close and the votes, for you to copy into the ledger (rule 6).</p>'
+                    '<p class="hint">Paste the week\'s chat. The page lists the SEEN items, proposals, yeses and votes '
+                    'to add and a LAST POSTS line, for you to copy into the ledger (rule 7).</p>'
                     % (html.escape(name), ", counted from %s" % start if start else ""))
             t = chip("in Member order", "turn-chip", name=name)
-        write = ('<p><a href="write.html">Write an entry</a>: a fact, a link anyone can open, and one line for each '
-                 'part of it that would prove it wrong. The page lays it out for the ledger and the chat.</p>')
+        write = ('<p><a href="write.html">Write an answer to Q%d</a>: what it says, a link anyone can open, and one line '
+                 'for each part of it that would prove it wrong.</p>' % q["num"] if q else
+                 "<p>No question is open, so there is nothing to answer yet. Propose one (step 2).</p>")
         link = "" if name == "*" else (
             '<p class="mylink">Your link, for a bookmark or your DM thread: <a href="#me=%s">%s#me=%s</a> '
             '<button type="button" class="btn copy" data-copy="%s#me=%s">Copy your link</button></p>'
             % (quote(name), FRONT.split("//")[1], quote(name), FRONT, quote(name)))
-        return ('<div class="moves" data-who="%s" hidden><ol class="steps">%s%s%s%s</ol>%s</div>'
-                % (html.escape(name), step(1, "Check", c, check), step(2, "Vote", v, vote),
-                   step(3, "Weekly turn", t, turn), step(4, "Write", chip("any time"), write), link))
+        return ('<div class="moves" data-who="%s" hidden><ol class="steps">%s%s%s%s%s</ol>%s</div>'
+                % (html.escape(name), step(1, "Check", c, check), step(2, "Propose and say yes", y, yes),
+                   step(3, "Vote", v, vote), step(4, "Weekly turn", t, turn), step(5, "Write", chip("any time"), write),
+                   link))
 
     chips = "".join('<label class="name"><input type="radio" name="me" value="%s"><span>%s</span></label>'
                     % (html.escape(n), html.escape(n if n != "*" else "someone else")) for n in members + ["*"])
-    turn = ('<div class="turn" data-from="%s" data-order="%s"><h3>Weekly turn (rule 6)</h3><p class="turn-now">One '
+    turn = ('<div class="turn" data-from="%s" data-order="%s"><h3>Weekly turn (rule 7)</h3><p class="turn-now">One '
             'member a week, in this order%s: %s. A turn not done by the end of its week passes to the next.</p></div>'
             % (start or "", html.escape("|".join(members)), ", counted from %s" % start if start else "",
                html.escape(", ".join(members))))
+    first_vote = next((v for v in votes if v[1] and v[2] == "by"), None)
     remind_html = ('<div class="remind"><h3>Remind the group</h3><p>What is due, as one post for the chat. Anyone '
                    'can send it; the dates come from the ledger.</p><pre class="lit keep" id="due-post" data-by="%s">%s'
                    '</pre><p class="acts"><button type="button" class="btn copy" data-copy="%s">Copy the reminder'
                    '</button><a class="btn" href="assembly.ics" download>Add the dates to your calendar</a></p></div>'
-                   % (html.escape(votes[0][1] if votes and votes[0][1] else ""), html.escape(remind), html.escape(remind)))
+                   % (html.escape(first_vote[1] if first_vote else ""), html.escape(remind), html.escape(remind)))
     return ('<section class="win next" id="next" aria-labelledby="next-h"><h2 class="bar" id="next-h">your week'
-            '<span class="q">pick your name, then the four steps</span></h2><div class="win-body"><fieldset class="names">'
+            '<span class="q">pick your name, then the five steps</span></h2><div class="win-body"><fieldset class="names">'
             '<legend>Pick your name</legend>%s</fieldset><p class="hint moves-none">Pick a name to see what you can '
-            'check, what is up for a vote, and when your weekly turn comes. The name is a claim, like a post in the '
-            'chat: the site vouches for nobody. This device keeps it, with any unfinished post, so you come back to '
-            'it. The first line of every post is what the weekly page reads: keep it as the buttons write it.</p>'
-            '<p class="acts links-all"><button type="button" class="btn copy" data-copy="%s">Copy a link for each '
-            'member</button></p>%s%s%s</div></section>'
+            'check, what waits for your yes, what is up for a vote, and when your weekly turn comes. The name is a '
+            'claim, like a post in the chat: the site vouches for nobody. This device keeps it, with any unfinished '
+            'post, so you come back to it. The first line of every post is what the weekly page reads: keep it as the '
+            'buttons write it.</p><p class="acts links-all"><button type="button" class="btn copy" data-copy="%s">Copy '
+            'a link for each member</button></p>%s%s%s</div></section>'
             % (chips, html.escape("\n".join("%s: %s#me=%s" % (n, FRONT, quote(n)) for n in members)),
                "".join(panel(n) for n in members + ["*"]), turn, remind_html))
 
@@ -1284,174 +1378,108 @@ def one_sentence(how_secs):
     return "".join("<span>%s.</span>" % html.escape(c[0].upper() + c[1:]) for c in clauses if c)
 
 
-def assembly_page(title, secs, steps_num, how_secs):
-    """The Assembly's front page, for someone who has just followed a link: the task now and the group's goal in the
-    banner, what this is in a sentence, three entries to check, each with its check card, and the other open ones
-    folded under them; then your week by name (check, vote, the weekly turn, write, with what is due, a reminder
-    post and the calendar file), every entry, how to check, who and the scripts. The four tests are reading, not
-    the experiment: served, not linked from here."""
+def assembly_page(title, secs, how_secs, m):
+    """The Assembly's front page, for someone who has just followed a link: the task now in the banner, what this is in
+    a sentence, the open question with a check card under each of its open answers, the proposals waiting for yeses;
+    then your week by name (check, propose and say yes, vote, the weekly turn, write, with what is due, a reminder post
+    and the calendar file), every question, how to check, who and the scripts. Answers are shown as the Assembly's,
+    with no name, and nothing is totalled by member (rules 3 and 9)."""
     doc = Doc(secs, "ledger.html")
-    by = {short(h): b for h, b in secs}
-    names = member_names(secs)
-    members = len(names)
-    items = entries(entries_section(secs)[1])
-    ents = [it for it in items if it[0] == "entry"]
-    author = {it[2]: writer(it[3], it[4], names) for it in ents}
-    first = cheapest(secs, items)
-    st = entry_states(secs)
-    open_ = [it for it in ents if checkable(it[1], it[4]) and st[it[2]]["state"] == "OPEN"]
-    rest = [it for it in open_ if it not in first]
-    picks = '<ul class="picks">%s</ul>' % "".join(pick_li(k, n, f, author[n], names, st[n]) for _, k, n, _, f in first)
-    if rest:
-        picks += ('<details class="others"><summary>%d more open entr%s to check</summary><ul class="picks">%s</ul>'
-                  '</details>' % (len(rest), "y" if len(rest) == 1 else "ies",
-                                  "".join(pick_li(k, n, f, author[n], names, st[n]) for _, k, n, _, f in rest)))
-    todo = [(k, n, text_of(f, HEADLINE[k]), author[n], seen(f)) for _, k, n, _, f in open_]
-    rows, done = [], 0
-    for _, kind, num, _, fields in (it for it in items if it[0] == "entry"):
-        done += checked(fields)
-        rows.append(entry_li(kind, num, fields, state_text(st[num], kind, fields)
-                             or ("checks posted" if checked(fields) else "not yet checked")))
-    after = "".join(doc.blocks(to_lines(it[1]), 2) for it in items if it[0] == "text")
+    names = m["members"]
+    q = open_question(m)
+    todo = [(q, a) for a in q["answers"] if a["state"]["state"] == "OPEN"] if q else []
+    waiting = [p for p in m["proposals"] if p["opened"] is None]
     proposed = status(secs)[1]
-    votes = open_votes(title, secs)
-    shut = sum(1 for it in ents if st[it[2]]["state"] in CLOSED and st[it[2]]["by"])   # under rule 3, not withdrawn
-    goal = next((it for it in ents if it[1] == "PROMISE" and "entries under rule 3" in text_of(it[4], "WILL")), None)
-    task = "<p><strong>Your task now:</strong> check one entry below and post what you saw."
-    if votes:
-        task += (' Then vote &ldquo;yes&rdquo; or &ldquo;object&rdquo;%s on %s (<a href="#next">pick your name</a>).'
-                 % (" by %s" % votes[0][1] if votes[0][1] else "",
-                    ", ".join(html.escape(v) for v, _ in votes[:-1]) + (" and " if len(votes) > 1 else "")
-                    + html.escape(votes[-1][0])))
-    task += "</p>"
-    posted = {n: (sum(1 for it in ents if author[it[2]] == n),
-                  sum(1 for it in ents if re.search(r"(?<!\w)%s(?!\w)" % re.escape(n), seen(it[4])))) for n in names}
+    votes = open_votes(title, secs, m)
     start = turn_start(secs)
-    by = votes[0][1] if votes and votes[0][1] else ""
-    due = []
-    if by:
-        due.append('vote closes <time data-due="%s">%s</time>' % (by, by))
+
+    if q and todo:
+        task = "<p><strong>Your task now:</strong> check an answer to Q%d below and post what you saw." % q["num"]
+    elif q:
+        task = ('<p><strong>Your task now:</strong> Q%d has no open answer: <a href="write.html">write one</a>.'
+                % q["num"])
+    else:
+        task = ("<p><strong>Your task now:</strong> no question is open. Propose one, or say yes to one below "
+                "(<a href=\"#next\">pick your name</a>).")
+    if votes:
+        task += (' Then vote &ldquo;yes&rdquo; or &ldquo;object&rdquo; on %s (<a href="#next">pick your name</a>).'
+                 % html.escape("; ".join(s for s, _, _ in votes)))
+    task += "</p>"
+    due = ['Q%d: CAN\'T TELL after <time data-due="%s">%s</time>' % (q["num"], q["state"]["until"], q["state"]["until"])
+           ] if q and q["state"]["until"] else []
+    due += ['vote %s %s <time data-due="%s">%s</time>' % (html.escape(s), how, by, by) for s, by, how in votes if by]
     if start:
         due.append('weekly turn: <span class="due-turn">in Member order from %s%s</span>'
                    % (start, ", a dry run until the vote closes" if proposed else ""))
     due.append('<a href="assembly.ics" download>the dates as a calendar</a>')
     task += '<p class="due"><b>Due</b> %s</p>' % " &middot; ".join(due)
+
     remind = ["DUE" + CHAT + "{today}"]
+    if q:
+        remind.append("Open question: Q%d, CAN'T TELL after %s. Post: CHECK Q%d ANSWER n%sHOLDS%slines 1,2%s<your name>"
+                      "%s<date>." % (q["num"], q["state"]["until"], q["num"], CHAT, CHAT, CHAT, CHAT))
+    if waiting:
+        remind.append("Proposals waiting for yeses: %s. Post: YES P%d%s<your name>%s<date>."
+                      % (", ".join("P%d" % p["num"] for p in waiting), waiting[0]["num"], CHAT, CHAT))
     if votes:
-        remind.append("Vote %s: %s. Post: VOTE YES%s<what>%s<your name>%s<date>."
-                      % ("by %s ({days})" % by if by else "within 7 days of the post", "; ".join(v for v, _ in votes),
-                         CHAT, CHAT, CHAT))
-    if open_:
-        remind.append("Open to check: %s%s. Post: CHECK FACT n%sHOLDS%slines 1,3%s<your name>%s<date>."
-                      % (", ".join("%s %s" % (k.lower(), n) for _, k, n, _, _ in open_[:3]),
-                         " and %d more" % (len(open_) - 3) if len(open_) > 3 else "", CHAT, CHAT, CHAT, CHAT))
+        remind.append("Vote: %s. Post: VOTE YES%s<what>%s<your name>%s<date>."
+                      % ("; ".join("%s (%s %s)" % (s, how, by) if by else s for s, by, how in votes), CHAT, CHAT, CHAT))
     if start:
         remind.append("Weekly turn this week, to {turnend}: {turn}. Next: {next}.")
-    if goal:
-        remind.append("Goal (PROMISE %s): %d of %d entries closed." % (goal[2], shut, len(ents)))
     remind = "\n".join(remind + [FRONT])
-    if goal:
-        task += ('<p><strong>The group&rsquo;s goal</strong> (<a href="ledger.html#%s">PROMISE %s</a>): %s %s '
-                 'Closed so far: %d of %d.</p>' % (anchor("PROMISE", goal[2]), goal[2],
-                                                 html.escape(text_of(goal[4], "WILL")),
-                                                 "By " + html.escape(text_of(goal[4], "BY").rstrip(".")) + ".",
-                                                 shut, len(ents)))
+
+    if q:
+        picks = ('<p class="says">Q%d asks: %s</p><p class="hint">%s</p>' % (q["num"], doc.fmt(short_addr(q["asks"])),
+                                                                              html.escape(question_text(q)))
+                 + ('<ul class="picks">%s</ul>' % "".join(pick_li(qq, a, names) for qq, a in todo) if todo else
+                    '<p>No open answer yet. <a href="write.html">Write one</a>.</p>'))
+    else:
+        picks = "<p>No question is open. The first proposal with three yeses from other members opens next (rule 2).</p>"
+    props = "".join('<li><a href="ledger.html#prop-P%d"><span class="num">P%d</span><span class="says">%s</span>'
+                    '<span class="state">%s</span></a></li>' % (p["num"], p["num"], html.escape(short_addr(p["asks"])), (
+                        "three yeses on %s" % p["reach"] if p["reach"] else "%d of 3 yeses" % yes_count(
+                            p, names, m["adopted"])[0])) for p in waiting)
+    if props:
+        picks += '<h3>Proposed questions</h3><ul class="entries">%s</ul>' % props
+    first_win = ('<section class="win start" id="start" aria-labelledby="start-h"><h2 class="bar" id="start-h">'
+                 'start here: %s</h2><div class="win-body"><p class="sentence">%s</p>%s%s'
+                 '<p class="go"><a href="how.html">How it works, in one picture</a> <a href="#every">Every question</a>'
+                 '</p></div></section>' % ("the open question" if q else "no question open", one_sentence(how_secs),
+                                           picks, '<p class="hint">The vote week is also a dry run. Post what you '
+                                           'saw.</p>' if proposed else ""))
+    rows = "".join('<li><a href="ledger.html#q-%d"><span class="num">Q%d</span><span class="says">%s</span>'
+                   '<span class="state">%s</span></a></li>' % (x["num"], x["num"], html.escape(short_addr(x["asks"])),
+                                                               html.escape(question_text(x))) for x in m["questions"])
+    every = ('<details class="win lead" id="every" data-open-wide><summary><span class="t">every question</span>'
+             '<span class="q">%d so far</span></summary><div class="win-body">%s<p class="go"><a href="ledger.html">'
+             'Read the whole ledger</a></p></div></details>'
+             % (len(m["questions"]), '<ul class="entries">%s</ul>' % rows if rows else "<p>None yet.</p>"))
 
     def small(key, title, text, href, go):
         return ('<section class="win" aria-labelledby="%s-h"><h2 class="bar" id="%s-h">%s</h2><div class="win-body">'
                 '<p>%s</p><p class="go"><a href="%s">%s</a></p></div></section>' % (key, key, title, text, href, go))
 
-    first_win = ('<section class="win start" id="start" aria-labelledby="start-h"><h2 class="bar" id="start-h">'
-             'start here: check one claim<span class="q">%d of %d checked by someone else</span>'
-             '</h2><div class="win-body"><p class="sentence">%s</p>%s%s'
-             '<p class="go"><a href="how.html">How it works, in one picture</a> <a href="#every">Every entry</a></p>'
-             '</div></section>' % (done, len(rows), one_sentence(how_secs), picks,
-                                   '<p class="hint">The vote week is also a dry run. Post what you saw, and how many '
-                                   'minutes it took.</p>' if proposed else ""))
-    every = ('<details class="win lead" id="every" data-open-wide><summary><span class="t">every entry</span>'
-             '<span class="q">%d entries &middot; checked by someone other than the writer: %d</span></summary>'
-             '<div class="win-body"><ul class="entries">%s</ul>%s<p class="go"><a href="ledger.html">Read the whole '
-             'ledger</a></p></div></details>' % (len(rows), done, "".join(rows), after))
-    body = (first_win + next_move(names, todo, votes, start, posted, remind) + every +
-            check_section(secs, doc, steps_num) +
+    body = (first_win + next_move(names, m, todo, waiting, votes, start, remind) + every + check_section(secs, doc) +
             '<div class="more">%s</div>' % "".join([
-                small("who", "who: members (%d)" % members, "Any two of them, other than an entry's writer, can close it "
-                      "(rule 3). Anyone at all can reopen one.", "people.html", "See what each one wrote and checked"),
-                small("scripts", "run a script", "Eight entries have a script that reads their record for you, with "
-                      "Python 3 and no account or key. Say in your post that you ran one, and still open one link by "
-                      "hand: until the Saw line is adopted, a script run alone is not a Saw. <code>python "
-                      "checks/resolve.py test9</code> takes seconds; <code>fact8</code> about a minute; "
-                      '<code>checks/fact6.py</code> a minute or two. <a href="%s">What makes a script count</a>.'
+                small("who", "who: members (%d)" % len(names), "Any three of them who did not post an answer, one of "
+                      "them opening every link by hand, close it (rule 4). Anyone at all can keep one open or reopen "
+                      "it with a second person (rule 5).", "ledger.html#words-used-here", "Members, posters and Saw"),
+                small("scripts", "run a script", "The scripts read version 3's facts, kept word for word in the "
+                      "archive, with Python 3 and no account or key. A script counts toward Saw when none of an "
+                      "answer's posters wrote it, you ran it yourself, and you opened one link by hand: say whose it "
+                      'is on the Script: line. <a href="%s">What makes a script count</a>.'
                       % "process.html#5-add-on-a-scripts",
                       "https://github.com/zinotino/febu-assembly/tree/main/checks", "The scripts, with a line each")]))
     return page("febu-assembly.html", "febu assembly", "febu assembly",
-                "%d members studying febu, and a ledger anyone can check" % members, body,
+                "%d members studying febu, one question at a time, in a ledger anyone can check" % len(names), body,
                 mast=status_banner(secs, doc, brief=True, task=task), source=" from ledger.txt", connect="'self'",
-                share="febu assembly: claims about febu that anyone can check",
-                description="%d claims about febu, each with a link and a line that would prove it wrong. %s Pick one "
-                "and check it.%s" % (len(rows), "%d checked so far." % done if done else "None checked yet.",
-                                     " Proposed, not yet adopted." if proposed else ""),
+                share="febu assembly: one question about febu at a time, answers anyone can check",
+                description="One question about febu at a time; each answer has a link and a line that would prove it "
+                "wrong. %s%s" % ("Q%d is open: check an answer." % q["num"] if q else "No question is open yet.",
+                                 " Proposed, not yet adopted." if proposed else ""),
                 foot='This site and the ledger file are run by Z for now (<a href="ledger.html#bug-1">known bug 1</a>). '
                 'This page keeps your name and unfinished posts on your device only, and loads nothing from other '
                 'sites. Nothing is counted.')
-
-
-def people_page(secs):
-    """Each name the ledger gives as an entry's writer or in a SEEN line, in the Member line's order (anyone not on it
-    after, as they first appear): the entries they wrote, the entries whose SEEN lines name them, and the failed
-    predictions a heading gives them ("Z'S PREDICTIONS ..."). Nothing is totalled: the ledger keeps no totals."""
-    doc = Doc(secs, "ledger.html")
-    members = member_names(secs)
-    st = entry_states(secs)
-    wrote, saw, preds = {}, {}, {}
-    for _, kind, num, who, fields in (it for it in entries(entries_section(secs)[1]) if it[0] == "entry"):
-        li = entry_li(kind, num, fields, state_text(st[num], kind, fields)
-                      or ("checks posted, see SEEN" if checked(fields) else "open, not yet checked"))
-        if who:
-            wrote.setdefault(who.split(",")[0].strip(), []).append(li)
-        # ponytail: a check is credited to a name on the Member line; a non-member's needs a fixed SEEN line format
-        for name in members:
-            if re.search(r"(?<!\w)%s(?!\w)" % re.escape(name), seen(fields)):
-                saw.setdefault(name, []).append(li)
-    for head, b in secs:
-        if not any(W_ITEM.match(r) for r in b):
-            continue
-        m = re.match(r"(\w+)'S ", head)
-        owner = [n for n in members if m and n.upper().startswith(m.group(1))]
-        if len(owner) != 1:
-            sys.exit("%r: whose predictions? Its heading should start with a member's name, or its first letters, "
-                     "and 'S" % head)
-        L = to_lines(b)
-        first, items = w_items(L)
-        rows = "".join('<li><a href="ledger.html#%s"><span class="num">%s</span><span class="says">%s</span>'
-                       '<span class="state">%s</span></a></li>' % (num, num, html.escape(said), (word + " " + qual).strip().lower())
-                       for num, said, word, qual, _ in items)
-        preds.setdefault(owner[0], []).append('<h3>%s</h3>%s<ul class="entries">%s</ul>' % (
-            html.escape(short(head).capitalize()), doc.blocks(L[:first], 2), rows))
-
-    def part(title, rows):
-        return "<h3>%s</h3>%s" % (title, '<ul class="entries">%s</ul>' % "".join(rows) if rows else "<p>None yet.</p>")
-
-    def window(name):
-        pid = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-        return ('<section class="win person" id="%s" aria-labelledby="%s-h"><h2 class="bar" id="%s-h">%s%s</h2>'
-                '<div class="win-body">%s%s%s</div></section>'
-                % (pid, pid, pid, html.escape(name), "" if name in members else '<span class="q">not on the Member line</span>',
-                   part("Entries written", wrote.get(name)), part("Checks posted", saw.get(name)), "".join(preds.get(name, []))))
-
-    named = set(wrote) | set(saw) | set(preds)
-    rest = [n for n in members if n not in named]
-    body = ('<div class="intro"><p>%s</p></div>' % doc.fmt(
-                "Everyone the ledger names as an entry's writer or in a SEEN line, in the order of the Member line in "
-                "WORDS USED HERE. Under each name, what they wrote and what they checked, each with where it stands "
-                "today and a link to it in the ledger. An entry is open until two members other than its writer post "
-                "the same result (rule 3). No totals, no rankings, no scores.")
-            + "".join(window(n) for n in [n for n in members if n in named] + [n for n in wrote if n not in members])
-            + ('<p class="hint">Nothing stands under these names yet: %s.</p>' % html.escape(", ".join(rest)) if rest else ""))
-    return page("people.html", "By person", "by person", "what stands under each name in the ledger, entry by entry",
-                body, mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
-                description="Each name in the febu Assembly's ledger, with the entries they wrote and the checks they "
-                "posted, entry by entry." + (" Proposed, not yet adopted." if status(secs)[1] else ""))
 
 
 GITHUB_EDIT = "https://github.com/zinotino/febu-assembly/edit/main/ledger.txt"
@@ -1462,38 +1490,51 @@ def clip(s):
     return ADDRESS.sub(lambda m: m.group()[:7] + "…", s)
 
 
-def ledger_dict(title, secs, more=False):
-    """What the weekly page needs from ledger.txt: the members in order, each entry's writer, WRONG IF line count and
-    SEEN items, the open votes and the next entry number. No addresses. more=True adds each entry's headline, WRONG IF
-    clauses and page address (ledger.json)."""
-    names, st = member_names(secs), entry_states(secs)
-    items = entries(entries_section(secs)[1])
-    ents = []
-    for _, k, n, w, f in (it for it in items if it[0] == "entry"):
-        e = {"kind": k, "num": int(n), "writer": writer(w, f, names), "lines": len(wrong_if(f)), "empty": not checked(f),
-             "results": [[a, d, r, list(ls), list(sm), sc and list(sc)] for a, d, r, ls, sm, sc in results(f)],
-             "state": st[n]}
-        if more:
-            e.update(says=clip(text_of(f, HEADLINE[k])), wrong_if=[clip(c) for c in wrong_if(f)],
-                     url="%s/ledger.html#%s" % (SITE, anchor(k, n)))
-        ents.append(e)
-    return {"members": names, "adopted": adopted(secs), "entries": ents, "next": next_number(items),
-            "votes": [{"subject": v, "by": by} for v, by in open_votes(title, secs)]}
+def ledger_dict(title, secs, m, more=False):
+    """What the weekly page needs from ledger.txt: the members in order, each name's dated posts (for "active"), the
+    proposals, each question and its answers' posters, WRONG IF line count, results and state, rule 2's order, the
+    votes, the last LAST POSTS line and the next numbers. No addresses. more=True adds each answer's SAYS, WRONG IF
+    clauses, page address and the version-3 entry it copies, if any (ledger.json)."""
+    qs = []
+    for q in m["questions"]:
+        ans = []
+        for a in q["answers"]:
+            e = {"num": a["num"], "posters": sorted(a["posters"]), "lines": len(a["lines"]),
+                 "empty": not checked(a["fields"]), "start": a["start"], "state": a["state"],
+                 "results": [[n, d, w, list(ls), [list(i) for i in it], sc and list(sc)]
+                             for n, d, w, ls, it, sc in a["results"]]}
+            if more:
+                cp = COPIED.search(a["head"])
+                e.update(says=clip(text_of(a["fields"], "SAYS")), wrong_if=[clip(c) for c in a["lines"]],
+                         url="%s/ledger.html#%s" % (SITE, answer_id(q["num"], a["num"])),
+                         copies=cp and [cp.group(1).upper(), int(re.match(r"\d+", cp.group(2)).group())])   # agent.py runs that entry's scripts
+            ans.append(e)
+        qs.append({"num": q["num"], "opened": q["opened"], "from": q["from"], "asks": clip(q["asks"]),
+                   "state": q["state"], "answers": ans})
+    return {"members": m["members"], "adopted": m["adopted"], "as_of": m["as_of"], "posts": m["posts"],
+            "proposals": [{"num": p["num"], "who": p["who"], "date": p["date"], "asks": clip(p["asks"]),
+                           "yes": [list(y) for y in p["yes"]], "opened": p["opened"], "reach": p["reach"]}
+                          for p in m["proposals"]],
+            "questions": qs, "slot": [list(s) for s in m["slot"]], "next": m["next"],
+            "votes": [{"subject": v["subject"], "posted": v["posted"], "votes": [list(x) for x in v["votes"]],
+                       "passed": v["passed"]} for v in m["votes"]],
+            "open_votes": [{"subject": s, "day": d, "how": h} for s, d, h in open_votes(title, secs, m)],
+            "last": [m["last"][-1][0], m["last"][-1][1]] if m["last"] else None}
 
 
-def ledger_data(title, secs):
+def ledger_data(title, secs, m):
     """ledger_dict as JSON in the weekly page."""
     return ('<script type="application/json" id="ledger-data">%s</script>'
-            % json.dumps(ledger_dict(title, secs)).replace("</", "<\\/"))
+            % json.dumps(ledger_dict(title, secs, m)).replace("<", "\\u003c"))
 
 
-def ledger_json(title, secs, raw):
+def ledger_json(title, secs, raw, m):
     """ledger.json: the same state for an agent that reads data and not pages, with the hash of the text it came from.
     Links and addresses stay in ledger.txt, which wins wherever the two differ. Nothing can be posted back."""
     out = {"about": "A read-only index of ledger.txt, written by build.py. ledger.txt is the record and wins where they "
                     "differ. Links are not here, and an address is cut to its first 7 characters: read ledger.txt for them.",
            "ledger": {"url": SITE + "/ledger.txt", "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)},
-           "proposed": status(secs)[1], **ledger_dict(title, secs, more=True)}
+           "proposed": status(secs)[1], **ledger_dict(title, secs, m, more=True)}
     text = json.dumps(out, indent=1, ensure_ascii=False) + "\n"
     vetted("ledger.json", text.replace(out["ledger"]["sha256"], ""))   # a hash with no 0 in it (1 in 60) reads as an address
     return text
@@ -1504,126 +1545,135 @@ def step(n, key, head, inner, hidden=False):
             '%s</h2><div class="win-body">%s</div></section>' % (key, key, " hidden" if hidden else "", key, n, head, inner))
 
 
-def weekly_page(title, secs):
-    """The weekly turn (rule 6) as one page: paste the week's chat, and claims.js reads every CHECK and VOTE post in it
-    and lists the SEEN lines to add in the ledger's layout, the entries rule 3 would close, the votes against rule 7,
-    and every line it could not read. It never edits the file: the member pastes into ledger.txt on GitHub."""
+def weekly_page(title, secs, m):
+    """The weekly turn (rule 7) as one page: paste the week's chat, and claims.js reads every CHECK, PROPOSE, YES, VOTE
+    and ANSWER post in it and lists, in the ledger's layout, the SEEN items to add and the answers rule 4 would close,
+    the proposals and yeses to add and what rule 2 opens, the VOTES items and the count under rule 8, a LAST POSTS
+    line, and every line it could not read. It never edits the file: the member pastes into ledger.txt on GitHub."""
     doc = Doc(secs, "ledger.html")
-    out = lambda key: '<div id="%s"></div>' % key
+    out = lambda key: '<div id="%s"></div>' % key   # noqa: E731
     body = ('<div class="intro"><p>%s</p></div>' % doc.fmt(
-                "Each week one member, in Member order, checks both ways: every result posted in the chat that week is "
-                "in the file, and every SEEN line in the file has its post in the chat (rule 6). Paste the week's chat "
-                "below. This page reads the posts whose first line starts CHECK or VOTE, and shows you everything else "
-                "to read yourself. It changes nothing: you copy what it writes into ledger.txt.")
+                "Each week one member, in Member order, checks both ways: every result, proposal, yes and vote posted in "
+                "the chat that week is in the file, and every SEEN, PROPOSED and VOTES item in the file has its post in "
+                "the chat (rule 7). Paste the week's chat below. This page reads the posts whose first line starts "
+                "CHECK, PROPOSE, YES, VOTE or ANSWER, and shows you everything else to read yourself. It changes "
+                "nothing: you copy what it writes into ledger.txt.")
             + step(1, "w-paste", "paste the week's chat",
                    '<label class="f" for="chat">Everything posted in the chat this week, copied out of it</label>'
-                   '<textarea id="chat" rows="10" spellcheck="false" autocomplete="off" placeholder="CHECK FACT 8'
-                   + html.escape(CHAT) + 'HOLDS' + html.escape(CHAT) + 'lines 1,2,3' + html.escape(CHAT) + 'Laura'
-                   + html.escape(CHAT) + '2026-10-16&#10;Line 1: ...&#10;Saw: ..."></textarea>'
+                   '<textarea id="chat" rows="10" spellcheck="false" autocomplete="off" placeholder="CHECK Q1 ANSWER 1'
+                   + html.escape(CHAT) + 'HOLDS' + html.escape(CHAT) + 'lines 1,2' + html.escape(CHAT) + 'Laura'
+                   + html.escape(CHAT) + '2026-11-02&#10;Line 1: ...&#10;Saw: ...&#10;Items: all 1"></textarea>'
                    '<p class="hint">Read on your device. Nothing is sent or kept: reload the page and it is gone.</p>'
                    '<p class="msg" id="w-sum" role="status"></p>')
-            + step(2, "w-seen", "SEEN lines to add", out("w-seen-out"), hidden=True)
-            + step(3, "w-back", "SEEN lines with no post in what you pasted", out("w-back-out"), hidden=True)
-            + step(4, "w-close", "entries that would close (rule 3)", out("w-close-out"), hidden=True)
-            + step(5, "w-votes", "votes (rule 7)", out("w-votes-out"), hidden=True)
-            + step(6, "w-unread", "lines it could not read", out("w-unread-out"), hidden=True)
-            + step(7, "w-file", "put it in the file, then post the hash",
+            + step(2, "w-seen", "SEEN items and answers to add", out("w-seen-out"), hidden=True)
+            + step(3, "w-back", "SEEN items with no post in what you pasted", out("w-back-out"), hidden=True)
+            + step(4, "w-close", "answers that would close (rule 4)", out("w-close-out"), hidden=True)
+            + step(5, "w-props", "proposals and yeses, and what opens (rule 2)", out("w-props-out"), hidden=True)
+            + step(6, "w-votes", "votes (rule 8)", out("w-votes-out"), hidden=True)
+            + step(7, "w-last", "the LAST POSTS line", out("w-last-out"), hidden=True)
+            + step(8, "w-unread", "lines it could not read", out("w-unread-out"), hidden=True)
+            + step(9, "w-file", "put it in the file, then post the hash",
                    '<ol class="plain">' + ('<li>Not during a vote: until the vote closes the file does not change, so '
-                                           'this week stops at step 6 and you post what it would add.</li>'
+                                           'this week stops at step 8 and you post what it would add.</li>'
                                            if status(secs)[1] else '') + '<li><a href="%s" rel="noopener '
                    'noreferrer">Open ledger.txt on GitHub</a> and press '
-                   'the pencil (README, &ldquo;Editing in the browser&rdquo;).</li><li>Paste each block where step 2 '
+                   'the pencil (README, &ldquo;Editing in the browser&rdquo;).</li><li>Paste each block where its step '
                    'says, lined up like the lines around it. Add nothing else.</li><li>Commit to main (only Z can '
                    'today, KNOWN BUGS 1; anyone else gets &ldquo;Propose changes&rdquo;, which Z merges). The site '
                    'rebuilds in a minute or two; if the build stops, GitHub shows a red cross and the site keeps the '
                    'version before.</li><li>Open <a href="ledger.html#the-text">the ledger page</a> and copy the new '
-                   'SHA-256. Post it somewhere the group does not control, then in the chat.</li></ol>' % GITHUB_EDIT)
-            + ledger_data(title, secs))
+                   'SHA-256. Post it in the chat and in one public place outside it, naming the place.</li></ol>'
+                   % GITHUB_EDIT)
+            + ledger_data(title, secs, m))
     return page("weekly.html", "The weekly turn", "the weekly turn", "paste the week's chat, copy what goes in the file",
                 body, mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
-                description="The febu Assembly's weekly turn: paste the week's chat and get the SEEN lines, the entries "
-                "that would close and the vote counts, ready to copy into the ledger.")
+                description="The febu Assembly's weekly turn: paste the week's chat and get the SEEN items, proposals, "
+                "yeses and votes to add, the answers that would close and a LAST POSTS line, ready to copy into the "
+                "ledger.")
 
 
-def write_page(secs):
-    """The entry form: SAYS, LINK and one WRONG IF line per part of SAYS. claims.js lays it out as the ledger writes
-    entries and as a chat post. Facts only for now; a promise is written by hand from HOW AN ENTRY IS WRITTEN."""
+def write_page(secs, m):
+    """The answer form: SAYS, LINK and one WRONG IF line per part of SAYS, for the open question. claims.js lays it out
+    as the ledger writes answers and as a chat post."""
     doc = Doc(secs, "ledger.html")
-    names = member_names(secs)
-    n = next_number(entries(entries_section(secs)[1]))
-    how = next((b for h, b in secs if short(h) == "HOW AN ENTRY IS WRITTEN"), None)
+    how = next((b for h, b in secs if short(h) == "HOW A QUESTION IS WRITTEN"), None)
     if how is None:
-        sys.exit("the ledger has no HOW AN ENTRY IS WRITTEN section; the entry form shows it")
+        sys.exit("the ledger has no HOW A QUESTION IS WRITTEN section; the answer form shows it")
+    q = open_question(m)
+    n = len(q["answers"]) + 1 if q else 1
     wi = ('<li class="wi"><span class="n">1</span><input type="text" class="wi-t" autocomplete="off" aria-label="WRONG IF '
           'line 1" placeholder="the balance on 2026-10-14 was below 11.12 SOL"><button type="button" class="btn wi-x" '
           'aria-label="Remove WRONG IF line 1">Remove</button><p class="warn" hidden>No date in this line. If someone '
           'outside the group could make it true later, with a transfer or a new post, end it: &ldquo;by the end of '
           '2026-10-14&rdquo;.</p></li>')
-    form = ('<div class="wf" data-next="%d"><div class="cc-pair"><label class="f">Your name<select class="who">%s</select>'
-            '<input type="text" class="other" autocomplete="off" placeholder="Your name in the chat" '
-            'aria-label="Your name in the chat" hidden></label><p class="f num-note">This will be <b>fact %d</b>, the '
-            'number the ledger gives next. If someone posts an entry before yours, take the one after.</p></div>'
+    form = ('<div class="wf" data-q="%s" data-next="%d"><div class="cc-pair"><label class="f">Your name<select class="who">'
+            '%s</select><input type="text" class="other" autocomplete="off" placeholder="Your name in the chat" '
+            'aria-label="Your name in the chat" hidden></label><p class="f num-note">%s</p></div>'
             '<label class="f">SAYS<span class="q">one sentence</span><textarea class="says" rows="3" '
             'placeholder="Between 2026-09-29 and 2026-10-09 the wallet that created $FEBU bought no $FEBU."></textarea>'
-            '</label><label class="f">LINK<span class="q">full links anyone can open without asking you (rule 1), one '
+            '</label><label class="f">LINK<span class="q">full links anyone can open without asking you (rule 3), one '
             'to a line; a line of words says what to look for</span><textarea class="link" rows="3" spellcheck="false" '
             'placeholder="https://..."></textarea></label><fieldset class="cc-set wis-set"><legend>WRONG IF<span '
             'class="q">one line for each part of SAYS</span></legend><p class="prompt">Could a stranger make this '
             'true? End-date it.</p><ol class="wis">%s</ol><p class="acts"><button type="button" class="btn wi-add">'
             'Add a WRONG IF line</button></p></fieldset><p class="need" id="need-w"></p></div>'
-            % (n, name_options(names), n, wi))
-    copy = lambda cls, label: ('<p class="acts"><button type="button" class="btn primary %s" disabled '
+            % (q["num"] if q else "", n, name_options(m["members"]),
+               "This will be <b>answer %d to Q%d</b>, the number the ledger gives next. If someone posts an answer "
+               "before yours, take the one after." % (n, q["num"]) if q else
+               "<b>No question is open</b>, so there is nothing to answer yet.", wi))
+    copy = lambda cls, label: ('<p class="acts"><button type="button" class="btn primary %s" disabled '   # noqa: E731
                                'aria-describedby="need-w">%s</button></p>' % (cls, label))
     body = ('<div class="intro"><p>%s</p></div>' % doc.fmt(
-                "Write a fact the way the ledger writes them, and post it in the chat. Nobody approves it. Two members "
-                "other than you check it by opening the link (rule 3). Every part of SAYS needs a WRONG IF line that "
-                "would catch it; if SAYS claims more, cut SAYS.")
+                "Write an answer to the open question the way the ledger writes them, and post it in the chat. Nobody "
+                "approves it, and the pages show it as the Assembly's (rule 3). Three members who did not post or "
+                "change it check it by opening its links (rule 4). Every part of SAYS needs a WRONG IF line that would "
+                "catch it; if SAYS claims more, cut SAYS.")
             + step(1, "w-form", "write it", form)
             + step(2, "w-chat", "post it in the chat",
-                   '<pre class="post keep chat-out" aria-live="polite"></pre>%s<p class="hint">Paste it yourself: this page '
-                   'sends nothing. Until the first SEEN line you may change WRONG IF with a dated CHANGED line; after '
-                   'that, never.</p>' % copy("w-copy-chat", "Copy the chat post"))
+                   '<pre class="post keep chat-out" aria-live="polite"></pre>%s<p class="hint">Paste it yourself: this '
+                   'page sends nothing. Until its first SEEN item anyone may change it with a dated CHANGED line '
+                   '("CHANGED   Name, YYYY-MM-DD: what changed"); after that, never: post a new answer.</p>'
+                   % copy("w-copy-chat", "Copy the chat post"))
             + step(3, "w-file", "put it in ledger.txt",
                    '<pre class="post keep entry-out"></pre>%s<p class="hint">%s week\'s member: on '
-                   '<a href="%s" rel="noopener noreferrer">ledger.txt on GitHub</a>, press the pencil, paste it under '
-                   'THE ENTRIES above &ldquo;The next entry is number %d.&rdquo;, and raise that number by one (README, '
-                   'Add an entry). Only Z can commit there today (KNOWN BUGS 1); anyone else gets &ldquo;Propose '
-                   'changes&rdquo;, which Z merges.</p>' % (copy("w-copy-entry", "Copy the entry"), (
+                   '<a href="%s" rel="noopener noreferrer">ledger.txt on GitHub</a>, press the pencil, and paste it '
+                   'under the question, after its last answer (README, Add an answer). Only Z can commit there today '
+                   '(KNOWN BUGS 1); anyone else gets &ldquo;Propose changes&rdquo;, which Z merges.</p>'
+                   % (copy("w-copy-entry", "Copy the answer"), (
                        "Not during a vote: until the vote closes the file does not change, and your chat post waits in "
-                       "the chat. After it, the" if status(secs)[1] else "The"), GITHUB_EDIT, n))
-            + '<details class="win" id="how-written"><summary><span class="t">how an entry is written</span><span '
+                       "the chat. After it, the" if status(secs)[1] else "The"), GITHUB_EDIT))
+            + '<details class="win" id="how-written"><summary><span class="t">how a question is written</span><span '
               'class="q">in the ledger\'s own words</span></summary><div class="win-body">%s</div></details>'
             % doc.blocks(to_lines(how), 2))
-    return page("write.html", "Write an entry", "write an entry", "a fact, a link, and what would prove it wrong",
+    return page("write.html", "Write an answer", "write an answer", "what it says, a link, and what would prove it wrong",
                 body, mast=status_banner(secs, doc, brief=True), source=" from ledger.txt",
-                description="Write a fact for the febu Assembly's ledger: what it says, a link anyone can open, and what "
-                "would prove it wrong. Laid out for the ledger and the chat.")
+                description="Write an answer to the febu Assembly's open question: what it says, a link anyone can "
+                "open, and what would prove it wrong. Laid out for the ledger and the chat.")
 
 
 def main():
     raw = raw_text(LEDGER)
     text = raw.decode("utf-8").rstrip("\n")
     title, secs = sections(text)
-    steps = raw_text(STEPS).decode("utf-8").rstrip("\n")
-    ledger, archives = ledger_page(text, raw, steps)
+    m = model(secs)
+    how = raw_text(HOW).decode("utf-8").rstrip("\n")
+    ledger, archives = ledger_page(text, raw, m)
     pages = {
         "ledger.html": ledger,
         "tests.html": tests_page(raw_text(TESTS).decode("utf-8").rstrip("\n"), secs),
-        "how.html": how_page(raw_text(HOW).decode("utf-8").rstrip("\n"), secs),
-        "febu-assembly.html": assembly_page(title, secs, steps_fact(steps),
-                                            sections(raw_text(HOW).decode("utf-8").rstrip("\n"))[1]),
-        "people.html": people_page(secs),
-        "weekly.html": weekly_page(title, secs),
-        "write.html": write_page(secs),
+        "how.html": how_page(how, secs),
+        "febu-assembly.html": assembly_page(title, secs, sections(how)[1], m),
+        "weekly.html": weekly_page(title, secs, m),
+        "write.html": write_page(secs, m),
         "process.html": process_page(),
     }
-    index = ledger_json(title, secs, raw)   # before any file is written: a refusal must not leave the repo half built
+    index = ledger_json(title, secs, raw, m)   # before any file is written: a refusal must not leave the repo half built
     if LEDGER.read_bytes() != raw:   # the page prints the hash of the LF text, so serve exactly that
         LEDGER.write_bytes(raw)
     for name, out in pages.items():
         (ROOT / name).write_text(out, encoding="utf-8", newline="\n")
     (ROOT / "ledger.json").write_text(index, encoding="utf-8", newline="\n")
-    (ROOT / "assembly.ics").write_bytes(calendar_ics(open_votes(title, secs), member_names(secs), turn_start(secs),
+    (ROOT / "assembly.ics").write_bytes(calendar_ics(open_votes(title, secs, m), m["members"], turn_start(secs),
                                                      secs).encode("utf-8"))
     print("ledger.txt sha256 %s (%d bytes); %s; wrote %s" % (
         hashlib.sha256(raw).hexdigest(), len(raw), ", ".join("%s sha256 %s" % (p, d[:16]) for p, _, d in archives),

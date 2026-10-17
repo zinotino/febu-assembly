@@ -9,7 +9,8 @@
     python checks/resolve.py claimsim dry-run the fee claim from a stranger's address: does it need the creator to sign?
     python checks/resolve.py --test   offline checks of the pure parts
 
-Reads ledger.txt and checks/common.py, so it tests what the ledger says. Public node, no key, read-only. Sends nothing:
+Reads version 3's facts through checks/common.py (from ledger.txt, or once version 5 is adopted from its archive copy,
+archive/08_CLAIMS_LEDGER_v3.txt), so it tests what the ledger says. Public node, no key, read-only. Sends nothing:
 claimsim and door2 only ask the node to dry-run a transaction. Posts nothing. An incomplete read is never HOLDS: it says
 CAN'T TELL. A person reads the output, opens a link by hand, and posts.
 """

@@ -1,60 +1,34 @@
-"""lint.py's rules, offline: python checks/test_lint.py (or pytest). Each test changes one thing in a small ledger and
-names the one rule that must catch it; two run on the real ledger and its archive."""
-import re
+"""lint.py's rules, offline: python checks/test_lint.py (or pytest). Each test changes one thing in the worked version-5
+ledger (checks/fixtures/ledger_v5_worked.txt) and names the one rule that must catch it; one runs the day of adoption,
+the frozen version-5 text against version 3's archive copy."""
+import shutil
 import tempfile
 from pathlib import Path
 
-from lint import CANT, FAIL, ROOT, WARN, keeps, lint, read, sha256
+from lint import CANT, FAIL, OK, ROOT, WARN, keeps, lint, read, sha256
 
-TODAY = "2026-11-30"
+FIXTURES = ROOT / "checks" / "fixtures"
+ARCHIVE = ROOT / "archive"
+FROZEN = read((FIXTURES / "ledger_v5.txt").read_bytes())
+WORKED = read((FIXTURES / "ledger_v5_worked.txt").read_bytes())
+V3 = read((ARCHIVE / "08_CLAIMS_LEDGER_v3.txt").read_bytes())
+TODAY = "2026-11-08"
 NOWHERE = Path(__file__).parent / "no-such-archive"
-NOBODY = "    SEEN      nobody yet"
-WRONG_IF = "    WRONG IF  it is not there, or it moved; or it is gone.\n"
-BASE = """TEST LEDGER (version 0)
-
-STATUS
-  {status}
-
-WORDS USED HERE
-  Member   Ann, Bo, Cy, Zed. Adding a member works like a rule change.
-
-THE RULES
-  1. The list holds promises and facts.
-  2. Nothing is removed or rewritten.
-
-THE ENTRIES
-
-  FACT 1. (Zed, 2026-10-12)
-    SAYS      One thing.
-    WRONG IF  it is not there, or it moved; or it is gone.
-{seen1}
-
-  PROMISE 2. (Ann, 2026-10-12)
-    WILL      Do a thing.
-    BY        10 days after this version is adopted under rule 7.
-    KNOWN BY  the file.
-    IF BROKEN none.
-{seen2}
-{more}
-  The next entry is number {next}.
-
-CHANGES TO THE RULES
-  2026-10-15. Clean start.{changes}
-"""
-THIRD = "\n  FACT 3. (Bo, 2026-10-24)\n    SAYS      A third thing.\n    WRONG IF  it is not.\n    SEEN      nobody yet\n"
 
 
-def make(status="Adopted on 2026-10-22 under rule 7.", seen1=NOBODY, seen2=NOBODY, more="", changes="", next=None):
-    return BASE.format(status=status, seen1=seen1, seen2=seen2, more=more, changes=changes,
-                       next=next or 3 + more.count("\n  FACT ") + more.count("\n  PROMISE "))
+def swap(text, old, new=""):
+    assert text.count(old) == 1, old
+    return text.replace(old, new)
 
 
-def item(name, date, word="HOLDS", lines="1, 2, 3"):
-    return "- %s, %s: %s%s. Saw: it. New: a date. 3 minutes." % (name, date, word, " on lines " + lines if lines else "")
-
-
-def seen(*items):
-    return "    SEEN      " + "\n              ".join(items)
+# The worked ledger a week earlier: before Q2's second answer, Ksizzle's SEEN item under its first, Crypto Fish's
+# vote and the first LAST POSTS line.
+ANSWER2 = WORKED[WORKED.index("    ANSWER 2.   (CrypticK"):WORKED.index("  The next question is Q3.")]
+KSIZZLE = ('                - Ksizzle, 2026-11-07: HOLDS on lines 1, 2. Items: line 1, all 24; line 2, all\n'
+           '                  1. Saw: "mockery" is not "mock". New: page 25 is in verse.\n')
+VOTE = "    - Crypto Fish, 2026-11-08: YES.\n"
+LAST = WORKED[WORKED.index("  - 2026-11-08: CrypticK"):WORKED.index("\nWHEN THIS HAS FAILED")]
+EARLIER = swap(swap(swap(swap(WORKED, ANSWER2), KSIZZLE), VOTE), LAST, "  None yet.\n")
 
 
 def codes(rows, status):
@@ -65,224 +39,245 @@ def row(rows, code):
     return next(what for _, what in rows if what.startswith(code + " "))
 
 
-def archived(prev, name="v0.txt"):
-    """A CHANGES TO THE RULES line that keeps prev as archive/name."""
-    return "\n  2026-10-23. A change. The text before it is kept word for word in\n  archive/%s SHA-256\n  %s" % (
-        name, sha256(prev))
+def run(new, prev=None, archive=ARCHIVE, today=TODAY):
+    return lint(new, prev, archive, today)
 
 
-def with_archive(prev, test):
+def with_archive(prev, new):
+    """new with a CHANGES TO THE RULES line that keeps prev as archive/v0.txt, linted against prev."""
+    line = "\n  2026-11-08. A change. The text before it is kept word for word in\n  archive/v0.txt SHA-256\n  %s" % sha256(prev)
     with tempfile.TemporaryDirectory() as d:
+        for f in ARCHIVE.glob("*.txt"):
+            shutil.copy(f, d)
         (Path(d) / "v0.txt").write_bytes(prev.encode())
-        return test(Path(d))
+        return run(new.rstrip("\n") + line + "\n", prev, Path(d))
 
 
-def test_real_ledger_and_its_archive():
-    real = read((ROOT / "ledger.txt").read_bytes())
-    for prev in [real] + [read(p.read_bytes()) for p in sorted((ROOT / "archive").glob("*.txt"))]:
-        rows = lint(real, prev, ROOT / "archive", TODAY)
-        assert not codes(rows, FAIL) and not codes(rows, CANT), rows
+def test_the_fixture_is_the_frozen_text():
+    assert sha256(FROZEN) == "6108f6e3140759b80f30b52c54c7214ea6641bb7423bb4fefd05e896141fd0a4"
+    assert sha256(V3) == "d3e1765863039f24a8c38ddcdd72f1034cb0252b1302d2214e154eef002984f7"
 
 
-def test_adoption_turn_rehearsed_on_the_real_ledger():
-    """AFTER_VOTE_20261022.md in small: STATUS rewritten and the voted text archived; fact 1's LINK changed with its
-    CHANGED line, then its first checks; two checks of fact 3; a new fact 10, and the next number raised."""
-    real = read((ROOT / "ledger.txt").read_bytes())
-    new = re.sub(r"(?m)^STATUS\n(?:  .*\n)+", "STATUS\n  Adopted on 2026-10-22 under rule 7. Posts made before "
-                 "2026-10-23 were the dry run.\n", real, count=1)
-    head, f1 = new.split("  FACT 1.", 1)
-    f1, tail = f1.split("  FACT 2.", 1)
-    f1 = re.sub(r"(?m)^(    LINK      ).*$", r"\1https://solscan.io/account/6PeGko4hvJn8EioYxKera24TrKMfkGUVM7egzrRwNVTo",
-                f1, count=1)
-    f1 = f1.replace(NOBODY, "    CHANGED   2026-10-23, before any check: the LINK names the $FEBU account.\n" +
-                    seen(item("Laura", "2026-10-23"), item("Merc", "2026-10-25")), 1)
-    head3, f3 = tail.split("  FACT 3.", 1)
-    f3 = f3.replace(NOBODY, seen(item("Laura", "2026-10-23", lines="1, 2"), item("Ksizzle", "2026-10-24", lines="1, 2")), 1)
-    new = head + "  FACT 1." + f1 + "  FACT 2." + head3 + "  FACT 3." + f3
-    new = new.replace("  The next entry is number 10.", "  FACT 10. (Laura, 2026-10-24)\n    SAYS      A new thing.\n"
-                      "    LINK      https://example.org\n    WRONG IF  it is not there.\n    SEEN      nobody yet\n\n"
-                      "  The next entry is number 11.")
-    new = new.rstrip("\n") + archived(real, "08_CLAIMS_LEDGER_v3-voted.txt") + "\n"
+def test_adoption_day_the_frozen_text_replaces_version_3():
+    rows = run(FROZEN, V3, today="2026-10-30")
+    assert not codes(rows, FAIL) and not codes(rows, CANT) and not codes(rows, WARN), rows
+    assert "archive/08_CLAIMS_LEDGER_v3.txt" in row(rows, "I1") and "replaces it" in row(rows, "I1")
+
+
+def test_adoption_day_needs_version_3_kept():
     with tempfile.TemporaryDirectory() as d:
-        arch = Path(d)
-        for p in (ROOT / "archive").glob("*.txt"):
-            (arch / p.name).write_bytes(p.read_bytes())
-        (arch / "08_CLAIMS_LEDGER_v3-voted.txt").write_bytes(real.encode())
-        rows = lint(new, real, arch, TODAY)
-        assert not codes(rows, FAIL) and not codes(rows, WARN), rows
-        assert "2 first SEEN items" in row(rows, "I1") and "next is 11" in row(rows, "I2")
-        (arch / "08_CLAIMS_LEDGER_v3-voted.txt").unlink()
-        assert codes(lint(new, real, arch, TODAY), FAIL) == ["I1", "I9"]
+        for f in ARCHIVE.glob("*.txt"):
+            if f.name != "08_CLAIMS_LEDGER_v3.txt":
+                shutil.copy(f, d)
+        rows = run(FROZEN, V3, Path(d), "2026-10-30")
+    assert codes(rows, FAIL) == ["I9"] and codes(rows, CANT) == ["I1"]
 
 
-def test_a_rewrite_needs_the_earlier_version_archived_and_a_changed_line():
-    prev = make()
-    reworded = prev.replace("One thing.", "One other thing.")
-    assert codes(lint(reworded, prev, NOWHERE, TODAY), FAIL) == ["I1", "I5"]
-
-    def archived_only(arch):
-        return codes(lint(make(changes=archived(prev)).replace("One thing.", "One other thing."), prev, arch, TODAY), FAIL)
-    assert with_archive(prev, archived_only) == ["I5"]                            # no CHANGED line
-
-    def both(arch):
-        new = make(changes=archived(prev)).replace("One thing.", "One other thing.").replace(
-            WRONG_IF, WRONG_IF + "    CHANGED   2026-10-23, before any check: reworded.\n")
-        rows = lint(new, prev, arch, TODAY)
-        return not codes(rows, FAIL) and "keeps it as archive/v0.txt" in row(rows, "I1")
-    assert with_archive(prev, both)
+def test_a_week_of_growth_passes():
+    rows = run(WORKED, EARLIER)
+    assert not codes(rows, FAIL) and not codes(rows, CANT), rows
+    assert "only grew" in row(rows, "I1")
+    assert codes(rows, WARN) == ["I3"] and "Zurandol's script" in row(rows, "I3")   # Ksizzle ran a poster's script
 
 
-def test_rule_text_gains_lines_only_in_changes_to_the_rules():
-    prev = make()
-    assert codes(lint(prev.replace("rewritten.\n", "rewritten.\n     Except by Zed.\n"), prev, NOWHERE, TODAY), FAIL) == ["I1"]
-    assert not codes(lint(make(changes="\n  2026-10-30. A dated line."), prev, NOWHERE, TODAY), FAIL)
-
-
-def test_removed_keeps_the_rest_of_its_line():
-    prev = make(status="Adopted on 2026-10-22 under rule 7. Ann's phone is 555 0100.")
-    rows = lint(prev.replace("555 0100", "[removed]"), prev, NOWHERE, TODAY)
-    assert not codes(rows, FAIL) and "1 [removed]" in row(rows, "I1")
-    rules = prev.replace("  1. The list holds promises and facts.\n  2. Nothing is removed or rewritten.\n", "  [removed]\n")
-    assert codes(lint(rules, prev, NOWHERE, TODAY), FAIL) == ["I1"]                # a [removed] cannot stand for lines
-    says = prev.replace("    SAYS      One thing.", "    SAYS      [removed]")
-    assert "I1" in codes(lint(says, prev, NOWHERE, TODAY), FAIL)                   # nor for a whole field
-    assert not keeps("[removed]", "anything") and keeps("a [removed] c", "a b c") and not keeps("a [removed] c", "a  c")
-
-
-def test_removed_cannot_erase_a_check():
-    prev = make(seen1=seen(item("Ann", "2026-10-23"), item("Bo", "2026-10-24")))
-    wiped = make(seen1="    SEEN      [removed]\n              [removed]")
-    assert "I5" in codes(lint(wiped, prev, NOWHERE, TODAY), FAIL)
+def test_the_worked_ledger_against_itself():
+    rows = run(WORKED, WORKED)
+    assert not codes(rows, FAIL) and not codes(rows, CANT), rows
+    assert "3 proposal(s), 2 question(s)" in row(rows, "I2")
 
 
 def test_the_first_seen_item_replaces_nobody_yet():
-    prev = make()
-    for seen1 in (seen(item("Ann", "2026-10-23"), item("Bo", "2026-10-24")),
-                  "    SEEN\n              " + item("Ann", "2026-10-23")):            # the label alone on its line
-        rows = lint(make(seen1=seen1), prev, NOWHERE, TODAY)
-        assert not codes(rows, FAIL) and not codes(rows, WARN), rows
-        assert "1 first SEEN item," in row(rows, "I1")
+    first = swap(WORKED, "      SEEN      nobody yet", "      SEEN      - Merc, 2026-11-08: HOLDS on lines 1, 2. "
+                 "Items: all 1. Saw: 40 pages.\n                  New: page 30.")
+    rows = run(first, WORKED)
+    assert not codes(rows, FAIL) and "1 first SEEN item," in row(rows, "I1")
 
 
-def test_more_seen_items_on_a_checked_entry():
-    prev = make(seen1=seen(item("Ann", "2026-10-23")))
-    assert not codes(lint(make(seen1=seen(item("Ann", "2026-10-23"), item("Bo", "2026-10-24"))), prev, NOWHERE, TODAY),
-                     FAIL)
+def test_rewrites_fail_unless_the_earlier_text_is_archived():
+    for old, new in (("Adopted on 2026-10-30, in place", "Adopted on 2026-10-29, in place"),           # STATUS
+                     ("    - Merc, 2026-11-02: YES.", "    - Merc, 2026-11-02: OBJECT."),             # a vote
+                     ("Merc 2026-10-29, Ksizzle", "Ksizzle"),                                          # a yes
+                     ("P3. Ksizzle, 2026-11-01: In the scripture", "P3. Ksizzle, 2026-11-01: In the copy"),
+                     ("Ksizzle 2026-11-07, Laura", "Ksizzle 2026-11-06, Laura"),                       # LAST POSTS
+                     ("in one public place outside", "in two public places outside"),                 # a rule
+                     ("    ASKS        In the scripture", "    ASKS        In the copy"),                # a question
+                     ("       Opened as Q1.\n", "")):                                                  # an opening
+        changed = swap(WORKED, old, new)
+        rows = run(changed, WORKED)
+        assert "I1" in codes(rows, FAIL), (old, rows)
+        rows = with_archive(WORKED, changed)
+        assert "I1" not in codes(rows, FAIL) and "keeps it as archive/v0.txt" in row(rows, "I1"), (old, rows)
 
 
-def test_no_earlier_version_cannot_tell():
-    assert codes(lint(make(), None, NOWHERE, TODAY), CANT) == ["I1"]
+def test_lines_may_be_added_where_the_file_grows():
+    for old, new in (("  The next proposal is P4.", "  P4. Laura, 2026-11-08: Did it?\n  The next proposal is P5."),
+                     (VOTE, VOTE + "    - Laura, 2026-11-08: YES.\n"),
+                     ("  2026-10-30. Version 5.", "  2026-11-08. A dated line.\n  2026-10-30. Version 5.")):
+        rows = run(swap(WORKED, old, new), WORKED)
+        assert not codes(rows, FAIL), (old, rows)
+    rows = run(swap(WORKED, "  Member   CrypticK", "  Member   Ann, CrypticK"), WORKED)
+    assert "I1" in codes(rows, FAIL)                                                 # but not in the rules
 
 
-def test_numbering_and_the_next_number():
-    new = make().replace("PROMISE 2.", "PROMISE 3.").replace("number 3.", "number 4.")
-    assert codes(lint(new, new, NOWHERE, TODAY), FAIL) == ["I2"]
-    stale = make(more=THIRD, next=3)                                               # an entry added, the number not raised
-    assert codes(lint(stale, make(), NOWHERE, TODAY), FAIL) == ["I2"]
-    rows = lint(make(more=THIRD), make(), NOWHERE, TODAY)                          # added and raised: nothing rewritten
-    assert not codes(rows, FAIL) and "only grew" in row(rows, "I1")
+def test_removed_keeps_the_rest_of_its_line():
+    for old, new in (("23,843,803.61 tokens, in one", "[removed] tokens, in one"),            # a checked answer's SAYS
+                     ('"mockery" on page 9. New: page 9 is the longest.',                     # a SEEN item past Saw:
+                      '"mockery" on [removed]. New: page 9 is the longest.'),
+                     ("change my mind: a week with two", "change my mind: [removed] with two")):   # an objection
+        rows = run(swap(WORKED, old, new), WORKED)
+        assert not codes(rows, FAIL), (new, rows)
+    assert "1 [removed]" in row(run(swap(WORKED, "change my mind: a week", "change my mind: [removed]"), WORKED), "I1")
+    for old, new in (("(Laura, 2026-10-31, version 3's fact 2)", "([removed], 2026-10-31, version 3's fact 2)"),
+                     ("- CrypticK, 2026-11-05: HOLDS", "- [removed], 2026-11-05: HOLDS"),   # who closed it
+                     ("      CHANGED   Laura, 2026-11-05:", "      CHANGED   [removed], 2026-11-05:"),
+                     ("  P1. Laura, 2026-10-24:", "  P1. [removed], 2026-10-24:"),
+                     ("Yes: Merc 2026-10-29,", "Yes: [removed] 2026-10-29,"),
+                     ("    - Merc, 2026-11-02: YES.", "    - [removed], 2026-11-02: YES."),
+                     ("three members other than its posters", "three members [removed] its posters"),   # a rule
+                     ("in place of version 3, which", "in place of [removed], which")):                  # STATUS
+        rows = run(swap(WORKED, old, new), WORKED)
+        assert "I1" in codes(rows, FAIL), (new, rows)   # rule 4 counts by names and dates; the rules are no one's
+    rows = run(swap(WORKED, "      SAYS      In the copy Z saved, none of the words jest, hollow, false, mock, laugh,\n"
+                    "                theater, spectacle or debt is on scripture pages 1-24, and jest and hollow\n"
+                    "                are both on page 25.\n", "      SAYS      [removed]\n"), WORKED)
+    assert "I5" in codes(rows, FAIL)                                                 # not a whole field
+    assert not keeps("[removed]", "anything") and keeps("a [removed] c", "a b c") and not keeps("a [removed] c", "a  c")
 
 
-def test_the_writer_cannot_check():
-    for name in ("Zed", "zed"):
-        new = make(seen1=seen(item(name, "2026-10-23")))
-        assert codes(lint(new, new, NOWHERE, TODAY), FAIL) == ["I3"], name
+def test_a_checked_answer_never_changes():
+    for old, new in (("are both on page 25.", "are both on page 26."),                              # its SAYS
+                     ("                it through 2026-10-14.\n",                                    # a note set off
+                      "                it through 2026-10-14.   (withdrawn: it bought again)\n"),
+                     ('"mockery" on page 9. New: page 9 is the longest.', '"mockery" on page 8. New: x.'),  # a SEEN item
+                     (KSIZZLE, "")):                                                                 # one is gone
+        rows = run(swap(WORKED, old, new), WORKED)
+        assert "I5" in codes(rows, FAIL), (old, rows)
+    late = swap(WORKED, "      CHANGED   Laura, 2026-11-05: WRONG IF now names page 25.\n",
+                "      CHANGED   Laura, 2026-11-05: WRONG IF now names page 25.\n"
+                "      CHANGED   Laura, 2026-11-08: a second change.\n")
+    assert "I5" in codes(run(late, WORKED), FAIL)
+
+
+def test_an_unchecked_answer_changes_with_a_changed_line():
+    says = swap(WORKED, "and laugh each appear on at least 40", "and laugh each appear on at least 30")
+    assert "I5" in codes(run(says, WORKED), FAIL)
+    said = swap(says, "      SEEN      nobody yet", "      CHANGED   Laura, 2026-11-08: 40 was 30.\n      SEEN      nobody yet")
+    assert codes(run(said, WORKED), FAIL) == ["I1"]                    # a rewrite: the earlier text must be kept too
+    assert not codes(with_archive(WORKED, said), FAIL)
+
+
+def test_changed_lines_name_who_and_when():
+    rows = run(swap(WORKED, "CHANGED   Laura, 2026-11-05:", "CHANGED   2026-11-05:"))
+    assert codes(rows, FAIL) == ["I5"] and "Name, YYYY-MM-DD" in row(rows, "I5")
+    rows = run(swap(WORKED, "CHANGED   Laura, 2026-11-05:", "CHANGED   Laura, 2026-11-07:"))
+    assert codes(rows, FAIL) == ["I5"] and "after its first SEEN item" in row(rows, "I5")
+
+
+def test_numbering():
+    for old, new in (("  The next proposal is P4.", "  The next proposal is P5."),
+                     ("  The next question is Q3.", "  The next question is Q4."),
+                     ("    ANSWER 2.   (CrypticK", "    ANSWER 3.   (CrypticK"),
+                     ("  Q2. (opened 2026-11-05, from P3)", "  Q3. (opened 2026-11-05, from P3)"),
+                     ("       Opened as Q2.\n", ""),
+                     ("  Q2. (opened 2026-11-05, from P3)", "  Q2. (opened 2026-11-05)")):
+        rows = run(swap(WORKED, old, new))
+        assert "I2" in codes(rows, FAIL), (old, rows)
+
+
+def test_rule_2_opens_on_the_day_of_the_third_yes():
+    late = swap(WORKED, "  Q2. (opened 2026-11-05, from P3)", "  Q2. (opened 2026-11-06, from P3)")
+    rows = run(late)
+    assert "I2" in codes(rows, FAIL) and "rule 2 opens P3 on 2026-11-05" in row(rows, "I2")
+    for old, new in (("Laura 2026-11-03, Crypto Fish 2026-11-03.", "Laura 2026-11-03, Crypto Fish 2026-11-06."),):
+        assert "I2" in codes(run(swap(WORKED, old, new)), FAIL)                      # the file's 11-05 is now early
+        assert not codes(run(swap(late, old, new)), FAIL)                            # and 11-06 is right
+    wrong = swap(swap(WORKED, "from P3)", "from P2)"), "       Opened as Q2.\n", "")
+    wrong = swap(wrong, "       Yes: Laura 2026-11-01, CrypticK 2026-11-02.\n",
+                 "       Yes: Laura 2026-11-01, CrypticK 2026-11-02.\n       Opened as Q2.\n")
+    assert "rule 2 opens P3 on 2026-11-05" in row(run(wrong), "I2")                  # P2 never had three yeses
+
+
+def test_an_opening_the_file_lacks_is_flagged():
+    q2 = WORKED[WORKED.index("\n  Q2. (opened"):WORKED.index("  The next question is Q3.")]
+    lacks = swap(swap(swap(WORKED, q2, "\n"), "       Opened as Q2.\n"), "The next question is Q3.", "The next question is Q2.")
+    rows = run(lacks)
+    assert not codes(rows, FAIL), rows
+    assert codes(rows, WARN) == ["I2", "I3"] and "rule 2 opens P3 as Q2 on 2026-11-05" in row(rows, "I2")
+
+
+def test_nothing_opens_before_adoption():
+    proposed = swap(WORKED, "  Adopted on 2026-10-30,", "  Proposed on 2026-10-30,")
+    rows = run(proposed)
+    assert codes(rows, FAIL) == ["I2", "I4"], rows
+
+
+def test_a_posters_result_counts_for_nothing():
+    rows = run(swap(WORKED, "- Crypto Fish, 2026-11-06: HOLDS", "- Merc, 2026-11-06: HOLDS"))
+    assert "I3" in codes(rows, WARN) and "Merc's SEEN item of 2026-11-06 is by one of its posters" in "".join(
+        w for _, w in rows)
+    rows = run(swap(WORKED, "checks/resolve.py fact2 by Ksizzle via laptop", "checks/resolve.py fact2 by Laura via laptop"))
+    assert "Laura's script" in "".join(w for _, w in rows)
 
 
 def test_dates():
-    for status, date in (("Proposed by Zed.", "2026-10-16"),                     # the vote week: the dry run
-                         ("Adopted on 2026-10-22 under rule 7.", "2026-11-00"),  # no such day: state() skips it
-                         ("Adopted on 2026-10-22 under rule 7.", "2026-10-22"),  # the day of adoption itself
-                         ("Adopted on 2026-10-22 under rule 7.", "2026-12-01")):  # after today
-        new = make(status=status, seen1=seen(item("Ann", date)))
-        assert codes(lint(new, new, NOWHERE, TODAY), FAIL) == ["I4"], (status, date)
-    early = make(seen2=seen(item("Bo", "2026-10-31", "KEPT", None)))             # BY is 2026-11-01
-    assert codes(lint(early, early, NOWHERE, TODAY), FAIL) == ["I4"]
-    on_time = make(seen2=seen(item("Bo", "2026-11-01", "KEPT", None)))
-    assert not codes(lint(on_time, on_time, NOWHERE, TODAY), FAIL)
-    undated = make(status="Adopted under rule 7.", seen1=seen(item("Ann", "2026-10-23")))
-    assert codes(lint(undated, undated, NOWHERE, TODAY), CANT) == ["I4"]
-    for status in ("Adopted on 2026-13-45 under rule 7.", "Adopted on 9999-12-31 under rule 7."):   # no crash
-        odd = make(status=status, seen2=seen(item("Bo", "2026-11-01", "KEPT", None)))
-        assert "I4" in codes(lint(odd, odd, NOWHERE, TODAY), FAIL) + codes(lint(odd, odd, NOWHERE, TODAY), CANT)
+    rows = run(swap(WORKED, "- Ksizzle, 2026-11-02: HOLDS", "- Ksizzle, 2026-10-30: HOLDS"))   # one that closed nothing
+    assert codes(rows, FAIL) == ["I4"] and "dated before 2026-10-31" in row(rows, "I4")
+    rows = run(swap(WORKED, "- Merc, 2026-11-01: HOLDS", "- Merc, 2026-10-30: HOLDS"))
+    assert codes(rows, FAIL) == ["I2", "I4"]                       # one that did: Q1 stays open, so Q2 cannot open
+    rows = run(swap(WORKED, "- Crypto Fish, 2026-11-06: HOLDS", "- Crypto Fish, 2026-11-31: HOLDS"))
+    assert "I4" in codes(rows, FAIL) and "not a date on the calendar" in row(rows, "I4")
+    rows = run(WORKED, today="2026-11-07")
+    said = "".join(w for _, w in rows)
+    assert codes(rows, FAIL) == ["I4"] and "Crypto Fish's vote is dated 2026-11-08, after today" in said
+    assert "LAST POSTS: the line is dated 2026-11-08" in said and "Q2 answer 2: its header is dated 2026-11-08" in said
+    assert not codes(run(WORKED, today="2026-11-08"), FAIL)                         # the control: the file's own last day
+    late = swap(WORKED, "  - 2026-11-08: CrypticK 2026-11-08,", "  - 2027-06-01: CrypticK 2026-11-08,")
+    assert "LAST POSTS: the line is dated 2027-06-01" in row(run(late), "I4")      # it would make Q2 CAN'T TELL
+    for old, new in (("  P1. Laura, 2026-10-24:", "  P1. Laura, 2026-10-34:"),
+                     ("posted 2026-11-01, SHA-256", "posted 2026-02-30, SHA-256")):
+        assert "is not a date on the calendar" in row(run(swap(WORKED, old, new)), "I4"), new
+    no_day = swap(WORKED, "  Adopted on 2026-10-30,", "  Taken up on 2026-10-30,")
+    assert "I4" in codes(run(no_day), CANT)
 
 
-def test_a_checked_entry_never_changes():
-    prev = make(seen1=seen(item("Ann", "2026-10-23")))
-    late = prev.replace(WRONG_IF, WRONG_IF + "    CHANGED   2026-10-24, before any check: it.\n")
-    assert codes(lint(late, prev, NOWHERE, TODAY), FAIL) == ["I5"]               # added, and dated after the item
-    backdated = prev.replace(WRONG_IF, WRONG_IF + "    CHANGED   2026-10-20, before any check: it.\n")
-    assert codes(lint(backdated, prev, NOWHERE, TODAY), FAIL) == ["I5"]          # the date says before; the file says after
-    widened = prev.replace(WRONG_IF, WRONG_IF + "              ; or it was never there.\n")
-    assert "I5" in codes(lint(widened, prev, NOWHERE, TODAY), FAIL)              # a line slipped into WRONG IF
-
-    def rewritten(arch):                                                         # an archived copy does not license it
-        new = make(seen1=seen(item("Ann", "2026-10-23")), changes=archived(prev)).replace("One thing.", "Two things.")
-        rows = lint(new, prev, arch, TODAY)
-        return codes(rows, FAIL) == ["I5"] and "its SAYS changed" in row(rows, "I5")
-    assert with_archive(prev, rewritten)
-
-    both = make(seen1=seen(item("Ann", "2026-10-23")), seen2=seen(item("Bo", "2026-11-01", "KEPT", None)))
-
-    def gone(arch):                                                              # nor does it license deleting it
-        new = make(seen1=seen(item("Ann", "2026-10-23")), changes=archived(both))
-        new = new.replace(new[new.index("  PROMISE 2."):new.index("\n\n  The next")], "").replace("number 3.", "number 2.")
-        rows = lint(new, both, arch, TODAY)
-        return codes(rows, FAIL) == ["I5"] and "PROMISE 2 had a SEEN item" in row(rows, "I5")
-    assert with_archive(both, gone)
-
-
-def test_changed_after_the_first_check_in_one_version():
-    new = make(seen1=seen(item("Ann", "2026-10-23"))).replace(
-        WRONG_IF, WRONG_IF + "    CHANGED   2026-10-25, before any check: reworded.\n")
-    assert codes(lint(new, None, NOWHERE, TODAY), FAIL) == ["I5"]
-
-
-def test_unreadable_seen_item_is_left_to_a_person():
-    new = make(seen1="    SEEN      Ann, 2026-10-23: saw it. HOLDS.")
-    rows = lint(new, new, NOWHERE, TODAY)
-    assert codes(rows, WARN) == ["I6"] and not codes(rows, FAIL)
-    for slot in ("Items: twenty pages.", "Script: mine.py."):   # a misspelt slot could hide a sample: a person reads it
-        new = make(seen1=seen(item("Ann", "2026-10-23").replace(". Saw:", ". %s Saw:" % slot)))
-        assert codes(lint(new, new, NOWHERE, TODAY), WARN) == ["I6"], slot
-    new = make(seen1=seen(item("Ann", "2026-10-23").replace(". Saw:", ". Items: line 1, all 44. Script: x.py by Bo. Saw:")))
-    assert not codes(lint(new, new, NOWHERE, TODAY), WARN)
+def test_unreadable_items_are_left_to_a_person():
+    rows = run(swap(WORKED, "                - Zurandol, 2026-11-06: DOESN'T HOLD on line 1. Items: line 1, all 24. Saw:",
+                    "                - Zurandol said it does not hold. Items: line 1, all 24. Saw:"))
+    assert codes(rows, WARN) == ["I3", "I6"] and not codes(rows, FAIL)
+    rows = run(swap(WORKED, "Yes: Laura 2026-11-01, CrypticK", "Yes: Laura said yes, CrypticK"))
+    assert "I6" in codes(rows, WARN) and "Laura said yes" in row(rows, "I6")
 
 
 def test_results_and_lines():
-    for seen1, seen2 in ((seen(item("Ann", "2026-10-23", lines="4")), NOBODY),           # fact 1 has three lines
-                         (seen(item("Ann", "2026-10-23", lines=None)), NOBODY),          # a fact's check names lines
-                         (seen(item("Ann", "2026-10-23", "KEPT")), NOBODY),              # a fact's result is HOLDS
-                         (NOBODY, seen(item("Bo", "2026-11-02", "KEPT", lines="1")))):   # a promise has no lines
-        new = make(seen1=seen1, seen2=seen2)
-        assert codes(lint(new, new, NOWHERE, TODAY), FAIL) == ["I7"], (seen1, seen2)
-
-
-def test_unpaid_bond_then_a_new_promise():
-    more = "\n  PROMISE 3. (Ann, 2026-11-20)\n    WILL      Another.\n    BY        2026-12-20\n    SEEN      nobody yet\n"
-    new = make(seen2=seen(item("Bo", "2026-11-02", "BROKEN", None)) + "\n    UNPAID    2026-11-09: not burned.",
-               more=more)
-    rows = lint(new, new, NOWHERE, TODAY)
-    assert codes(rows, CANT) == ["I8"] and "PROMISE 3" in row(rows, "I8") and not codes(rows, FAIL), rows
-    assert row(lint(make(more=more), None, NOWHERE, TODAY), "I8").startswith("I8 nobody")
+    for old, new in (("- Crypto Fish, 2026-11-06: HOLDS on lines 1, 2.", "- Crypto Fish, 2026-11-06: KEPT on lines 1, 2."),
+                     ("- Zurandol, 2026-11-06: DOESN'T HOLD on line 1.", "- Zurandol, 2026-11-06: DOESN'T HOLD on line 3."),
+                     ("- Zurandol, 2026-11-06: DOESN'T HOLD on line 1.", "- Zurandol, 2026-11-06: DOESN'T HOLD.")):
+        assert "I7" in codes(run(swap(WORKED, old, new)), FAIL), old
 
 
 def test_archive_copies_must_be_there_and_match():
-    prev = make()
+    rows = run(WORKED, WORKED, NOWHERE)
+    assert "I9" in codes(rows, FAIL)
     with tempfile.TemporaryDirectory() as d:
-        (Path(d) / "v0.txt").write_bytes(b"something else\n")
-        new = make(changes=archived(prev))
-        assert codes(lint(new, new, Path(d), TODAY), FAIL) == ["I9"]
-        assert codes(lint(new, new, NOWHERE, TODAY), FAIL) == ["I9"]
-    loose = make(status="Adopted on 2026-10-22 under rule 7. See archive/gone.txt.")   # named anywhere, no hash
-    assert codes(lint(loose, loose, NOWHERE, TODAY), FAIL) == ["I9"]
+        for f in ARCHIVE.glob("*.txt"):
+            shutil.copy(f, d)
+        (Path(d) / "08_CLAIMS_LEDGER_v3.txt").write_bytes(b"something else\n")
+        rows = run(WORKED, WORKED, Path(d))
+    assert codes(rows, FAIL) == ["I9"]
+
+
+def test_no_earlier_version_cannot_tell():
+    rows = run(WORKED)
+    assert codes(rows, CANT) == ["I1"] and not codes(rows, FAIL)
 
 
 def test_an_unreadable_file_fails_without_a_crash():
-    for bad in (make().replace("STATUS", "STATE", 1),
-                make(seen1=seen(item("Ann", "2026-10-23", lines="1" * 5000)))):
-        rows = lint(bad, None, NOWHERE, TODAY)
+    for bad in (WORKED.replace("STATUS", "STATE", 1), WORKED.replace("THE QUESTIONS\n", "QUESTIONS\n", 1),
+                swap(WORKED, "version 3's fact 5)\n", "version 3's fact 5)\n     stray\n")):
+        rows = run(bad)
         assert rows[0][0] == FAIL and "cannot read" in rows[0][1], rows
+    rows = run(WORKED, V3)                                                          # version 3, not archived as such
+    assert codes(rows, OK) and "I1" in codes(rows, OK)                             # it is: v5 names it
 
 
 def test_slow_removed_patterns_stay_fast():

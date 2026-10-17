@@ -6,23 +6,33 @@
     python checks/lint.py --test             offline tests
 
 It checks the file, not a chat post (`agent.py lint` checks a post). One line per rule it can test:
-  I1  nothing rewritten (rule 2): an entry only grows (SEEN items, CHANGED, NOTE, UNPAID and WITHDRAWN lines added
-      under the old ones; "nobody yet" giving way to the first SEEN item; new entries), and the rest of the file only
-      gains lines in CHANGES TO THE RULES and a higher "next entry" number. Any other change passes only when CHANGES TO
-      THE RULES names an archive/ copy of the earlier version with its SHA-256. Text replaced by "[removed]" passes if
-      the rest of its line is kept.
-  I2  entries numbered 1 to n, in order, with no gap and no repeat, and "the next entry" is n + 1 (Number)
-  I3  no SEEN item by the entry's writer (rule 3)
-  I4  no SEEN item while STATUS says Proposed, on or before the day of adoption, or after today; and none on a promise
-      before its BY date (rule 3, STATUS)
-  I5  an entry that had a SEEN item never changes and gains no CHANGED line; an entry that does change gains a dated
-      CHANGED line; and every CHANGED line is dated on or before its entry's first SEEN item (HOW AN ENTRY IS WRITTEN)
-  I6  every SEEN item reads in the weekly page's form; one that does not is listed for a person to read (rule 6)
-  I7  every SEEN item names a result its kind has, and WRONG IF lines its entry has (Result)
-  I8  nobody whose bond shows UNPAID has posted a promise since (Bond)
-  I9  every archive/ copy the file names is there, with the SHA-256 printed beside it (rule 7)
-A SEEN item that does not read (I6) is not tested by I3, I4 or I7: a person reads it.
-Exit: 0 when nothing FAILs, 1 when a line FAILs, 2 when there was no earlier version to compare.
+  I1  nothing rewritten (rule 6): a proposal only gains yeses and its "Opened as" line; a question only gains NOTE
+      lines and answers; an answer only grows (SEEN items, CHANGED and NOTE lines under the old ones; "nobody yet"
+      giving way to the first SEEN item); and the rest of the file only gains lines in PROPOSED QUESTIONS, THE
+      QUESTIONS, VOTES, LAST POSTS and CHANGES TO THE RULES, gives up its "None yet" lines there, and raises its "next"
+      numbers. Any other change passes only when CHANGES TO THE RULES names an archive/ copy of the earlier version with
+      its SHA-256, as a new version does on the day it is adopted. An answer reworded under a CHANGED line is such a
+      change too: I5 asks for the line, I1 for the copy. Text replaced by "[removed]" (rule 6) passes if the rest of
+      its line is kept, in what a proposal, question, answer or objection says; never in a name or date rule 4 counts
+      by (an answer's header, a proposer, a yes, a SEEN item up to Saw:, a CHANGED line up to its colon, a vote) nor
+      anywhere else in the file.
+  I2  proposals P1 to Pn, questions Q1 to Qn and each question's answers numbered from 1, in order, with no gap or
+      repeat, and the "next" numbers one past the last (Number); each question opened from the proposal and on the day
+      rule 2 gives, and each "Opened as Q n" under the proposal its question names
+  I3  no SEEN item by one of its answer's posters, or on a script one of them wrote: it counts for nothing (rule 4, Saw)
+  I4  no SEEN item while STATUS says Proposed, before its answer's first day (adoption, the question's opening, the
+      answer's own date), or after today; and no other date the file's state is read from (a proposal, a yes, a
+      question's opening, an answer's header, a CHANGED line, a vote, a LAST POSTS line) after today or off the
+      calendar
+  I5  an answer that had a SEEN item never changes and gains no CHANGED line; an answer that does change gains a
+      CHANGED line; and every CHANGED line names who changed it and when ("Name, YYYY-MM-DD:"), on or before its
+      answer's first SEEN item (HOW A QUESTION IS WRITTEN, Posters)
+  I6  every SEEN item reads in the weekly page's form, and every Yes: item as "Name YYYY-MM-DD"; one that does not is
+      listed for a person to read (rule 7)
+  I7  every SEEN item says HOLDS or DOESN'T HOLD and names WRONG IF lines its answer has (Result)
+  I9  every archive/ copy the file names is there, with the SHA-256 printed beside it (rule 8)
+There is no I8: version 3's bonds are gone (rule 9). A SEEN item that does not read (I6) is not tested by I3, I4 or I7:
+a person reads it. Exit: 0 when nothing FAILs, 1 when a line FAILs, 2 when there was no earlier version to compare.
 """
 import argparse
 import datetime as dt
@@ -39,10 +49,12 @@ import build  # noqa: E402  the site's own reading of the file, so the lint and 
 
 OK, WARN, FAIL, CANT = "OK", "WARN", "FAIL", "CAN'T TELL"
 REMOVED = "[removed]"
-GROWS = ("SEEN", "CHANGED", "NOTE", "UNPAID", "WITHDRAWN")       # an entry's fields that only gain lines
+GROWS = ("SEEN", "CHANGED", "NOTE")                               # an answer's fields that only gain lines
+GAINS = ("PROPOSED QUESTIONS", "THE QUESTIONS", "VOTES", "LAST POSTS", "CHANGES TO THE RULES")   # sections that gain lines
+NONE = re.compile(r"\s*None\b")                                   # "None yet.": gives way to the section's first item
 NAMED = re.compile(r"\barchive/[\w.-]+\.txt\b")
-NEXT = re.compile(r"\s*The next entry is number (\d{1,6})\.\s*$")
-LABEL = re.compile(r"^\s*[A-Z]{2,}(?: [A-Z]+)?\s+")   # "    SAYS      ", at the start only
+NEXT = re.compile(r"The next (proposal is P|question is Q) ?(\d{1,6})\.")
+LABEL = re.compile(r"^\s*[A-Z]{2,}(?: [A-Z]+)?\s+")   # "      SAYS      ", at the start only
 
 
 class Unreadable(Exception):
@@ -62,11 +74,10 @@ def sha256(data):
 
 
 def parse(text):
-    """(sections, entries as (kind, number, who, fields), member names), read the way build.py reads them."""
+    """(sections, the state build.py reads from them: members, proposals, questions and answers, rule 2's order)."""
     try:
         secs = build.sections(text)[1]
-        found = build.entries(build.entries_section(secs)[1])
-        return secs, [it[1:] for it in found if it[0] == "entry"], build.member_names(secs)
+        return secs, build.model(secs)
     except SystemExit as e:
         raise Unreadable(str(e))
 
@@ -88,47 +99,80 @@ def keeps(new, old):
     return end > pos
 
 
-def same(new, old):
-    return new == old or keeps(new, old)
+def same(new, old, head=None):
+    """new is old, or old with parts replaced by "[removed]". With head, the text up to and including its first
+    occurrence in old (who and when, which rule 4 counts by) is kept whole."""
+    if new == old:
+        return True
+    if not keeps(new, old):
+        return False
+    i = old.find(head) if head else 0
+    return i >= 0 and (not head or new[:i + len(head)] == old[:i + len(head)])
 
 
-def prefix(new, old):
-    """Whether the list old is the start of the list new, line by line (each kept or "[removed]")."""
-    return len(new) >= len(old) and all(same(n, o) for n, o in zip(new, old))
+def prefix(new, old, head=None):
+    """Whether the list old is the start of the list new, item by item (each kept or "[removed]" past head)."""
+    return len(new) >= len(old) and all(same(n, o, head) for n, o in zip(new, old))
 
 
-def shape(who, fields):
-    """An entry as I1 and I5 compare it: (who, the fixed fields in order, each growing field's lines, SEEN items)."""
+def shape(head, fields):
+    """An answer as I1 and I5 compare it: (its header, the fixed fields in order, each growing field's lines, SEEN items)."""
     fixed = [(lab, " ".join(ln.txt for ln in ls if ln.txt)) for lab, ls in fields if lab not in GROWS]
     grows = {lab: [" ".join(ln.txt for ln in ls if ln.txt) for l2, ls in fields if l2 == lab] for lab in GROWS}
-    return who, fixed, grows, build.seen_items(fields)
+    return head, fixed, grows, build.seen_items(fields)
 
 
-def entry_change(old, new):
-    """What changed in one entry, or None: the first field that changed, other than by growing."""
-    (ow, of, og, oi), (nw, nf, ng, ni) = old, new
-    if not same(nw, ow):
+def answer_change(old, new):
+    """What changed in one answer, or None: the first field that changed, other than by growing."""
+    (oh, of, og, oi), (nh, nf, ng, ni) = old, new
+    if nh != oh:   # who posted it, and when: rule 4 sets them aside (Posters)
         return "header"
     if len(nf) != len(of) or any(nl != ol or not same(nt, ot) for (nl, nt), (ol, ot) in zip(nf, of)):
         return next((ol for (nl, nt), (ol, ot) in zip(nf, of) if nl != ol or not same(nt, ot)), "fields")
-    if oi and not prefix(ni, oi):
+    if oi and not prefix(ni, oi, " Saw:"):
         return "SEEN items"
     said = " ".join(og["SEEN"])
     if not oi and said and not re.fullmatch(r"(?i)nobody yet", said) and not " ".join(ng["SEEN"]).startswith(said):
         return "SEEN"
-    for lab in GROWS[1:]:
-        if not prefix(ng[lab], og[lab]):
+    for lab, head in (("CHANGED", ": "), ("NOTE", None)):
+        if not prefix(ng[lab], og[lab], head):
             return lab
     return None
 
 
+def proposal_change(old, new):
+    """What changed in one proposal, or None: it may only gain Yes: items and its "Opened as" line."""
+    if not (new["who"] == old["who"] and new["date"] == old["date"] and same(new["asks"], old["asks"])):
+        return "header"
+    if new["said"][:len(old["said"])] != old["said"]:
+        return "Yes: line"
+    if old["opened"] is not None and new["opened"] != old["opened"]:
+        return "Opened as line"
+    return None
+
+
+def question_change(old, new):
+    """What changed in one question other than its answers, or None: it may only gain NOTE lines."""
+    if new["head"] != old["head"]:
+        return "header"
+    fixed = lambda q: [(lab, " ".join(ln.txt for ln in ls if ln.txt)) for lab, ls in q["fields"] if lab != "NOTE"]  # noqa: E731
+    notes = lambda q: [" ".join(ln.txt for ln in ls if ln.txt) for lab, ls in q["fields"] if lab == "NOTE"]  # noqa: E731
+    o, n = fixed(old), fixed(new)
+    if len(n) != len(o) or any(nl != ol or not same(nt, ot) for (nl, nt), (ol, ot) in zip(n, o)):
+        return "fields"
+    if not prefix(notes(new), notes(old)):
+        return "NOTE"
+    return None
+
+
 def places(text):
-    """Each line's (entry such as "FACT 6", or None for the ledger's other text; its section's heading)."""
+    """Each line's (proposal or question such as "P2" or "Q1", or None for the ledger's other text; its section)."""
     out, cur, sec = [], None, ""
     for raw in text.split("\n"):
-        m = build.ENTRY.match(raw)
-        if m:
-            cur = "%s %s" % (m.group(1), m.group(2))
+        p = build.PROPOSAL.match(raw) if sec == "PROPOSED QUESTIONS" else None
+        q = build.QUESTION.match(raw) if sec == "THE QUESTIONS" else None
+        if p or q:
+            cur = "P%s" % p.group(1) if p else "Q%s" % q.group(1)
         elif raw[:1].strip():
             cur, sec = None, build.short(raw)
         elif raw.strip() and build.indent(raw) <= 2:
@@ -138,15 +182,17 @@ def places(text):
 
 
 def text_changes(prev, new):
-    """The ledger's text outside the entries, earlier against new: ([removed] count, changes as (where, text))."""
+    """The ledger's text outside the proposals and questions, earlier against new: ([removed] count, changes as
+    (where, text)). Lines may be added in GAINS, a "None ..." line there may go, a "next" number may rise, and an
+    objection in VOTES may have words replaced by "[removed]"."""
     def lines(text):
-        return [(i + 1, sec, raw) for i, (raw, (who, sec)) in enumerate(zip(text.split("\n"), places(text)))
-                if who is None and raw.strip()]
+        return [(i + 1, sec, raw) for i, (raw, (item, sec)) in enumerate(zip(text.split("\n"), places(text)))
+                if item is None and raw.strip()]
     a, b = lines(prev), lines(new)
     removed, out = 0, []
 
     def added(j):
-        if b[j][1] != "CHANGES TO THE RULES":
+        if b[j][1] not in GAINS:
             out.append(("line %d, added" % b[j][0], b[j][2]))
 
     for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, [x[2] for x in a], [x[2] for x in b],
@@ -154,17 +200,21 @@ def text_changes(prev, new):
         if op == "equal":
             continue
         pairs = min(i2 - i1, j2 - j1) if op == "replace" else 0
+        left = set(range(j1, j2))                                          # the new lines not matched to an old one
         for off in range(i2 - i1):
-            k, old = a[i1 + off][0], a[i1 + off][2]
+            k, sec, old = a[i1 + off]
             got = b[j1 + off][2] if off < pairs else None
-            m, n = NEXT.match(old), NEXT.match(got or "")
-            if m and n and int(n.group(1)) > int(m.group(1)):
-                continue                                                  # "the next entry" goes up as entries are added
-            if got is not None and keeps(got, old):
+            m, n = NEXT.search(old), NEXT.search(got or "")
+            if (m and n and m.group(1) == n.group(1) and int(n.group(2)) > int(m.group(2))
+                    and old.replace(m.group(), "") == got.replace(n.group(), "")):
+                left.discard(j1 + off)                                     # "the next proposal" goes up as they are added
+            elif (got is not None and sec == "VOTES" and not build.VOTE_HEAD.match(old)
+                  and same(got, old, ": " if old.lstrip().startswith("- ") else None)):
+                left.discard(j1 + off)                                     # an objection's words, not who or when
                 removed += 1
-                continue
-            out.append(("line %d" % k, old))
-        for j in range(j1 + pairs, j2):
+            elif not (NONE.match(old) and sec in GAINS[:4]):               # a placeholder gives way to the first item
+                out.append(("line %d" % k, old))
+        for j in sorted(left):
             added(j)
     return removed, out
 
@@ -196,6 +246,10 @@ def first_date(text):
     return m.group() if m else None
 
 
+def ordinal(n):
+    return "%d%s" % (n, "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th"))
+
+
 def lint(new, prev, archive, today):
     """Rows of (status, what) for the new text against the earlier one (None when there is none to compare)."""
     try:
@@ -204,162 +258,247 @@ def lint(new, prev, archive, today):
         return [(FAIL, "the lint cannot read ledger.txt: %s" % e)]
 
 
+def compare(prev, new, old_m, m, have, add):
+    """I1 and the comparing half of I5: the earlier version against this one, item by item and line by line."""
+    removed, changes = text_changes(prev, new)
+    firsts = 0
+    props = {p["num"]: p for p in m["proposals"]}
+    for p in old_m["proposals"]:
+        what = proposal_change(p, props[p["num"]]) if p["num"] in props else "proposal, gone"
+        if what:
+            changes.append(("P%d" % p["num"], "its %s changed" % what))
+    qs = {q["num"]: q for q in m["questions"]}
+    for q in old_m["questions"]:
+        if q["num"] not in qs:
+            changes.append(("Q%d" % q["num"], "the question is gone"))
+            if any(build.checked(a["fields"]) for a in q["answers"]):
+                add(FAIL, "I5 Q%d had a SEEN item in the earlier version, and it is gone" % q["num"])
+            continue
+        nq = qs[q["num"]]
+        what = question_change(q, nq)
+        if what:
+            changes.append(("Q%d" % q["num"], "its %s changed" % what))
+        now = {a["num"]: a for a in nq["answers"]}
+        for a in q["answers"]:
+            label, checked = "Q%d answer %d" % (q["num"], a["num"]), build.checked(a["fields"])
+            if a["num"] not in now:
+                changes.append((label, "the answer is gone"))
+                if checked:
+                    add(FAIL, "I5 %s had a SEEN item in the earlier version, and it is gone" % label)
+                continue
+            na = now[a["num"]]
+            old_shape, new_shape = shape(a["head"], a["fields"]), shape(na["head"], na["fields"])
+            what = answer_change(old_shape, new_shape)
+            gained = len(new_shape[2]["CHANGED"]) - len(old_shape[2]["CHANGED"])
+            if not a["results"] and na["results"]:
+                firsts += 1
+            if checked and na["results"][:len(a["results"])] != a["results"]:
+                what = what or "SEEN results"
+            if what:
+                changes.append((label, "its %s changed" % what))
+            if checked and what:
+                add(FAIL, "I5 %s had a SEEN item in the earlier version, and its %s changed; an answer never changes "
+                    "after its first check: post a new answer" % (label, what))
+            elif checked and gained > 0:
+                add(FAIL, "I5 %s: a CHANGED line was added after its first SEEN item" % label)
+            elif what and gained <= 0:
+                add(FAIL, "I5 %s: its %s changed with no new dated CHANGED line" % (label, what))
+    was = sha256(prev)
+    note = "%d first SEEN item%s, %d [removed]" % (firsts, "" if firsts == 1 else "s", removed)
+    if not changes:
+        add(OK, "I1 the earlier version (%s...) is all still here; it only grew. %s" % (was[:8], note))
+    elif was in have:
+        add(OK, "I1 %d change(s) to the earlier version, and the file keeps it as archive/%s. %s"
+            % (len(changes), have[was], note))
+    else:
+        where, txt = changes[0]
+        add(FAIL, "I1 %d change(s) to the earlier version (%s...), and the file names no archive/ copy of it with "
+            "that SHA-256; the first is %s: %r" % (len(changes), was[:8], where, txt.strip()[:70]))
+
+
+def numbering(secs, m, today):
+    """I2 rows: the numbers, the links between proposals and questions, and rule 2's order of openings."""
+    props, qs, rows = m["proposals"], m["questions"], []
+
+    def add(status, what):
+        rows.append((status, what))
+
+    for what, nums, word in (("proposals", [p["num"] for p in props], "P"), ("questions", [q["num"] for q in qs], "Q")):
+        if nums != list(range(1, len(nums) + 1)):
+            add(FAIL, "I2 the %s are numbered %s; one series from %s1, in order, was expected"
+                % (what, ", ".join("%s%d" % (word, n) for n in nums), word))
+    for q in qs:
+        nums = [a["num"] for a in q["answers"]]
+        if nums != list(range(1, len(nums) + 1)):
+            add(FAIL, "I2 Q%d's answers are numbered %s; 1, 2 and on, in order, was expected"
+                % (q["num"], ", ".join(map(str, nums))))
+    for name, kind, items in (("PROPOSED QUESTIONS", "proposal is P", props), ("THE QUESTIONS", "question is Q", qs)):
+        said = [int(x.group(2)) for x in NEXT.finditer(" ".join(build.section(secs, name))) if kind in x.group()]
+        last = max([x["num"] for x in items] or [0])
+        if said and said[-1] != last + 1:
+            add(FAIL, "I2 the file says the next %s%d; after %s%d it is %s%d" % (kind, said[-1], kind[-1], last, kind[-1],
+                                                                                 last + 1))
+    by_num = {p["num"]: p for p in props}
+    for q in qs:
+        p = by_num.get(q["from"])
+        if not q["opened"] or q["from"] is None:
+            add(FAIL, "I2 Q%d's header does not read \"(opened YYYY-MM-DD, from P n)\"" % q["num"])
+        elif not p:
+            add(FAIL, "I2 Q%d says it is from P%d, and the file has no P%d" % (q["num"], q["from"], q["from"]))
+        elif p["opened"] != q["num"]:
+            add(FAIL, "I2 Q%d is from P%d, and P%d says %s" % (q["num"], p["num"], p["num"], "Opened as Q%d" % p["opened"]
+                                                              if p["opened"] else "nothing about opening"))
+    for p in props:
+        if p["opened"] and not any(q["num"] == p["opened"] and q["from"] == p["num"] for q in qs):
+            add(FAIL, "I2 P%d says it opened as Q%d, and no Q%d in the file is from P%d" % (p["num"], p["opened"],
+                                                                                         p["opened"], p["num"]))
+    proposed = build.status(secs)[1]
+    seq = m["slot"]
+    if qs and not m["adopted"]:
+        add(FAIL if proposed else CANT, "I2 %d question(s) in the file while STATUS %s: nothing opens before adoption "
+            "(rule 2)" % (len(qs), "says Proposed" if proposed else "gives no \"Adopted on <date>\""))
+    elif m["adopted"]:
+        for k, q in enumerate(qs):
+            if k >= len(seq):
+                add(FAIL, "I2 Q%d is in the file, and by the file's own dates rule 2 opens no %s question"
+                    % (q["num"], ordinal(k + 1)))
+                break
+            if (q["from"], q["opened"]) != seq[k]:
+                add(FAIL, "I2 Q%d opened %s from P%s; by the file's own dates rule 2 opens P%d on %s"
+                    % (q["num"], q["opened"], q["from"], seq[k][0], seq[k][1]))
+                break
+        else:
+            for k in range(len(qs), len(seq)):
+                if seq[k][1] <= today:
+                    add(WARN, "I2 rule 2 opens P%d as Q%d on %s, and the file does not have it yet: the weekly turn "
+                        "adds it (rule 7)" % (seq[k][0], k + 1, seq[k][1]))
+    if not any(s == FAIL for s, _ in rows):
+        add(OK, "I2 %d proposal(s), %d question(s) and their answers are numbered in order, the next numbers follow, "
+            "and each question opened from its proposal on the day rule 2 gives" % (len(props), len(qs)))
+    return rows
+
+
 def _lint(new, prev, archive, today):
     rows = []
 
     def add(status, what):
         rows.append((status, what))
 
-    secs, ents, names = parse(new)
-    try:
-        body, proposed = build.status(secs)
-    except SystemExit as e:
-        raise Unreadable(str(e))
-    old_ents = None
-    if prev is not None:
-        try:
-            old_ents = parse(prev)[1]
-        except Unreadable as e:
-            add(CANT, "I1 the earlier version cannot be read (%s): I1 and I5 compare nothing" % e)
-
+    secs, m = parse(new)
+    proposed = build.status(secs)[1]
     found, have = archive_rows(new, archive)
     rows.extend(found)
 
-    # I1 and the comparing half of I5
-    now = {"%s %s" % (k, n): (k, n, w, f) for k, n, w, f in ents}
-    if old_ents is None and prev is None:
+    if prev is None:
         add(CANT, "I1 no earlier version to compare: pass --prev FILE or --rev REV")
-    elif old_ents is not None:
-        removed, changes = text_changes(prev, new)
-        firsts = 0
-        for k, n, w, f in old_ents:
-            label = "%s %s" % (k, n)
-            checked = build.checked(f)
-            if label not in now:
-                changes.append((label, "the entry is gone"))
-                if checked:
-                    add(FAIL, "I5 %s had a SEEN item in the earlier version, and it is gone" % label)
-                continue
-            nk, nn, nw, nf = now[label]
-            old_shape, new_shape = shape(w, f), shape(nw, nf)
-            what = entry_change(old_shape, new_shape)
-            gained = len(new_shape[2]["CHANGED"]) - len(old_shape[2]["CHANGED"])
-            if not build.results(f) and build.results(nf):
-                firsts += 1
-            if checked and build.results(nf)[:len(build.results(f))] != build.results(f):
-                what = what or "SEEN results"
-            if what:
-                changes.append((label, "its %s changed" % what))
-            if checked and what:
-                add(FAIL, "I5 %s had a SEEN item in the earlier version, and its %s changed; an entry never changes "
-                    "after its first check" % (label, what))
-            elif checked and gained > 0:
-                add(FAIL, "I5 %s: a CHANGED line was added after its first SEEN item" % label)
-            elif what and gained <= 0:
-                add(FAIL, "I5 %s: its %s changed with no new dated CHANGED line" % (label, what))
-        was = sha256(prev)
-        note = "%d first SEEN item%s, %d [removed]" % (firsts, "" if firsts == 1 else "s", removed)
-        if not changes:
-            add(OK, "I1 the earlier version (%s...) is all still here; it only grew. %s" % (was[:8], note))
-        elif was in have:
-            add(OK, "I1 %d change(s) to the earlier version, and the file keeps it as archive/%s. %s"
-                % (len(changes), have[was], note))
+    else:
+        try:
+            old_m = parse(prev)[1]
+        except Unreadable as e:
+            was = sha256(prev)
+            if was in have:
+                add(OK, "I1 the earlier version (%s...) is another version of the ledger, kept word for word as "
+                    "archive/%s: this text replaces it (rule 8)" % (was[:8], have[was]))
+            else:
+                add(CANT, "I1 the earlier version cannot be read (%s), and the file names no archive/ copy with its "
+                    "SHA-256: I1 and I5 compare nothing" % e)
         else:
-            where, txt = changes[0]
-            add(FAIL, "I1 %d change(s) to the earlier version (%s...), and the file names no archive/ copy of it with "
-                "that SHA-256; the first is %s: %r" % (len(changes), was[:8], where, txt.strip()[:70]))
+            compare(prev, new, old_m, m, have, add)
 
-    # I2
-    nums = [n for _, n, _, _ in ents]
-    if nums != [str(i) for i in range(1, len(nums) + 1)]:
-        add(FAIL, "I2 the entries are numbered %s; one series from 1, in order, was expected" % ", ".join(nums))
-    nxt = [int(m.group(1)) for m in map(NEXT.match, new.split("\n")) if m]
-    if nxt and nxt[-1] != len(nums) + 1:
-        add(FAIL, "I2 the file says the next entry is number %d; after %d entries it is %d" % (
-            nxt[-1], len(nums), len(nums) + 1))
-    elif nums == [str(i) for i in range(1, len(nums) + 1)]:
-        add(OK, "I2 the %d entries are numbered 1 to %d in order%s" % (
-            len(nums), len(nums), ", and the next is %d" % nxt[-1] if nxt else ""))
+    rows.extend(numbering(secs, m, today))
 
-    adopted = build.adopted(secs)
-    any_items, said_cant = False, False
+    adopted, any_items, said_cant = m["adopted"], False, False
+    for q in m["questions"]:
+        for a in q["answers"]:
+            label, res, n_lines = "Q%d answer %d" % (q["num"], a["num"]), a["results"], len(a["lines"])
+            any_items = any_items or bool(res)
+            if not a["who"] or not a["date"]:                                         # I5
+                add(FAIL, "I5 %s's header does not read \"(Name, YYYY-MM-DD)\", so its posters cannot be read" % label)
+            for name, date, word, lines, items, script in res:
+                item = "%s: %s's SEEN item of %s" % (label, name, date)
+                if name in a["posters"]:                                              # I3
+                    add(WARN, "I3 %s is by one of its posters: it counts for nothing (rule 4)" % item)
+                elif script and script[1] in a["posters"]:
+                    add(WARN, "I3 %s ran %s's script, a poster's: it counts for nothing (Saw)" % (item, script[1]))
+                if not build.a_day(date):                                             # I4
+                    add(FAIL, "I4 %s: %s is not a date on the calendar, so it counts toward nothing" % (item, date))
+                elif proposed:
+                    add(FAIL, "I4 %s is in the file while STATUS says Proposed: posts before adoption close nothing "
+                        "and go in no file" % item)
+                elif adopted is None and not said_cant:
+                    said_cant = True
+                    add(CANT, "I4 STATUS says neither Proposed nor \"Adopted on <date>\": SEEN dates are not checked")
+                elif a["start"] and date < a["start"]:
+                    add(FAIL, "I4 %s is dated before %s, the first day %s's results count (adoption, the question's "
+                        "opening, the answer's own date)" % (item, a["start"], label))
+                if date > today:
+                    add(FAIL, "I4 %s is dated after today (%s, UTC)" % (item, today))
+                if word not in ("HOLDS", "DOESN'T HOLD"):                             # I7
+                    add(FAIL, "I7 %s says %s; a result is HOLDS or DOESN'T HOLD" % (item, word))
+                if not lines:
+                    add(FAIL, "I7 %s names no WRONG IF line" % item)
+                elif any(n < 1 or n > n_lines for n in lines):
+                    add(FAIL, "I7 %s names line(s) %s; %s has %d WRONG IF line(s)" % (item, list(lines), label, n_lines))
 
-    for kind, num, who, fields in ents:
-        label = "%s %s" % (kind, num)
-        writer = build.writer(who, fields, names)
-        res = build.results(fields)
-        any_items = any_items or bool(res)
+            changed = build.changes(a["fields"])                                       # I5
+            if (None, None) in changed:
+                add(FAIL, "I5 %s: a CHANGED line does not start \"Name, YYYY-MM-DD:\", so who changed it cannot be "
+                    "read (Posters)" % label)
+            dates = [r[1] for r in res]
+            if dates and any(d and d > min(dates) for _, d in changed):
+                add(FAIL, "I5 %s: a CHANGED line is dated after its first SEEN item (%s)" % (label, min(dates)))
 
-        for name, date, word, lines, *_ in res:
-            item = "%s: %s's SEEN item of %s" % (label, name, date)
-            if name.strip().casefold() == writer.strip().casefold():               # I3
-                add(FAIL, "I3 %s is by its writer; nobody checks their own entry (rule 3)" % item)
-            if not build.a_day(date):                                              # I4
-                add(FAIL, "I4 %s: %s is not a date on the calendar, so it counts toward nothing" % (item, date))
-            if proposed:
-                add(FAIL, "I4 %s is in the file while STATUS says Proposed: posts before adoption close nothing and "
-                    "go in no file" % item)
-            elif adopted is None and not said_cant:
-                said_cant = True
-                add(CANT, "I4 STATUS says neither Proposed nor \"Adopted on <date>\": SEEN dates against adoption "
-                    "are not checked")
-            elif adopted and date <= adopted:
-                add(FAIL, "I4 %s is not after the day of adoption, %s: it was the dry run" % (item, adopted))
-            if date > today:
-                add(FAIL, "I4 %s is dated after today (%s, UTC)" % (item, today))
-            if kind == "PROMISE" and not proposed:
-                by = build.due(fields, adopted)
-                if by is None:
-                    add(CANT, "I4 %s: the BY line names no date this can read, so its results' dates are not "
-                        "checked" % item)
-                elif date < by:
-                    add(FAIL, "I4 %s comes before the promise's date, %s" % (item, by))
-            if word not in build.RESULTS[kind]:                                    # I7
-                add(FAIL, "I7 %s says %s; a %s's result is %s" % (item, word, kind.lower(), " or ".join(build.RESULTS[kind])))
-            n_lines = len(build.wrong_if(fields))
-            if kind == "FACT" and not lines:
-                add(FAIL, "I7 %s names no WRONG IF line" % item)
-            elif kind == "FACT" and any(n < 1 or n > n_lines for n in lines):
-                add(FAIL, "I7 %s names line(s) %s; %s has %d WRONG IF line(s)" % (item, list(lines), label, n_lines))
-            elif kind == "PROMISE" and lines:
-                add(FAIL, "I7 %s names WRONG IF lines; a promise has none" % item)
+            unread = [it for it in build.seen_items(a["fields"]) if not build.SEEN_ITEM.match(it.replace("’", "'"))]
+            for it in unread:                                                         # I6
+                add(WARN, "I6 %s: a SEEN item a script cannot read, for a person to check: %r" % (label, it[:70]))
+            if build.checked(a["fields"]) and not build.seen_items(a["fields"]):
+                add(WARN, "I6 %s: SEEN says more than \"nobody yet\" but holds no item in the weekly page's form" % label)
 
-        changed = [first_date(" ".join(ln.txt for ln in ls)) for lab, ls in fields if lab == "CHANGED"]  # I5
-        if None in changed:
-            add(WARN, "I5 %s: a CHANGED line names no date" % label)
-        dates = [r[1] for r in res]
-        if dates and any(d and d > min(dates) for d in changed):
-            add(FAIL, "I5 %s: a CHANGED line is dated after its first SEEN item (%s)" % (label, min(dates)))
+    for p in m["proposals"]:
+        for y in p["unread"]:
+            add(WARN, "I6 P%d: a Yes: item that does not read as \"Name YYYY-MM-DD\", for a person to check: %r"
+                % (p["num"], y[:70]))
+    for where, what, date in dated(m):                                                # I4
+        if not build.a_day(date):
+            add(FAIL, "I4 %s: %s, %s, is not a date on the calendar" % (where, what, date))
+        elif date > today:
+            add(FAIL, "I4 %s: %s is dated %s, after today (%s, UTC); the file's state is read up to its last date"
+                % (where, what, date, today))
 
-        unread = [it for it in build.seen_items(fields) if not build.SEEN_ITEM.match(it.replace("’", "'"))]  # I6
-        for it in unread:
-            add(WARN, "I6 %s: a SEEN item a script cannot read, for a person to check: %r" % (label, it[:70]))
-        if build.checked(fields) and not build.seen_items(fields):
-            add(WARN, "I6 %s: SEEN says more than \"nobody yet\" but holds no item in the weekly page's form" % label)
-
-    for kind, num, who, fields in ents:                                            # I8
-        if not any(lab == "UNPAID" for lab, _ in fields):
-            continue
-        writer = build.writer(who, fields, names)
-        since = first_date(build.text_of(fields, "UNPAID")) or ""
-        later = ["%s %s" % (k, n) for k, n, w, f in ents
-                 if k == "PROMISE" and build.writer(w, f, names) == writer and (first_date(w) or "") > since]
-        if later:
-            add(CANT, "I8 %s %s's bond shows UNPAID (%s), and %s has posted %s since: check by hand that the bond was "
-                "paid first" % (kind, num, since or "no date", writer, ", ".join(later)))
-
-    blurbs = {"I3": "no SEEN item is by its entry's writer",
-              "I4": ("every SEEN item is after adoption (%s), not after today, and none on a promise before its date"
-                     % adopted) if any_items else "no SEEN item in the weekly page's form yet",
-              "I5": "no checked entry has changed, every change has its CHANGED line, and every CHANGED line comes "
-                    "before its entry's first SEEN item",
-              "I6": "every SEEN item reads in the weekly page's form",
-              "I7": "every SEEN item names a result its kind has and WRONG IF lines its entry has",
-              "I8": "nobody whose bond shows UNPAID has posted a promise since"}
+    blurbs = {"I3": "no SEEN item is by its answer's posters or on a script one of them wrote",
+              "I4": ("every SEEN item is on or after its answer's first day and not after today, and every other "
+                     "date the state is read from is a day on the calendar, not after today") if any_items else
+                    "no SEEN item in the weekly page's form yet, and every date the state is read from is a day on the "
+                    "calendar, not after today",
+              "I5": "no checked answer has changed, every change has its CHANGED line, and every CHANGED line names "
+                    "who and when, before its answer's first SEEN item",
+              "I6": "every SEEN item and every Yes: item reads in the weekly page's form",
+              "I7": "every SEEN item says HOLDS or DOESN'T HOLD and names WRONG IF lines its answer has"}
     for key, text in blurbs.items():
         if not any(s.startswith(key + " ") for _, s in rows):
             add(OK, "%s %s" % (key, text))
     return sorted(rows, key=lambda r: int(r[1][1]) if re.match(r"I\d ", r[1]) else 0)
+
+
+def dated(m):
+    """(where, what, date) for every date the model reads other than SEEN items (those are tested with their answer)."""
+    out = []
+    for p in m["proposals"]:
+        out.append(("P%d" % p["num"], "%s's proposal" % p["who"], p["date"]))
+        out += [("P%d" % p["num"], "%s's yes" % n, d) for n, d in p["yes"]]
+    for q in m["questions"]:
+        for a in q["answers"]:
+            where = "Q%d answer %d" % (q["num"], a["num"])
+            out += [(where, "its header", a["date"])] if a["date"] else []
+            out += [(where, "%s's CHANGED line" % w, d) for w, d in build.changes(a["fields"]) if d]
+        out += [("Q%d" % q["num"], "its opening", q["opened"])] if q["opened"] else []
+    for v in m["votes"]:
+        out.append(("VOTES, %s" % v["subject"], "the day it was posted", v["posted"]))
+        out += [("VOTES, %s" % v["subject"], "%s's vote" % n, d) for n, d, _ in v["votes"]]
+    for day, row in m["last"]:
+        out.append(("LAST POSTS", "the line", day))
+        out += [("LAST POSTS, %s" % day, "%s's last post" % n, d) for n, d in row.items() if d]
+    return out
 
 
 def git_show(rev):

@@ -35,7 +35,7 @@
       "continue": true
     },
     {
-      "src": "/(?:(?:febu-assembly|how|people|process|weekly|write|ledger|tests)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|ledger\\.json|start(?:\\.html)?|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
+      "src": "/(?:(?:febu-assembly|how|process|weekly|write|ledger|tests)\\.html|(?:ledger|how|tests|fact-6-steps)\\.txt|assembly\\.ics|ledger\\.json|start(?:\\.html)?|(?:archive|checks|timestamps)/.+|assets/(?:findings\\.css|ledger\\.css|claims\\.js|how-it-works\\.svg|how-it-connects\\.svg|card\\.png))",
       "headers": {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",

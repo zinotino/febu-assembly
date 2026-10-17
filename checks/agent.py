@@ -1,20 +1,24 @@
 """What an AI helper runs on a member's own machine. It helps a person look. It never posts a result (ledger.txt, WORDS
 USED HERE, Saw), so nothing here posts, signs or edits a file.
 
-    python checks/agent.py status                  the ledger's and process.md's hashes, the members, each entry's state
-    python checks/agent.py run 8                   fact 8's scripts from checks/, then one line saying what ran and where
-    python checks/agent.py draft 8 --as Laura      run them, then print a CHECK post with Saw: and New: left empty
+    python checks/agent.py status                  the ledger's and process.md's hashes, the members, each answer's state
+    python checks/agent.py run 8                   version 3's fact 8's scripts from checks/, then one line saying what
+                                                   ran and where
+    python checks/agent.py draft 1 2 --as Laura    Q1 answer 2: run the scripts of the version 3 fact it copies, then
+                                                   print a CHECK post with Saw: and New: left empty
     python checks/agent.py lint post.txt           would the weekly page take this post? ("-" reads stdin)
 
-run and draft take --rpc https://your-node to read through another Solana node than the default. The Script: line ends in
-"via <host>" (the host only: a path or query can hold an API key, and it is cut from the output too). lint takes several
-posts, the week's chat for example, and notes where two members' results on one entry name the same source, and where a
-post's Saw: and New: would read the same on another entry (the swap test: notes only, nothing is held back).
+The scripts in checks/ re-read version 3's facts, so an answer has a script only when it copies one (its header says
+"version 3's fact 8"). run and draft take --rpc https://your-node to read through another Solana node than the default.
+The Script: line ends in "via <host>" (the host only: a path or query can hold an API key, and it is cut from the output
+too). lint takes several posts, the week's chat for example, and notes where two members' results on one answer name the
+same source, and where a post's Saw: and New: would read the same on another answer (the swap test: notes only, nothing is
+held back).
 
 draft never writes "I opened the link myself." and never fills Saw: or New:: only a person who opened the link can.
 lint refuses the post until they are there, by the weekly page's own reading of it (assets/claims.js, needs node), and
 refuses a Saw: or New: with nothing in it ("." is not an answer) or a named line with no Saw: of its own.
-The entries come from ledger.json, which build.py writes from ledger.txt. checks/mcp_server.py offers the same four
+The questions and answers come from ledger.json, which build.py writes from ledger.txt. checks/mcp_server.py offers the same four
 commands to an agent that has no shell.
 """
 import datetime as dt
@@ -47,9 +51,9 @@ SCRIPT_TIMEOUT = 600   # seconds per script; fact 8's door 2 takes about three m
 VERDICT = re.compile(r"^verdict[^:\n]*:\s*(HOLDS|DOESN'T HOLD|CAN'T TELL)", re.M)
 NAME = re.compile(r"[^\W_][\w .'-]{0,39}")   # a name as it is written in the chat: one line, nothing the post's format reads
 POST_LINE = re.compile(r"CHECK [^\n]*|Line \d+:|Saw:|New:|Script: [^\n]*")
-NEXT_STEP = ("Not posted. Open the link yourself, fill every Saw: and New:, add 'Minutes: n' and the line\n"
-             "'I opened the link myself.' once it is true. Under a line over many items, add how many you opened:\n"
-             "'Items: all 164' or 'Items: 20 of 164' (a sample never counts toward HOLDS, rule 3). Then:\n"
+NEXT_STEP = ("Not posted. Open the link yourself, fill every Saw: and New:, and add the line\n"
+             "'I opened the link myself.' once it is true. Under each Line n:, add how many items you opened:\n"
+             "'Items: all 164' or 'Items: 20 of 164' (a HOLDS counts only with 'all' on every line, rule 4). Then:\n"
              "python checks/agent.py lint post.txt")
 _busy = threading.Lock()   # one script run at a time: they all read the same public node
 # Reads the weekly page's own parser on {text, data, now}, then asks more of a post than it does: a Saw: with something in
@@ -60,12 +64,13 @@ const claims = require(input.claims), p = claims.parse(input.text), r = claims.r
 const lines = input.text.replace(/\r\n?/g, '\n').split('\n');
 const solid = s => /[A-Za-z0-9]/.test(s);   // "." and "?" are not an answer; "none" is
 const extra = [], posts = [];
-p.votes.concat(p.entries).forEach(x => extra.push('line ' + x.at + ': a ' + x.type + ' post is not a check, and lint reads check posts only'));
+[].concat(p.proposals, p.yeses, p.votes, p.answers).forEach(x => extra.push('line ' + x.at + ': a ' + x.type +
+  ' post is not a check, and lint reads check posts only'));
 p.checks.forEach(c => {
-  const name = c.kind + ' ' + c.num, block = [];
+  const name = 'Q' + c.q + ' answer ' + c.a, block = [];
   for (let i = c.at - 1; i < lines.length && lines[i].trim(); i++) block.push(lines[i].trim());
   const via = (block.map(l => l.match(/^Script: .* via (\S+)$/i)).find(Boolean) || [])[1] || null;
-  posts.push({kind: c.kind, num: c.num, who: c.who, via, text: c.saw.map(s => s.text).concat(c.fresh || '').join(' ')});
+  posts.push({q: c.q, a: c.a, who: c.who, via, text: c.saw.map(s => s.text).concat(c.fresh || '').join(' ')});
   if (!block.some(l => /^I opened the link myself\b/i.test(l))) extra.push(name + ': the line "I opened the link myself." is missing from the post');
   if (c.saw.some(s => !solid(s.text))) extra.push(name + ' has a Saw: line with nothing in it (a dot or a question mark is not an answer)');
   if (c.fresh && !solid(c.fresh)) extra.push(name + ' has a New: line with nothing in it');
@@ -74,7 +79,8 @@ p.checks.forEach(c => {
 });
 console.log(JSON.stringify({
   checks: p.checks.length,
-  held: r.held.map(h => h.post.kind + ' ' + h.post.num + ': ' + h.why).concat(extra),
+  held: r.held.filter(h => h.post.type === 'check').map(h => 'Q' + h.post.q + ' answer ' + h.post.a + ': ' + h.why)
+    .concat(extra),
   add: r.add.reduce((n, a) => n + a.posts.length, 0),
   posts
 }));
@@ -120,7 +126,7 @@ def is_loopback(via):
 
 
 def source_of(num, rpc=None):
-    """The host this entry's scripts read from, as the Script: line names it."""
+    """The host version 3's fact num's scripts read from, as the Script: line names it."""
     if num in RPC_FACTS:
         return host_of(rpc if rpc is not None else common.RPC)
     try:
@@ -130,20 +136,33 @@ def source_of(num, rpc=None):
     return host_of(m.group(m.lastindex or 0)) if m else "unknown"
 
 
+def fact_of(a):
+    """The version 3 fact an answer copies, if checks/ has a script for it (a promise has none)."""
+    kind, num = a.get("copies") or (None, None)
+    return num if kind == "FACT" and num in SCRIPTS else None
+
+
+def plural(n, word):
+    return "%d %s%s" % (n, word, "" if n == 1 else "s")
+
+
 def status_text():
     d = ledger_data()
     rows = ["ledger.txt %s | process.md %s" % (sha8("ledger.txt"), sha8("process.md")),
             "members: " + ", ".join(d["members"]),
-            "open votes: " + ("; ".join("%s by %s" % (v["subject"], v["by"]) for v in d["votes"]) or "none")]
-    for e in d["entries"]:
-        rows.append("%-8s %-3d writer %-14s %d WRONG IF line%s, %d check%s, script %s" % (
-            e["kind"], e["num"], e["writer"], e["lines"], "" if e["lines"] == 1 else "s", len(e["results"]),
-            "" if len(e["results"]) == 1 else "s", "reads " + source_of(e["num"]) if e["num"] in SCRIPTS else "no"))
+            "open votes: " + ("; ".join("%s, %s" % (v["subject"], v["how"]) for v in d["open_votes"]) or "none")]
+    for q in d["questions"]:
+        rows.append("Q%d %s (opened %s)" % (q["num"], q["state"]["state"], q["opened"]))
+        for a in q["answers"]:
+            num = fact_of(a)
+            rows.append("  answer %-3d posters %s; %s, %s, %s, script %s" % (
+                a["num"], ", ".join(a["posters"]), plural(a["lines"], "WRONG IF line"), plural(len(a["results"]), "check"),
+                a["state"]["state"], "fact %d's, reads %s" % (num, source_of(num)) if num else "no"))
     return "\n".join(rows)
 
 
 def verdict_of(outputs):
-    """One word for the entry from its scripts' "verdict:" lines, or None if any script printed none."""
+    """One word for the fact from its scripts' "verdict:" lines, or None if any script printed none."""
     words = [VERDICT.search(o) for o in outputs]
     if not words or not all(words):
         return None
@@ -152,12 +171,12 @@ def verdict_of(outputs):
 
 
 def execute(num, say=lambda s: None, rpc=None):
-    """Run the entry's scripts: (the commands as typed, their outputs). A script that fails or hangs stops everything.
+    """Run the fact's scripts: (the commands as typed, their outputs). A script that fails or hangs stops everything.
     rpc points the scripts that read the node at another one."""
     if num not in SCRIPTS:
-        raise Refused("entry %d has no script in checks/: open its link and look" % num)
+        raise Refused("fact %d has no script in checks/: open its link and look" % num)
     if rpc is not None and num not in RPC_FACTS:
-        raise Refused("entry %d reads a link, not the Solana node: --rpc does nothing here" % num)
+        raise Refused("fact %d reads a link, not the Solana node: --rpc does nothing here" % num)
     # SOLANA_RPC is checked like --rpc: it is how the MCP server sets the node, and a malformed one put its key in an error
     url = (check_rpc(rpc) if rpc is not None else check_rpc(common.RPC, "SOLANA_RPC") if num in RPC_FACTS else common.RPC)
     env = {**os.environ, "PYTHONIOENCODING": "utf-8", **({"SOLANA_RPC": rpc} if rpc is not None else {})}
@@ -206,54 +225,68 @@ def check_name(who):
                       "at most 40 characters")
 
 
-def draft_post(entry, who, date, word, script):
-    """The CHECK post for a person to finish. It leaves out "I opened the link myself." on purpose, and it is checked
-    to hold nothing but the header, empty Line/Saw/New lines and one Script: line, whatever it was given."""
+def draft_post(q, a, who, date, word, script):
+    """The CHECK post on question q's answer a for a person to finish. It leaves out "I opened the link myself." on
+    purpose, and it is checked to hold nothing but the header, empty Line/Saw/New lines and one Script: line, whatever
+    it was given."""
     check_name(who)
-    n = entry["lines"]
-    head = "CHECK %s %d | %s | lines %s | %s | %s" % (entry["kind"], entry["num"], word or "RESULT", ",".join(map(str, range(1, n + 1))), who, date)
+    n = a["lines"]
+    head = "CHECK Q%d ANSWER %d · %s · lines %s · %s · %s" % (
+        q["num"], a["num"], word or "RESULT", ",".join(map(str, range(1, n + 1))), who, date)
     post = "\n".join([head] + ["Line %d:\nSaw:" % i for i in range(1, n + 1)] + ["New:", script]) + "\n"
     if "opened the link" in post.lower() or not all(POST_LINE.fullmatch(ln) for ln in post.splitlines()):
         raise Refused("the draft would hold more than a header, empty lines and one Script: line; not printing it")
     return post
 
 
-def draft(num, who, say=lambda s: None, rpc=None):
-    """(the post, notes for the person). The entry and the name are checked before a script that can take minutes."""
+def draft(qn, an, who, say=lambda s: None, rpc=None):
+    """(the post, notes for the person). The answer and the name are checked before a script that can take minutes."""
     check_name(who)
     data = ledger_data()
-    entry = next((e for e in data["entries"] if e["num"] == num), None)
-    if not entry:
-        raise Refused("the ledger has no entry %d" % num)
+    q = next((x for x in data["questions"] if x["num"] == qn), None)
+    a = q and next((x for x in q["answers"] if x["num"] == an), None)
+    if not a:
+        raise Refused("the ledger has no Q%d answer %d" % (qn, an))
+    num = fact_of(a)
+    if num is None:
+        raise Refused("Q%d answer %d copies no version 3 fact that has a script in checks/: open its link and look"
+                      % (qn, an))
     cmds, outs = execute(num, say, rpc)
     word = verdict_of(outs)
     if word == "CAN'T TELL":
         raise Refused("the script says CAN'T TELL: that is not a result, so there is nothing to post")
     when = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-    notes = [] if who in data["members"] else ["%s is not on the Member line, so a post by them is an outsider's (rule 3)" % who]
-    if any("NOT SETTLED" in o for o in outs):   # the script's verdict covers only part of the entry's WRONG IF lines
+    notes = [] if who in data["members"] else ["%s is not a member, so a post by them is an outsider's (rule 4)" % who]
+    if who in a["posters"]:
+        notes.append("%s posted or changed this answer, so their result counts for nothing (rule 4)" % who)
+    if AUTHOR in a["posters"]:   # Saw: a script none of the answer's posters wrote
+        notes.append("%s, who wrote these scripts, is among this answer's posters, so a result that leans on them is no "
+                     "Saw (WORDS USED HERE): open every link by hand, and say so." % AUTHOR)
+    if any("NOT SETTLED" in o for o in outs):   # the script's verdict covers only part of the answer's WRONG IF lines
         word = None
-        notes.append("The script leaves part of this entry unsettled (NOT SETTLED in its output): the result and the "
+        notes.append("The script leaves part of this answer unsettled (NOT SETTLED in its output): the result and the "
                      "lines are yours to decide, and those lines are by hand.")
     line = script_line(cmds, verdict_of(outs), when, source_of(num, rpc))
-    return draft_post(entry, who, when[:10], word, line), notes + [NEXT_STEP]
+    return draft_post(q, a, who, when[:10], word, line), notes + [NEXT_STEP]
 
 
 def source_notes(posts, data):
-    """One note for each entry where two checkers (members other than the writer) name the same node: that is one witness,
-    not two. Only the facts that read the node, since --rpc is what changes it; a node on a member's own machine is
-    their own."""
-    writer = {e["num"]: e["writer"].lower() for e in data["entries"]}
+    """One note for each answer where two checkers (members other than its posters) name the same node: that is one
+    witness, not two. Only answers that copy a fact read from the node, since --rpc is what changes it; a node on a
+    member's own machine is their own."""
+    answers = {(q["num"], a["num"]): a for q in data["questions"] for a in q["answers"]}
     members = {m.lower() for m in data["members"]}
     by = {}
     for p in posts:
+        a = answers.get((p["q"], p["a"]))
         via = (p["via"] or "").rstrip(".,;)").lower()   # a person's full stop after the host is not a second source
         via = via[:-4] if via.endswith(":443") else via    # nor is https's own port written out
-        if p["num"] in RPC_FACTS and via and via != "unknown" and not is_loopback(via)                 and p["who"].lower() in members and p["who"].lower() != writer.get(p["num"]):
-            by.setdefault((p["kind"], p["num"], via), set()).add(p["who"])
-    return ["%s %d: %s all read via %s, which is one source, not two. What makes them two checks is the link each opened "
-            "by hand and the new thing each named (process.md, section 5); a second node (--rpc) is a second source."
-            % (kind, num, " and ".join(sorted(who)), via) for (kind, num, via), who in sorted(by.items()) if len(who) > 1]
+        if (a and fact_of(a) in RPC_FACTS and via and via != "unknown" and not is_loopback(via)
+                and p["who"].lower() in members and p["who"].lower() not in {x.lower() for x in a["posters"]}):
+            by.setdefault((p["q"], p["a"], via), set()).add(p["who"])
+    return ["Q%d answer %d: %s all read via %s, which is one source, not two. What makes them two checks is the link "
+            "each opened by hand and the new thing each named; a second node (--rpc) is a second source."
+            % (q, a, " and ".join(sorted(who)), via) for (q, a, via), who in sorted(by.items()) if len(who) > 1]
 
 
 WORDS = re.compile(r"[a-z0-9$][a-z0-9$.-]*[a-z0-9]")   # a word or a figure as written: 2,939.10  2026-09-22  apwpkd8  $febu
@@ -274,34 +307,36 @@ def words(text):
 
 
 def swap_notes(posts, data):
-    """The swap test. A reading of an entry names something only that entry has. Take each post's Saw: and New: and ask
-    which entry's words it uses. None of this entry's, or at least 2 of another entry's own (found in no other entry's text
-    or WRONG IF lines) and more than this entry's, means the text would read the same on another entry: a frame, not a
-    reading. Two posts on two entries that share most of their words say it too. Notes only: nothing is held back.
+    """The swap test. A reading of an answer names something only that answer has. Take each post's Saw: and New: and ask
+    which answer's words it uses (its SAYS and WRONG IF lines, in ledger.json). None of this answer's, or at least 2 of
+    another answer's own (found in no other answer's text) and more than this answer's, means the text would read the same
+    on another answer: a frame, not a reading. Two posts on two answers that share most of their words say it too. Notes only: nothing is held back.
     # ponytail: word overlap, not meaning, and the words come from the ledger, not from what the page showed. A post can
     # use the right words and not have read the page. Upgrade: compare against the script's own output."""
-    bag = {e["num"]: words(" ".join([str(e.get("says", ""))] + [str(w) for w in e.get("wrong_if", [])])) for e in data["entries"]}
+    bag = {(q["num"], a["num"]): words(" ".join([str(a.get("says", ""))] + [str(w) for w in a.get("wrong_if", [])]))
+           for q in data["questions"] for a in q["answers"]}
     if len(bag) < 2:
         return []
     own = {n: w.difference(*(bag[m] for m in bag if m != n)) for n, w in bag.items()}
-    notes, seen = [], [(p, words(p["text"])) for p in posts if p["num"] in own]
+    notes, seen = [], [(p, words(p["text"])) for p in posts if (p["q"], p["a"]) in own]
     for p, w in seen:
         if not re.search(r"[A-Za-z0-9]", p["text"]):   # nothing in it: lint already holds the post back and says why
             continue
+        me = (p["q"], p["a"])
         hits = {n: len(w & o) for n, o in own.items()}
         best = max(hits, key=hits.get)
-        label = "%s %d (%s)" % (p["kind"], p["num"], p["who"])
-        if hits[best] >= 2 and hits[best] > hits[p["num"]]:   # one shared word ("says") is chance, two is a lean
-            notes.append("%s: its Saw: and New: use more of entry %d's own words than of this entry's. Say what was on "
-                         "this entry's page." % (label, best))
-        elif bag[p["num"]] and not w & bag[p["num"]]:   # not one word of this entry's text, own or shared: it could be about any entry
-            notes.append("%s: its Saw: and New: use none of this entry's words (for example %s). They would read the same "
-                         "on another entry: say what was on the page." % (label, ", ".join(sorted(own[p["num"]] or bag[p["num"]])[:3])))
+        label = "Q%d answer %d (%s)" % (*me, p["who"])
+        if hits[best] >= 2 and hits[best] > hits[me]:   # one shared word ("says") is chance, two is a lean
+            notes.append("%s: its Saw: and New: use more of Q%d answer %d's own words than of this answer's. Say what was "
+                         "on this answer's page." % (label, *best))
+        elif bag[me] and not w & bag[me]:   # not one word of this answer's text, own or shared: it could be about any answer
+            notes.append("%s: its Saw: and New: use none of this answer's words (for example %s). They would read the same "
+                         "on another answer: say what was on the page." % (label, ", ".join(sorted(own[me] or bag[me])[:3])))
     for i, (p, w) in enumerate(seen):
         for q, v in seen[i + 1:]:
-            if p["num"] != q["num"] and min(len(w), len(v)) >= 5 and len(w & v) / len(w | v) >= 0.6:
-                notes.append("%s %d (%s) and %s %d (%s) wrote nearly the same Saw: and New: for two entries: a frame, not "
-                             "two readings." % (p["kind"], p["num"], p["who"], q["kind"], q["num"], q["who"]))
+            if (p["q"], p["a"]) != (q["q"], q["a"]) and min(len(w), len(v)) >= 5 and len(w & v) / len(w | v) >= 0.6:
+                notes.append("Q%d answer %d (%s) and Q%d answer %d (%s) wrote nearly the same Saw: and New: for two answers: "
+                             "a frame, not two readings." % (p["q"], p["a"], p["who"], q["q"], q["a"], q["who"]))
     return notes
 
 
@@ -325,7 +360,8 @@ def review(text, data, now=None):
     out = json.loads(done.stdout)
     notes = source_notes(out["posts"], data) + swap_notes(out["posts"], data)
     if not out["checks"]:
-        return ["no CHECK line found: the first line is CHECK FACT n | HOLDS or DOESN'T HOLD | lines 1,2 | Name | YYYY-MM-DD"], notes
+        return ["no CHECK line found: the first line is CHECK Q n ANSWER k · HOLDS or DOESN'T HOLD · lines 1,2 · "
+                "Name · YYYY-MM-DD"], notes
     if not out["held"] and not out["add"]:
         return ["nothing to add: the ledger already has this result"], notes
     return out["held"], notes
@@ -341,7 +377,7 @@ def read_post(arg):
 
 
 def options(args, allowed):
-    """{--as: name, --rpc: node} from the words after the entry number. An option that is not allowed here, one given twice
+    """{--as: name, --rpc: node} from the words after the numbers. An option that is not allowed here, one given twice
     or one with no value is refused: a typo (--rcp, --rpc=URL) or an empty $NODE must not run on the default node."""
     got = {}
     for i in range(0, len(args), 2):
@@ -360,18 +396,18 @@ def main(argv):
         getattr(stream, "reconfigure", lambda **k: None)(encoding="utf-8")
     cmd = argv[1] if len(argv) > 1 else ""
     err = lambda s: print(s, file=sys.stderr)   # noqa: E731
-    num = int(argv[2]) if len(argv) > 2 and argv[2].isascii() and argv[2].isdigit() else None
+    num = lambda i: int(argv[i]) if len(argv) > i and argv[i].isascii() and argv[i].isdigit() else None   # noqa: E731
     try:
         if cmd == "status":
             print(status_text())
-        elif cmd == "run" and num is not None:
-            out, line = run_entry(num, err, options(argv[3:], ("--rpc",)).get("--rpc"))
+        elif cmd == "run" and num(2) is not None:
+            out, line = run_entry(num(2), err, options(argv[3:], ("--rpc",)).get("--rpc"))
             print(out + "\n" + line)
-        elif cmd == "draft" and num is not None:
-            opt = options(argv[3:], ("--as", "--rpc"))
+        elif cmd == "draft" and num(2) is not None and num(3) is not None:
+            opt = options(argv[4:], ("--as", "--rpc"))
             if "--as" not in opt:
                 raise Refused("draft needs --as <your name in the chat>")
-            post, notes = draft(num, opt["--as"], err, opt.get("--rpc"))
+            post, notes = draft(num(2), num(3), opt["--as"], err, opt.get("--rpc"))
             print(post, end="")
             err("\n".join(notes))
         elif cmd == "lint" and len(argv) > 2:

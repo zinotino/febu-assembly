@@ -15,10 +15,10 @@ turns them into the Assembly's pages on https://febu-assembly.vercel.app (assemb
 | `api/archive.js` | Asks the Internet Archive to save `ledger.txt` once a day. |
 | `checks/` | Scripts that re-read facts 1 to 6, 8 and 9 from public sources, for anyone to run. `agent.py` and `mcp_server.py` let a member's AI run them and draft a check post (see `AGENTS.md`). |
 | `ledger.json` | Written by `build.py`: a read-only index of `ledger.txt` for an agent (its hash, the members, the open votes, each entry's writer, WRONG IF clauses and results). No links, addresses cut to 7 characters; `ledger.txt` wins. |
-| `build.py` | Write the pages from the texts, and each entry's state under rules 3 and 4 (`standing`, also in `ledger.json`). `test_build.py` tests the people page, how the build reads SEEN lines, and the states against `checks/states.json`. |
+| `build.py` | Write the pages from the texts, and each entry's state under rules 3 and 4 (`standing`, also in `ledger.json`). `test_build.py` tests how the build reads SEEN lines, the worked version-5 ledger in `checks/fixtures/`, the states against `checks/states.json`, and adoption day in a copy of the repo. |
 | `assets/` | The pages' stylesheets, and `claims.js`: tap to copy, hash checks, and the member flows below. Written by hand. `node test_claims.js` tests its reading of a pasted chat, and its copy of `standing` against the same `checks/states.json`. |
 | `assets/card.png`, `make_card.py` | The 1200x630 picture a chat shows when someone pastes a link (every page names it in its `og:image` tag). `make_card.py` draws it; it holds nothing that changes with the ledger, so redraw it only to change the look. |
-| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `people.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
+| `febu-assembly.html`, `ledger.html`, `how.html`, `process.html`, `tests.html`, `weekly.html`, `write.html`, `assembly.ics` | Written by `build.py`. Don't edit them by hand. |
 
 
 ## One project
