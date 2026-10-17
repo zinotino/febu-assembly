@@ -8,7 +8,8 @@ USED HERE, Saw), so nothing here posts, signs or edits a file.
 
 run and draft take --rpc https://your-node to read through another Solana node than the default. The Script: line ends in
 "via <host>" (the host only: a path or query can hold an API key, and it is cut from the output too). lint takes several
-posts, the week's chat for example, and notes where two members' results on one entry name the same source.
+posts, the week's chat for example, and notes where two members' results on one entry name the same source, and where a
+post's Saw: and New: would read the same on another entry (the swap test: notes only, nothing is held back).
 
 draft never writes "I opened the link myself." and never fills Saw: or New:: only a person who opened the link can.
 lint refuses the post until they are there, by the weekly page's own reading of it (assets/claims.js, needs node), and
@@ -64,7 +65,7 @@ p.checks.forEach(c => {
   const name = c.kind + ' ' + c.num, block = [];
   for (let i = c.at - 1; i < lines.length && lines[i].trim(); i++) block.push(lines[i].trim());
   const via = (block.map(l => l.match(/^Script: .* via (\S+)$/i)).find(Boolean) || [])[1] || null;
-  posts.push({kind: c.kind, num: c.num, who: c.who, via});
+  posts.push({kind: c.kind, num: c.num, who: c.who, via, text: c.saw.map(s => s.text).concat(c.fresh || '').join(' ')});
   if (!block.some(l => /^I opened the link myself\b/i.test(l))) extra.push(name + ': the line "I opened the link myself." is missing from the post');
   if (c.saw.some(s => !solid(s.text))) extra.push(name + ' has a Saw: line with nothing in it (a dot or a question mark is not an answer)');
   if (c.fresh && !solid(c.fresh)) extra.push(name + ' has a New: line with nothing in it');
@@ -255,6 +256,55 @@ def source_notes(posts, data):
             % (kind, num, " and ".join(sorted(who)), via) for (kind, num, via), who in sorted(by.items()) if len(who) > 1]
 
 
+WORDS = re.compile(r"[a-z0-9$][a-z0-9$.-]*[a-z0-9]")   # a word or a figure as written: 2,939.10  2026-09-22  apwpkd8  $febu
+
+
+STOP = frozenset("""that this with from have were they them their then than what when which where there these those into each
+after before about under over only more most some such also just like said says made make goes gets first last then
+line lines entry entries page saw new looked fine matches matched opened open checked check here your yours mine very
+will would could should been being does doing done both same many much other another every again still while""".split())
+
+
+def words(text):
+    """The words of a text that can tell one entry from another: a figure whole (it names an entry), a plain word cut to 5
+    letters so transaction and transactions are one, and none of the plain English any reading uses (STOP). A comma between
+    words is a break, a comma inside a figure (2,939.10) is not."""
+    found = WORDS.findall(re.sub(r",(?!\d)", " ", text.lower()).replace(",", ""))
+    return {w if re.search(r"[\d$]", w) else w[:5] for w in found if len(w) >= 4 and w not in STOP}
+
+
+def swap_notes(posts, data):
+    """The swap test. A reading of an entry names something only that entry has. Take each post's Saw: and New: and ask
+    which entry's words it uses. None of this entry's, or at least 2 of another entry's own (found in no other entry's text
+    or WRONG IF lines) and more than this entry's, means the text would read the same on another entry: a frame, not a
+    reading. Two posts on two entries that share most of their words say it too. Notes only: nothing is held back.
+    # ponytail: word overlap, not meaning, and the words come from the ledger, not from what the page showed. A post can
+    # use the right words and not have read the page. Upgrade: compare against the script's own output."""
+    bag = {e["num"]: words(" ".join([str(e.get("says", ""))] + [str(w) for w in e.get("wrong_if", [])])) for e in data["entries"]}
+    if len(bag) < 2:
+        return []
+    own = {n: w.difference(*(bag[m] for m in bag if m != n)) for n, w in bag.items()}
+    notes, seen = [], [(p, words(p["text"])) for p in posts if p["num"] in own]
+    for p, w in seen:
+        if not re.search(r"[A-Za-z0-9]", p["text"]):   # nothing in it: lint already holds the post back and says why
+            continue
+        hits = {n: len(w & o) for n, o in own.items()}
+        best = max(hits, key=hits.get)
+        label = "%s %d (%s)" % (p["kind"], p["num"], p["who"])
+        if hits[best] >= 2 and hits[best] > hits[p["num"]]:   # one shared word ("says") is chance, two is a lean
+            notes.append("%s: its Saw: and New: use more of entry %d's own words than of this entry's. Say what was on "
+                         "this entry's page." % (label, best))
+        elif bag[p["num"]] and not w & bag[p["num"]]:   # not one word of this entry's text, own or shared: it could be about any entry
+            notes.append("%s: its Saw: and New: use none of this entry's words (for example %s). They would read the same "
+                         "on another entry: say what was on the page." % (label, ", ".join(sorted(own[p["num"]] or bag[p["num"]])[:3])))
+    for i, (p, w) in enumerate(seen):
+        for q, v in seen[i + 1:]:
+            if p["num"] != q["num"] and min(len(w), len(v)) >= 5 and len(w & v) / len(w | v) >= 0.6:
+                notes.append("%s %d (%s) and %s %d (%s) wrote nearly the same Saw: and New: for two entries: a frame, not "
+                             "two readings." % (p["kind"], p["num"], p["who"], q["kind"], q["num"], q["who"]))
+    return notes
+
+
 def lint(text, data, now=None):
     """The reasons the weekly page, or this helper, would hold this post back. An empty list means it would go in."""
     return review(text, data, now)[0]
@@ -273,7 +323,7 @@ def review(text, data, now=None):
     if done.returncode:
         raise Refused("node failed:\n" + done.stderr)
     out = json.loads(done.stdout)
-    notes = source_notes(out["posts"], data)
+    notes = source_notes(out["posts"], data) + swap_notes(out["posts"], data)
     if not out["checks"]:
         return ["no CHECK line found: the first line is CHECK FACT n | HOLDS or DOESN'T HOLD | lines 1,2 | Name | YYYY-MM-DD"], notes
     if not out["held"] and not out["add"]:

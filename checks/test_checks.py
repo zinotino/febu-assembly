@@ -377,6 +377,39 @@ def test_lint_notes_two_checks_that_read_one_source():
     assert agent.review(link("Ann") + "\n\n" + link("Bo"), data, "2026-10-16")[1] == []   # --rpc cannot change a link fact's host
 
 
+def test_swap_test_notes_a_reading_that_would_fit_another_entry():
+    """Saw: and New: that use none of an entry's own words, or more of another's, or that two entries share, are a frame."""
+    import agent
+    data = {"entries": [
+        {"num": 1, "says": "the wallet bought nothing between 2026-09-29 and 2026-10-09", "wrong_if": ["ApWpkd8 signed a swap"]},
+        {"num": 2, "says": "the wallet sold 23,843,803.61 tokens on 2026-09-22", "wrong_if": ["the sale moves another amount"]},
+        {"num": 6, "says": "2,939.10 SOL arrived in 44 payments", "wrong_if": ["a payment goes somewhere else"]}]}
+    post = lambda num, text, who="Ann": {"kind": "FACT", "num": num, "who": who, "text": text}   # noqa: E731
+    reading = post(1, "opened the swap list, ApWpkd8 signed nothing in the window")
+    assert agent.swap_notes([reading], data) == []                                                     # own words: a reading
+    none = agent.swap_notes([post(1, "looked fine, matches what the entry says")], data)
+    assert len(none) == 1 and "none of this entry's words" in none[0] and "FACT 1 (Ann)" in none[0]
+    other = agent.swap_notes([post(1, "the sale moved 23,843,803.61 tokens, a different amount")], data)
+    assert len(other) == 1 and "more of entry 2's own words" in other[0]
+    same = "everything looked right to me, nothing odd, nothing missing, nothing unusual anywhere"
+    twin = agent.swap_notes([post(1, same), post(2, same, "Bo")], data)
+    assert any("nearly the same" in n for n in twin)                                                   # one text, two entries
+    assert not any("nearly the same" in n for n in agent.swap_notes([post(1, same), post(1, same, "Bo")], data))   # one entry twice is not a swap
+    assert agent.swap_notes([post(1, "anything")], {"entries": data["entries"][:1]}) == []             # one entry: nothing to swap with
+    assert agent.swap_notes([post(1, "")], data) == [] and agent.swap_notes([post(1, ".")], data) == []   # lint holds an empty one
+    # a date is the most entry-specific thing a reading has; a plural and a figure without its comma are the same words
+    dated = {"entries": [{"num": 1, "says": "bought nothing between 2026-09-29 and 2026-10-09", "wrong_if": ["the transaction is a swap"]},
+                         {"num": 2, "says": "sold 23,843,803.61 tokens on 2026-09-22", "wrong_if": ["the transaction moves more"]}]}
+    assert agent.swap_notes([post(1, "checked 2026-09-29 to 2026-10-09 and the transactions show nothing")], dated) == []
+    assert agent.swap_notes([post(2, "I saw the sale of 23843803.61 tokens on 2026-09-22")], dated) == []
+    assert len(agent.swap_notes([post(1, "the sale of 23,843,803.61 tokens on 2026-09-22 is there")], dated)) == 1
+    # end to end through review(): the node reader hands each post's Saw:/New: text to swap_notes
+    chat = FILLED.replace("FACT 1", "FACT 2").replace("Saw: 5 SOL", "Saw: looked fine, matches the entry")
+    why, notes = agent.review(chat, {**DATA, "entries": [{**DATA["entries"][0], "num": 2, "says": "sold 23,843,803.61 tokens",
+        "wrong_if": ["a swap"]}, {**DATA["entries"][0], "num": 1, "says": "bought nothing 2026-09-29", "wrong_if": ["a buy"]}]}, "2026-10-16")
+    assert any("FACT 2 (Ann)" in n and "none of this entry's words" in n for n in notes), (why, notes)
+
+
 def test_ledger_json_is_written_from_this_ledger():
     """ledger.json is the committed index of ledger.txt: a ledger.txt edited without python build.py fails here."""
     import re
