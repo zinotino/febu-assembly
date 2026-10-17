@@ -256,11 +256,14 @@ def source_notes(posts, data):
             % (kind, num, " and ".join(sorted(who)), via) for (kind, num, via), who in sorted(by.items()) if len(who) > 1]
 
 
-WORDS = re.compile(r"[a-z0-9$][a-z0-9$.,]*[a-z0-9]")   # a word or a figure as written: 2,939.10  apwpkd8  $febu
+WORDS = re.compile(r"[a-z0-9$][a-z0-9$.-]*[a-z0-9]")   # a word or a figure as written: 2,939.10  2026-09-22  apwpkd8  $febu
 
 
 def words(text):
-    return {w for w in WORDS.findall(text.lower()) if len(w) >= 4}
+    """The words of a text, a figure whole (it names an entry) and a plain word cut to 5 letters, so transaction and
+    transactions are one. A comma between words is a break, a comma inside a figure (2,939.10) is not."""
+    found = WORDS.findall(re.sub(r",(?!\d)", " ", text.lower()).replace(",", ""))
+    return {w if re.search(r"[\d$]", w) else w[:5] for w in found if len(w) >= 4}
 
 
 def swap_notes(posts, data):
@@ -276,6 +279,8 @@ def swap_notes(posts, data):
     own = {n: w.difference(*(bag[m] for m in bag if m != n)) for n, w in bag.items()}
     notes, seen = [], [(p, words(p["text"])) for p in posts if p["num"] in own]
     for p, w in seen:
+        if not re.search(r"[A-Za-z0-9]", p["text"]):   # nothing in it: lint already holds the post back and says why
+            continue
         hits = {n: len(w & o) for n, o in own.items()}
         best = max(hits, key=hits.get)
         label = "%s %d (%s)" % (p["kind"], p["num"], p["who"])
