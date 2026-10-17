@@ -52,8 +52,18 @@ class Seen(unittest.TestCase):
                          [("Bo", "2026-11-04", "DOESN'T HOLD", (2,), (), None)])
         for odd in ("Items: twenty.", "Items: 20 of 164; most.", "Script: mine.py.", "Script: x by Bo, Cy.",
                     "items: 20 of 164.", "Item: 20 of 164.", "ITEMS : 20 of 164.", " Items: 20 of 164.", "Items 20 of 164.",
-                    "Items: 20 of 164", "script: x by Bo."):
+                    "Items: 20 of 164", "script: x by Bo.", "Scripts: x.py by Bo.", "Ran x.py.", "Items: all 1. Scripts: x by Bo.",
+                    "Items: all 0.", "Items: line 0, all 1.", "Items: 0 of 0."):
             self.assertEqual(self.read("- Bo, 2026-11-04: HOLDS on line 1. %s Saw: x." % odd), [], odd)   # lint I6
+        self.assertEqual(self.read("- Bo, 2026-11-04: HOLDS on line 1. Items: all 1."), [])   # no Saw: no check
+        self.assertEqual(len(self.read("- Bo, 2026-11-04: HOLDS on line 1. Items: all 1. Saw: x.")), 1)   # the control
+
+    def test_a_note_at_the_end_of_a_line_is_text(self):
+        """A field's words are the file's: "(...)" set off at the end of a line is not a layout note the model drops."""
+        body = ("  Q1. (opened 2026-10-31, from P1)\n    ANSWER 1.   (Zed, 2026-10-31)\n      SAYS      One thing,\n"
+                "                and another.   (withdrawn: it moved)\n")
+        fields = build.questions(body.split("\n"))[0]["answers"][0]["fields"]
+        self.assertEqual(build.text_of(fields, "SAYS"), "One thing, and another.   (withdrawn: it moved)")
 
     def test_wrong_if_lines(self):
         fields = build.questions(("  Q1. (opened 2026-10-31, from P1)\n    ANSWER 1.   (Zed, 2026-10-31)\n"
@@ -128,6 +138,32 @@ class Worked(unittest.TestCase):
         self.assertEqual(build.v3_writer("PROMISE", "7", members), "Zurandol")   # the group's: "Zurandol proposed it"
         no_copy = swap(WORKED, "(CrypticK, 2026-11-08, version 3's fact 5)", "(CrypticK, 2026-11-08)")
         self.assertEqual(sorted(answer(2, 2, no_copy)["posters"]), ["CrypticK"])
+        two = swap(WORKED, "(CrypticK, 2026-11-08, version 3's fact 5)", "(CrypticK, 2026-11-08, version 3's facts 2 and 5)")
+        self.assertEqual(sorted(answer(2, 2, two)["posters"]), ["CrypticK", "Zurandol"])
+        with self.assertRaises(SystemExit):   # every number is read: version 3 has no fact 99
+            model(swap(WORKED, "(CrypticK, 2026-11-08, version 3's fact 5)", "(CrypticK, 2026-11-08, version 3's facts 5 and 99)"))
+
+    def test_odd_input_does_not_stop_the_build_with_a_traceback(self):
+        """An address in a question, "<!--" in the data, a date off the calendar in VOTES or STATUS: every page is still
+        written. A section the model reads, written twice, stops with a message, not a traceback."""
+        wallet = "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG"
+        text = swap(WORKED, "Did the wallet that created $FEBU sell all of its $FEBU on 2026-09-22 and\n",
+                    "Did the wallet %s <!-- <script> sell all of its $FEBU on 2026-09-22 and\n" % wallet)
+        text = swap(text, "posted 2026-11-01, SHA-256", "posted 2026-02-30, SHA-256")
+        title, secs = build.sections(swap(text, "  Adopted on 2026-10-30,", "  Adopted on 2026-10-30 (not 2026-13-01),"))
+        m = build.model(secs)
+        front = build.assembly_page(title, secs, build.sections(build.raw_text(build.HOW).decode("utf-8"))[1], m)
+        self.assertIn("ApWpkd8t...", front)
+        weekly = build.weekly_page(title, secs, m)
+        data = re.search(r'id="ledger-data">(.*?)</script>', weekly, re.S).group(1)
+        self.assertNotIn("<", data)
+        self.assertIn("ApWpkd8… <!-- <script>", json.loads(data)["questions"][0]["asks"])
+        self.assertEqual(build.open_votes(title, secs, m), [])
+        build.calendar_ics(build.open_votes(title, secs, m), m["members"], build.turn_start(secs), secs)
+        twice = WORKED + "\nLAST POSTS\n  - 2026-11-09: Merc 2026-11-09.\n"
+        with self.assertRaises(SystemExit) as e:
+            model(twice)
+        self.assertIn("2 LAST POSTS sections", str(e.exception))
 
     def test_by_hand(self):
         """Rule 4: one of the three closers opened every link with no script. Merc and CrypticK were by hand; with a

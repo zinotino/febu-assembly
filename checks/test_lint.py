@@ -120,8 +120,23 @@ def test_lines_may_be_added_where_the_file_grows():
 
 
 def test_removed_keeps_the_rest_of_its_line():
-    rows = run(swap(WORKED, "in place of version 3, which", "in place of [removed], which"), WORKED)
-    assert not codes(rows, FAIL) and "1 [removed]" in row(rows, "I1")
+    for old, new in (("23,843,803.61 tokens, in one", "[removed] tokens, in one"),            # a checked answer's SAYS
+                     ('"mockery" on page 9. New: page 9 is the longest.',                     # a SEEN item past Saw:
+                      '"mockery" on [removed]. New: page 9 is the longest.'),
+                     ("change my mind: a week with two", "change my mind: [removed] with two")):   # an objection
+        rows = run(swap(WORKED, old, new), WORKED)
+        assert not codes(rows, FAIL), (new, rows)
+    assert "1 [removed]" in row(run(swap(WORKED, "change my mind: a week", "change my mind: [removed]"), WORKED), "I1")
+    for old, new in (("(Laura, 2026-10-31, version 3's fact 2)", "([removed], 2026-10-31, version 3's fact 2)"),
+                     ("- CrypticK, 2026-11-05: HOLDS", "- [removed], 2026-11-05: HOLDS"),   # who closed it
+                     ("      CHANGED   Laura, 2026-11-05:", "      CHANGED   [removed], 2026-11-05:"),
+                     ("  P1. Laura, 2026-10-24:", "  P1. [removed], 2026-10-24:"),
+                     ("Yes: Merc 2026-10-29,", "Yes: [removed] 2026-10-29,"),
+                     ("    - Merc, 2026-11-02: YES.", "    - [removed], 2026-11-02: YES."),
+                     ("three members other than its posters", "three members [removed] its posters"),   # a rule
+                     ("in place of version 3, which", "in place of [removed], which")):                  # STATUS
+        rows = run(swap(WORKED, old, new), WORKED)
+        assert "I1" in codes(rows, FAIL), (new, rows)   # rule 4 counts by names and dates; the rules are no one's
     rows = run(swap(WORKED, "      SAYS      In the copy Z saved, none of the words jest, hollow, false, mock, laugh,\n"
                     "                theater, spectacle or debt is on scripture pages 1-24, and jest and hollow\n"
                     "                are both on page 25.\n", "      SAYS      [removed]\n"), WORKED)
@@ -131,6 +146,8 @@ def test_removed_keeps_the_rest_of_its_line():
 
 def test_a_checked_answer_never_changes():
     for old, new in (("are both on page 25.", "are both on page 26."),                              # its SAYS
+                     ("                it through 2026-10-14.\n",                                    # a note set off
+                      "                it through 2026-10-14.   (withdrawn: it bought again)\n"),
                      ('"mockery" on page 9. New: page 9 is the longest.', '"mockery" on page 8. New: x.'),  # a SEEN item
                      (KSIZZLE, "")):                                                                 # one is gone
         rows = run(swap(WORKED, old, new), WORKED)
@@ -210,7 +227,15 @@ def test_dates():
     rows = run(swap(WORKED, "- Crypto Fish, 2026-11-06: HOLDS", "- Crypto Fish, 2026-11-31: HOLDS"))
     assert "I4" in codes(rows, FAIL) and "not a date on the calendar" in row(rows, "I4")
     rows = run(WORKED, today="2026-11-07")
-    assert codes(rows, FAIL) == ["I4"] and "Crypto Fish's vote is dated after today" in "".join(w for _, w in rows)
+    said = "".join(w for _, w in rows)
+    assert codes(rows, FAIL) == ["I4"] and "Crypto Fish's vote is dated 2026-11-08, after today" in said
+    assert "LAST POSTS: the line is dated 2026-11-08" in said and "Q2 answer 2: its header is dated 2026-11-08" in said
+    assert not codes(run(WORKED, today="2026-11-08"), FAIL)                         # the control: the file's own last day
+    late = swap(WORKED, "  - 2026-11-08: CrypticK 2026-11-08,", "  - 2027-06-01: CrypticK 2026-11-08,")
+    assert "LAST POSTS: the line is dated 2027-06-01" in row(run(late), "I4")      # it would make Q2 CAN'T TELL
+    for old, new in (("  P1. Laura, 2026-10-24:", "  P1. Laura, 2026-10-34:"),
+                     ("posted 2026-11-01, SHA-256", "posted 2026-02-30, SHA-256")):
+        assert "is not a date on the calendar" in row(run(swap(WORKED, old, new)), "I4"), new
     no_day = swap(WORKED, "  Adopted on 2026-10-30,", "  Taken up on 2026-10-30,")
     assert "I4" in codes(run(no_day), CANT)
 

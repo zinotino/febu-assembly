@@ -42,6 +42,8 @@
   function byDate(xs) { return xs.slice().sort(function (a, b) { return cmp(a.date, b.date) || a.at - b.at; }); }
   function assign(a, b) { var o = {}; [a, b].forEach(function (x) { Object.keys(x).forEach(function (k) { o[k] = x[k]; }); }); return o; }
   function has(xs, x) { return xs.indexOf(x) >= 0; }
+  function map() { return Object.create(null); }   // keyed by name: "constructor" is a name like any other
+  function own(o, k) { return Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined; }
 
   /* --- the weekly page's reading of a pasted chat ------------------------------------------------------------------
      A post's first line is the part a machine reads. The check card, the buttons under "your week" and the answer form
@@ -63,6 +65,10 @@
   var YES = new RegExp('\\bYES\\s+P\\s*(\\d+)' + SEP + PART + SEP + ON, 'i');
   var ANSWER = new RegExp('\\bANSWER\\s+Q\\s*(\\d+)' + SEP + PART + SEP + ON, 'i');
   var BOTH = ["DOESN'T HOLD", 'HOLDS'];
+
+  var ADDRESS = /\b[1-9A-HJ-NP-Za-km-z]{32,}\b/g;
+  function clip(s) { return String(s).replace(ADDRESS, function (m) { return m.slice(0, 7) + '\u2026'; }); }   // build.py clip
+  var CLIPPED = /[1-9A-HJ-NP-Za-km-z]{7}\u2026/;
 
   function numbers(s) {   // "1,2,3", "1, 2 and 3", "1-3"
     var out = [];
@@ -116,7 +122,7 @@
     if ((m = s.match(/^saw\s*:\s*(.*)$/i))) { cur.saw.push({ line: cur.line, text: m[1].trim() }); return true; }
     if ((m = s.match(/^new\s*:\s*(.*)$/i))) { cur.fresh = m[1].trim(); return true; }
     if ((m = s.match(/^items?\s*:\s*(.*)$/i))) { cur.items.push(itemsOf(cur.line, m[1])); return true; }
-    if ((m = s.match(/^script\s*:\s*(.*)$/i))) { cur.script = scriptOf(m[1]); return true; }
+    if ((m = s.match(/^scripts?\b\s*:?\s*(.*)$/i))) { cur.script = /^script\s*:/i.test(s) ? scriptOf(m[1]) : { bad: s }; return true; }
     if (/^i opened the link/i.test(s)) { cur.opened = true; return true; }
     return false;
   }
@@ -124,7 +130,7 @@
   // "Items: all 164" or "Items: 20 of 164", under the Line n: it counts for (Result: only "all" counts toward HOLDS)
   function itemsOf(line, text) {
     var m = String(text).trim().match(/^(?:all\s+(\d{1,9})|(\d{1,9})\s+of\s+(\d{1,9}))\.?$/i);   // 9 digits: the count reads back as written
-    return m && +(m[2] || m[1]) <= +(m[3] || m[1]) ? { line: line, n: +(m[2] || m[1]), of: +(m[3] || m[1]) }
+    return m && +(m[2] || m[1]) <= +(m[3] || m[1]) && +(m[3] || m[1]) >= 1 ? { line: line, n: +(m[2] || m[1]), of: +(m[3] || m[1]) }
       : { line: line, bad: String(text).trim() };
   }
   // "Script: python checks/x.py by Ann said HOLDS on ledger 1a2b3c4d at 2026-10-23T12:00Z via host", as agent.py writes
@@ -204,7 +210,7 @@
 
   function active(posts, name, day) {   // a post dated in the 90 days up to and including day
     var first = daysAfter(day, 1 - ACTIVE_DAYS);
-    return (posts[name] || []).some(function (d) { return first <= d && d <= day; });
+    return (own(posts, name) || []).some(function (d) { return first <= d && d <= day; });
   }
 
   function full(lines, items, n) {   // a HOLDS on every WRONG IF line with "all" for each (Result)
@@ -215,7 +221,7 @@
   }
 
   function standing(found, posters, members, start, n, posts) {
-    var out = { state: 'OPEN', lines: [], since: null, by: [], both: [], held: null }, dated = {}, holds = {}, wrong = {};
+    var out = { state: 'OPEN', lines: [], since: null, by: [], both: [], held: null }, dated = map(), holds = map(), wrong = map();
     keys(posts || {}).forEach(function (k) { dated[k] = posts[k].slice(); });
     found.forEach(function (r) { if (realDay(r[1])) (dated[r[0]] = dated[r[0]] || []).push(r[1]); });
     var every = range(n), poster = function (x) { return has(posters, x); };
@@ -227,13 +233,13 @@
       var hand = !script, hit = lines.filter(function (l) { return has(every, l); });
       if (word === 'HOLDS' && full(lines, rs[i][4] || [], n)) holds[name] = holds[name] || hand;
       else if (word === "DOESN'T HOLD" && hit.length) {
-        hit.forEach(function (l) { var by = wrong[l] = wrong[l] || {}; by[name] = by[name] || hand; });
+        hit.forEach(function (l) { var by = wrong[l] = wrong[l] || map(); by[name] = by[name] || hand; });
       } else continue;                                                   // a sample, or no result here: a SEEN item
       var pair = lineKeys(wrong).filter(function (l) { return keys(wrong[l]).length >= 2; });
       if (out.state !== 'OPEN') {
         if (out.state === 'HOLDS' ? pair.length : keys(holds).length >= 2) {   // reopened (rule 5)
           out = assign(out, { state: 'OPEN', lines: [], since: date, by: [], both: BOTH.slice() });
-          holds = {}; wrong = {};
+          holds = map(); wrong = map();
         }
         continue;
       }
@@ -241,7 +247,7 @@
         return keys(holds).concat(keys(wrong[l]).filter(function (x) { return !(x in holds); })).length >= 4;
       })) {
         out = assign(out, { since: date, both: BOTH.slice() });
-        holds = {}; wrong = {};
+        holds = map(); wrong = map();
         continue;
       }
       var others = members.filter(function (m) { return !poster(m) && active(dated, m, date); });
@@ -256,7 +262,7 @@
       } else if (shut.length) {
         out = assign(out, { state: "DOESN'T HOLD", lines: shut, since: date, by: ok(wrong[shut[0]]), both: [] });
       } else continue;
-      holds = {}; wrong = {};
+      holds = map(); wrong = map();
     }
     return out;
   }
@@ -302,14 +308,14 @@
     var out = { passed: null, yes: [], object: [] };
     var first = realDay(v.posted) ? daysAfter(v.posted, 7) : null;
     if (!first || !asOf || asOf < first) return out;
-    var p = {}, days = {};
+    var p = map(), days = {};
     keys(posts).forEach(function (k) { p[k] = posts[k].slice(); });
     v.votes.forEach(function (x) { if (realDay(x[1])) (p[x[0]] = p[x[0]] || []).push(x[1]); });   // a vote is a post
     days[first] = 1;
     keys(p).forEach(function (k) { p[k].forEach(function (d) { days[d] = days[daysAfter(d, ACTIVE_DAYS)] = 1; }); });
     var order = v.votes.slice().sort(function (a, b) { return cmp(a[1], b[1]); }), list = keys(days).sort();
     for (var i = 0; i < list.length; i++) {
-      var day = list[i], latest = {};
+      var day = list[i], latest = map();
       if (day < first || day > asOf) continue;
       order.forEach(function (x) { if (x[1] <= day) latest[x[0]] = x[2]; });
       var act = members.filter(function (m) { return active(p, m, day); });
@@ -328,7 +334,17 @@
     var out = { add: [], held: [], already: [], answers: [], props: [], opens: [], votes: [], back: [], last: [],
       unread: p.unread, counts: { checks: p.checks.length, proposals: p.proposals.length, yeses: p.yeses.length,
         votes: p.votes.length, answers: p.answers.length } };
-    var members = data.members, qs = {}, posts = {};
+    var onDay = function (list) {   // a post dated on no calendar day, or after today (UTC), is a person's to read (I4)
+      return list.filter(function (x) {
+        var why = !realDay(x.date) ? x.date + ' is not a day on the calendar'
+          : x.date > now ? 'it is dated after today, ' + now + ' (UTC)' : '';
+        if (why) out.held.push({ post: x, why: why });
+        return !why;
+      });
+    };
+    p = assign(p, { checks: onDay(p.checks), proposals: onDay(p.proposals), yeses: onDay(p.yeses), votes: onDay(p.votes),
+      answers: onDay(p.answers) });
+    var members = data.members, qs = {}, posts = map();
     data.questions.forEach(function (q) { qs[q.num] = q; });
     keys(data.posts).forEach(function (k) { posts[k] = data.posts[k].slice(); });
     [].concat(p.checks, p.proposals, p.yeses, p.votes, p.answers).forEach(function (x) {   // this week's posts (Member)
@@ -376,6 +392,13 @@
         return out.held.push({ post: n, why: q ? 'Q' + n.q + ' is not open (' + st.state + '), and answers go under the open question (rule 3)'
           : 'the file has no Q' + n.q });
       }
+      var head = n.text.map(function (l) { return l.match(/^\s*ANSWER\s+\d+\.\s+\(([^,()]+?),\s*(\d{4}-\d\d-\d\d)\b/); })
+        .filter(Boolean)[0];
+      if (!head || head[1].trim() !== n.who || head[2] !== n.date) {   // the header is who rule 4 sets aside (Posters)
+        return out.held.push({ post: n, why: head ? 'its header names ' + head[1].trim() + ', ' + head[2] + ', and the post is ' +
+          n.who + "'s of " + n.date + ': the header says who posted it (Posters)' : 'the pasted answer has no header line ' +
+          'ANSWER n. (Name, YYYY-MM-DD)' });
+      }
       counts[q.num] = (counts[q.num] || q.answers.length) + 1;
       var said = (n.text.join(' ').match(/\bANSWER\s+(\d+)\./) || [])[1];
       out.answers.push({ post: n, q: q, num: counts[q.num], renumber: said && +said !== counts[q.num] ? +said : null });
@@ -388,7 +411,7 @@
     var claimed = {}, next = data.next.proposal;
     byDate(p.proposals).forEach(function (n) {
       if (!has(members, n.who)) return out.held.push({ post: n, why: 'only members propose (rule 2)' });
-      if (props.some(function (x) { return x.who === n.who && x.date === n.date && norm(x.asks) === norm(n.asks); })) {
+      if (props.some(function (x) { return x.who === n.who && x.date === n.date && norm(clip(x.asks)) === norm(clip(n.asks)); })) {
         return out.already.push(n);
       }
       var x = { num: next++, who: n.who, date: n.date, asks: n.asks, yes: [], opened: null, added: [], fresh: true, post: n };
@@ -418,7 +441,9 @@
       var x = props.filter(function (z) { return z.num === s[0]; })[0], num = data.questions.length + i + 1;
       if (s[1] > now) return;
       out.opens.push({ num: num, prop: x, day: s[1],
-        lines: ['  Q' + num + '. (opened ' + s[1] + ', from P' + x.num + ')'].concat(wrap(PAD4 + 'ASKS' + pad(8), x.asks, PAD16)) });
+        lines: ['  Q' + num + '. (opened ' + s[1] + ', from P' + x.num + ')'].concat(wrap(PAD4 + 'ASKS' + pad(8),
+          !x.fresh && CLIPPED.test(x.asks) ? "copy P" + x.num + "'s question here from PROPOSED QUESTIONS: it holds an " +
+            'address this page carries cut short' : x.asks, PAD16)) });
     });
 
     // VOTE posts: the VOTES items to add, and the count under rule 8 as of today
@@ -443,7 +468,7 @@
     // LAST POSTS: one line for this turn, each member's last post on or before today (rule 7)
     var row = data.last ? data.last[1] : {};
     out.last = wrap('  - ' + now + ': ', members.map(function (m) {
-      var ds = (posts[m] || []).concat(row[m] ? [row[m]] : []).filter(function (d) { return d <= now; }).sort();
+      var ds = (posts[m] || []).concat(own(row, m) ? [own(row, m)] : []).filter(function (d) { return d <= now; }).sort();
       return m + ' ' + (ds.length ? ds[ds.length - 1] : 'none');
     }).join(', ') + '.', PAD4);
 

@@ -12,14 +12,18 @@ It checks the file, not a chat post (`agent.py lint` checks a post). One line pe
       QUESTIONS, VOTES, LAST POSTS and CHANGES TO THE RULES, gives up its "None yet" lines there, and raises its "next"
       numbers. Any other change passes only when CHANGES TO THE RULES names an archive/ copy of the earlier version with
       its SHA-256, as a new version does on the day it is adopted. An answer reworded under a CHANGED line is such a
-      change too: I5 asks for the line, I1 for the copy. Text replaced by "[removed]" passes if the rest of its line is
-      kept.
+      change too: I5 asks for the line, I1 for the copy. Text replaced by "[removed]" (rule 6) passes if the rest of
+      its line is kept, in what a proposal, question, answer or objection says; never in a name or date rule 4 counts
+      by (an answer's header, a proposer, a yes, a SEEN item up to Saw:, a CHANGED line up to its colon, a vote) nor
+      anywhere else in the file.
   I2  proposals P1 to Pn, questions Q1 to Qn and each question's answers numbered from 1, in order, with no gap or
       repeat, and the "next" numbers one past the last (Number); each question opened from the proposal and on the day
       rule 2 gives, and each "Opened as Q n" under the proposal its question names
   I3  no SEEN item by one of its answer's posters, or on a script one of them wrote: it counts for nothing (rule 4, Saw)
   I4  no SEEN item while STATUS says Proposed, before its answer's first day (adoption, the question's opening, the
-      answer's own date), or after today; and no yes or vote dated after today
+      answer's own date), or after today; and no other date the file's state is read from (a proposal, a yes, a
+      question's opening, an answer's header, a CHANGED line, a vote, a LAST POSTS line) after today or off the
+      calendar
   I5  an answer that had a SEEN item never changes and gains no CHANGED line; an answer that does change gains a
       CHANGED line; and every CHANGED line names who changed it and when ("Name, YYYY-MM-DD:"), on or before its
       answer's first SEEN item (HOW A QUESTION IS WRITTEN, Posters)
@@ -95,13 +99,20 @@ def keeps(new, old):
     return end > pos
 
 
-def same(new, old):
-    return new == old or keeps(new, old)
+def same(new, old, head=None):
+    """new is old, or old with parts replaced by "[removed]". With head, the text up to and including its first
+    occurrence in old (who and when, which rule 4 counts by) is kept whole."""
+    if new == old:
+        return True
+    if not keeps(new, old):
+        return False
+    i = old.find(head) if head else 0
+    return i >= 0 and (not head or new[:i + len(head)] == old[:i + len(head)])
 
 
-def prefix(new, old):
-    """Whether the list old is the start of the list new, item by item (each kept or "[removed]")."""
-    return len(new) >= len(old) and all(same(n, o) for n, o in zip(new, old))
+def prefix(new, old, head=None):
+    """Whether the list old is the start of the list new, item by item (each kept or "[removed]" past head)."""
+    return len(new) >= len(old) and all(same(n, o, head) for n, o in zip(new, old))
 
 
 def shape(head, fields):
@@ -114,26 +125,26 @@ def shape(head, fields):
 def answer_change(old, new):
     """What changed in one answer, or None: the first field that changed, other than by growing."""
     (oh, of, og, oi), (nh, nf, ng, ni) = old, new
-    if not same(nh, oh):
+    if nh != oh:   # who posted it, and when: rule 4 sets them aside (Posters)
         return "header"
     if len(nf) != len(of) or any(nl != ol or not same(nt, ot) for (nl, nt), (ol, ot) in zip(nf, of)):
         return next((ol for (nl, nt), (ol, ot) in zip(nf, of) if nl != ol or not same(nt, ot)), "fields")
-    if oi and not prefix(ni, oi):
+    if oi and not prefix(ni, oi, " Saw:"):
         return "SEEN items"
     said = " ".join(og["SEEN"])
     if not oi and said and not re.fullmatch(r"(?i)nobody yet", said) and not " ".join(ng["SEEN"]).startswith(said):
         return "SEEN"
-    for lab in GROWS[1:]:
-        if not prefix(ng[lab], og[lab]):
+    for lab, head in (("CHANGED", ": "), ("NOTE", None)):
+        if not prefix(ng[lab], og[lab], head):
             return lab
     return None
 
 
 def proposal_change(old, new):
     """What changed in one proposal, or None: it may only gain Yes: items and its "Opened as" line."""
-    if not (same(new["who"], old["who"]) and new["date"] == old["date"] and same(new["asks"], old["asks"])):
+    if not (new["who"] == old["who"] and new["date"] == old["date"] and same(new["asks"], old["asks"])):
         return "header"
-    if not prefix(new["said"], old["said"]):
+    if new["said"][:len(old["said"])] != old["said"]:
         return "Yes: line"
     if old["opened"] is not None and new["opened"] != old["opened"]:
         return "Opened as line"
@@ -142,7 +153,7 @@ def proposal_change(old, new):
 
 def question_change(old, new):
     """What changed in one question other than its answers, or None: it may only gain NOTE lines."""
-    if not same(new["head"], old["head"]):
+    if new["head"] != old["head"]:
         return "header"
     fixed = lambda q: [(lab, " ".join(ln.txt for ln in ls if ln.txt)) for lab, ls in q["fields"] if lab != "NOTE"]  # noqa: E731
     notes = lambda q: [" ".join(ln.txt for ln in ls if ln.txt) for lab, ls in q["fields"] if lab == "NOTE"]  # noqa: E731
@@ -172,7 +183,8 @@ def places(text):
 
 def text_changes(prev, new):
     """The ledger's text outside the proposals and questions, earlier against new: ([removed] count, changes as
-    (where, text)). Lines may be added in GAINS, a "None ..." line there may go, and a "next" number may rise."""
+    (where, text)). Lines may be added in GAINS, a "None ..." line there may go, a "next" number may rise, and an
+    objection in VOTES may have words replaced by "[removed]"."""
     def lines(text):
         return [(i + 1, sec, raw) for i, (raw, (item, sec)) in enumerate(zip(text.split("\n"), places(text)))
                 if item is None and raw.strip()]
@@ -196,8 +208,9 @@ def text_changes(prev, new):
             if (m and n and m.group(1) == n.group(1) and int(n.group(2)) > int(m.group(2))
                     and old.replace(m.group(), "") == got.replace(n.group(), "")):
                 left.discard(j1 + off)                                     # "the next proposal" goes up as they are added
-            elif got is not None and keeps(got, old):
-                left.discard(j1 + off)
+            elif (got is not None and sec == "VOTES" and not build.VOTE_HEAD.match(old)
+                  and same(got, old, ": " if old.lstrip().startswith("- ") else None)):
+                left.discard(j1 + off)                                     # an objection's words, not who or when
                 removed += 1
             elif not (NONE.match(old) and sec in GAINS[:4]):               # a placeholder gives way to the first item
                 out.append(("line %d" % k, old))
@@ -445,18 +458,18 @@ def _lint(new, prev, archive, today):
         for y in p["unread"]:
             add(WARN, "I6 P%d: a Yes: item that does not read as \"Name YYYY-MM-DD\", for a person to check: %r"
                 % (p["num"], y[:70]))
-        for name, date in p["yes"]:
-            if date > today:
-                add(FAIL, "I4 P%d: %s's yes is dated after today (%s, UTC)" % (p["num"], name, today))
-    for v in m["votes"]:
-        for name, date, _ in v["votes"]:
-            if date > today:
-                add(FAIL, "I4 VOTES, %s: %s's vote is dated after today (%s, UTC)" % (v["subject"], name, today))
+    for where, what, date in dated(m):                                                # I4
+        if not build.a_day(date):
+            add(FAIL, "I4 %s: %s, %s, is not a date on the calendar" % (where, what, date))
+        elif date > today:
+            add(FAIL, "I4 %s: %s is dated %s, after today (%s, UTC); the file's state is read up to its last date"
+                % (where, what, date, today))
 
     blurbs = {"I3": "no SEEN item is by its answer's posters or on a script one of them wrote",
-              "I4": ("every SEEN item is on or after its answer's first day and not after today, and so is every yes "
-                     "and vote") if any_items else "no SEEN item in the weekly page's form yet, and no yes or vote "
-                     "after today",
+              "I4": ("every SEEN item is on or after its answer's first day and not after today, and every other "
+                     "date the state is read from is a day on the calendar, not after today") if any_items else
+                    "no SEEN item in the weekly page's form yet, and every date the state is read from is a day on the "
+                    "calendar, not after today",
               "I5": "no checked answer has changed, every change has its CHANGED line, and every CHANGED line names "
                     "who and when, before its answer's first SEEN item",
               "I6": "every SEEN item and every Yes: item reads in the weekly page's form",
@@ -465,6 +478,27 @@ def _lint(new, prev, archive, today):
         if not any(s.startswith(key + " ") for _, s in rows):
             add(OK, "%s %s" % (key, text))
     return sorted(rows, key=lambda r: int(r[1][1]) if re.match(r"I\d ", r[1]) else 0)
+
+
+def dated(m):
+    """(where, what, date) for every date the model reads other than SEEN items (those are tested with their answer)."""
+    out = []
+    for p in m["proposals"]:
+        out.append(("P%d" % p["num"], "%s's proposal" % p["who"], p["date"]))
+        out += [("P%d" % p["num"], "%s's yes" % n, d) for n, d in p["yes"]]
+    for q in m["questions"]:
+        for a in q["answers"]:
+            where = "Q%d answer %d" % (q["num"], a["num"])
+            out += [(where, "its header", a["date"])] if a["date"] else []
+            out += [(where, "%s's CHANGED line" % w, d) for w, d in build.changes(a["fields"]) if d]
+        out += [("Q%d" % q["num"], "its opening", q["opened"])] if q["opened"] else []
+    for v in m["votes"]:
+        out.append(("VOTES, %s" % v["subject"], "the day it was posted", v["posted"]))
+        out += [("VOTES, %s" % v["subject"], "%s's vote" % n, d) for n, d, _ in v["votes"]]
+    for day, row in m["last"]:
+        out.append(("LAST POSTS", "the line", day))
+        out += [("LAST POSTS, %s" % day, "%s's last post" % n, d) for n, d in row.items() if d]
+    return out
 
 
 def git_show(rev):

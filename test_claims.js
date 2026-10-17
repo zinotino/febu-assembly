@@ -160,6 +160,39 @@ assert.deepStrictEqual(own.opens.map((o) => [o.num, o.prop.num, o.day]), [[3, 4,
 assert.ok(own.opens[0].lines[0] === '  Q3. (opened 2026-11-09, from P4)');
 assert.deepStrictEqual(own.answers, [], 'Q2 closed today: no answer goes under it');
 
+// A name is a name: "constructor", "__proto__" or "toString" in a post is no lookup on an object's prototype
+const odd = review(parse('CHECK Q2 ANSWER 2 · HOLDS · lines 1,2 · constructor · 2026-11-09\nSaw: x\nItems: all 1\nNew: y\n' +
+  'I opened the link myself.\n\nVOTE YES · Rule 9 wording · __proto__ · 2026-11-09\nYES P2 · toString · 2026-11-09'), data, NOW);
+assert.deepStrictEqual([odd.add.length, odd.add[0].after.state], [1, 'OPEN']);
+assert.ok(odd.held.some((h) => h.post.who === '__proto__' && /only members vote/.test(h.why)));
+assert.ok(odd.held.some((h) => h.post.who === 'toString' && /only members say yes/.test(h.why)));
+assert.ok(odd.last.join(' ').includes('Zurandol 2026-11-06'));
+
+// A post dated on no calendar day, or after today (UTC), is held for a person, as lint I4 fails it in the file
+const days = review(parse('VOTE YES · Rule 9 wording · Merc · 2026-13-45\n\nCHECK Q2 ANSWER 2 · HOLDS · lines 1,2 · Merc · ' +
+  '2026-11-10\nSaw: x\nItems: all 1\nNew: y\nI opened the link myself.'), data, NOW);
+assert.deepStrictEqual(days.held.map((h) => h.why).sort(), ['2026-13-45 is not a day on the calendar',
+  'it is dated after today, 2026-11-09 (UTC)']);
+assert.deepStrictEqual([days.add, days.votes.filter((v) => v.fresh)], [[], []]);
+
+// An ANSWER post's header is who posted it (Posters): it must be the post's own name and day
+const answerPost = (who, head) => 'ANSWER Q2 · ' + who + ' · 2026-11-09\n```\n' + head + '      SAYS      Something.\n```';
+assert.strictEqual(review(parse(answerPost('Merc', '    ANSWER 3.   (Merc, 2026-11-09)\n')), data, NOW).answers.length, 1);
+assert.ok(/its header names Merc, 2026-11-09, and the post is Laura's/.test(
+  review(parse(answerPost('Laura', '    ANSWER 3.   (Merc, 2026-11-09)\n')), data, NOW).held[0].why));
+assert.ok(/no header line/.test(review(parse(answerPost('Merc', '')), data, NOW).held[0].why));
+
+// An address in a proposal: the page's data has it cut to 7 characters, as build.py clip does. A repost of it whole is
+// the same proposal, and when it opens the page says to copy its question from the file, not the cut text.
+const cut = JSON.parse(JSON.stringify(data)), p2 = cut.proposals[1];
+p2.asks = 'Did ApWpkd8… buy $benchcoin?';
+p2.yes = p2.yes.concat([['Ksizzle', '2026-11-08']]);   // Merc's P2: its third yes, while Q2 is open
+const again = 'PROPOSE · Did ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG buy $benchcoin? · ' + p2.who + ' · ' + p2.date;
+assert.deepStrictEqual(review(parse(again), cut, NOW).already.map((x) => x.type), ['propose']);
+const opened = review(parse(chat.replace('fact5.py by Zurandol said', 'fact5.py by Ksizzle said')), cut, NOW).opens[0];
+assert.strictEqual(opened.prop.num, 2);
+assert.ok(opened.lines.join(' ').includes("copy P2's question here from PROPOSED QUESTIONS"), opened.lines);
+
 // A sample (Items: 20 of 24) goes in as a SEEN item and counts toward nothing (rule 4)
 const sample = review(parse(chat.replace('fact5.py by Zurandol said', 'fact5.py by Ksizzle said')
   .replace('Items: all 24', 'Items: 20 of 24')), data, NOW);
@@ -179,6 +212,8 @@ assert.ok(/write Items: all 164/.test(why(merc.replace('Items: all 24', 'Items: 
 assert.ok(/write Items: all 164/.test(why(merc.replace('Items: all 24', 'Items: 20 of 99999999999999999999999'))[0]),
   'a count JavaScript would print as 1e+23 cannot be read back from the file');
 assert.ok(/whose script/.test(why(merc + '\nScript: python checks/fact5.py')[0]), 'a Script: line names whose script it is');
+assert.ok(/whose script/.test(why(merc + '\nScripts: python checks/fact5.py by Bo')[0]), 'misspelt, it is no hand check');
+assert.ok(/write Items: all 164/.test(why(merc.replace('Items: all 24', 'Items: all 0'))[0]), 'a count is 1 or more');
 
 // rules 2, 4, 5 and 8: the cases build.py passes too (test_build.py States), so the two copies cannot drift
 const fx = require('./checks/states.json');

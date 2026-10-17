@@ -313,7 +313,8 @@ QUESTION = re.compile(r"  Q ?(\d+)\.\s*(?:\((.*)\))?\s*$")                      
 ANSWER = re.compile(r" {3,}ANSWER (\d+)\.\s*(?:\((.*)\))?\s*$")                    # "    ANSWER 1.   (Ann, 2026-10-31)"
 OPENED = re.compile(r"\bopened (\d{4}-\d\d-\d\d), from P ?(\d+)\b")
 WHO = re.compile(r"\s*([^,:]+?), (\d{4}-\d\d-\d\d)\b")    # "Ann, 2026-10-31": who posted an answer, or wrote a CHANGED line
-COPIED = re.compile(r"\b(fact|promise) (\d+)\b", re.I)    # "(Ann, 2026-10-31, version 3's fact 6)": a copied answer (Posters)
+# "(Ann, 2026-10-31, version 3's fact 6)", or "facts 2 and 6": a copied answer, whose writers are posters (Posters)
+COPIED = re.compile(r"\b(fact|promise)s? (\d+(?:(?:,| and|, and) \d+)*)\b", re.I)
 YES = re.compile(r"(.+?) (\d{4}-\d\d-\d\d)")             # "Crypto Fish 2026-10-25", one item of a Yes: line
 VOTE_HEAD = re.compile(r"\s+(.+?), posted (\d{4}-\d\d-\d\d), SHA-256 ([0-9a-f]{64})\s*$")
 VOTE_ITEM = re.compile(r"\s+- (.+?), (\d{4}-\d\d-\d\d): (YES|OBJECT)\b")
@@ -356,7 +357,7 @@ def fields_of(raws, what):
             tcol = fcol + f.end()
             out.append((f.group(1), [Ln(tcol, raw[tcol:].strip(), None, raw.rstrip())]))
         elif out:
-            out[-1][1].extend(to_lines([raw]))
+            out[-1][1].append(Ln(indent(raw), raw.strip(), None, raw.rstrip()))
         else:
             sys.exit("%s: a line before its first field: %r" % (what, raw))
     return out
@@ -380,7 +381,10 @@ def single(html_text):
 
 
 def section(secs, name, need=True):
-    body = next((b for h, b in secs if short(h) == name), None)
+    bodies = [b for h, b in secs if short(h) == name]
+    if len(bodies) > 1:
+        sys.exit("the ledger has %d %s sections: one, please" % (len(bodies), name))
+    body = bodies[0] if bodies else None
     if body is None and need:
         sys.exit("the ledger has no %s section: version 5 keeps proposals under PROPOSED QUESTIONS and questions "
                  "under THE QUESTIONS" % name)
@@ -463,21 +467,21 @@ def posters(a, members):
     """Rule 4's posters (Posters): who posted the answer, who changed it with a CHANGED line, and for an answer copied from
     version 3 (its header names the entry: "(Ann, 2026-10-31, version 3's fact 6)"), that entry's writer."""
     out = {a["who"]} | {w for w, _ in changes(a["fields"]) if w}
-    c = COPIED.search(a["head"])
-    if c:
-        out.add(v3_writer(c.group(1).upper(), c.group(2), members))
+    for c in COPIED.finditer(a["head"]):
+        out |= {v3_writer(c.group(1).upper(), n, members) for n in re.findall(r"\d+", c.group(2))}
     return out - {""}
 
 
 # A SEEN item as the weekly page writes it: "- Laura, 2026-10-30: HOLDS on lines 1, 2. Items: line 1, all 1; line 2,
 # all 164. Saw: ... New: ...", with "Script: python checks/x.py by Ann via host." before Saw: when a script ran. A slot
 # word in that place written any other way ("items:", "Item:", a count with no full stop) leaves the whole item to a
-# person (lint I6), so a sample cannot pass for a full check by being misspelt. KEPT and BROKEN are read so that lint
-# can say they are no result here (I7).
-ITEMS = r"(?:line \d+, )?(?:all \d+|\d+ of \d+)"
+# person (lint I6), so a sample cannot pass for a full check by being misspelt, and so does anything else between the
+# result and Saw: ("Scripts: ...", "Ran x.py."). A count is 1 or more. KEPT and BROKEN are read so that lint can say they
+# are no result here (I7).
+ITEMS = r"(?:line [1-9]\d*, )?(?:all [1-9]\d*|\d+ of [1-9]\d*)"
 SEEN_ITEM = re.compile(r"- (.+?), (\d{4}-\d\d-\d\d): (HOLDS|DOESN'T HOLD|KEPT|BROKEN)(?: on lines? ([\d, and]+?))?\."
                        r"(?: Items: (%s(?:; %s)*)\.|(?!\s*(?i:items?)\b))" % (ITEMS, ITEMS) +
-                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.(?= Saw:)|(?!\s*(?i:script)\b))")
+                       r"(?: Script: (.+?) by ([^:;,]+?)(?: via (\S+?))?\.)?(?= Saw:)")
 ITEM = re.compile(r"(?:line (\d+), )?(?:all (\d+)|(\d+) of (\d+))")
 CLAUSE = re.compile(r"[;,] or ")                            # "a, or b; or c": one WRONG IF line per clause
 DATE = re.compile(r"\b\d{4}-\d\d-\d\d\b")
@@ -1150,14 +1154,14 @@ def open_votes(title, secs, m):
     if status(secs)[1]:
         flat = re.sub(r"\s+", " ", " ".join(r for _, b in secs for r in b))
         dates = re.findall(r'"yes" or "object" by (\d{4}-\d\d-\d\d)', flat)
-        return [(titled(title)[1] or "this version", dates[-1] if dates else None, "by")]
-    return [(v["subject"], days_after(v["posted"], 7), "counted from") for v in m["votes"] if not v["passed"]]
+        return [(titled(title)[1] or "this version", dates[-1] if dates and a_day(dates[-1]) else None, "by")]
+    return [(v["subject"], days_after(v["posted"], 7), "counted from") for v in m["votes"]
+            if not v["passed"] and a_day(v["posted"])]
 
 
 def turn_start(secs):
     """The first date in STATUS: the weekly turns (rule 7) are counted in weeks from it, in Member order."""
-    m = DATE.search(" ".join(status(secs)[0]))
-    return m.group() if m else None
+    return next((d for d in DATE.findall(" ".join(status(secs)[0])) if a_day(d)), None)
 
 
 def calendar_ics(votes, members, start, secs):
@@ -1179,7 +1183,8 @@ def calendar_ics(votes, members, start, secs):
                        "turn-" + d))
     bugs = re.sub(r"\s+", " ", " ".join(next((b for h, b in secs if short(h).startswith("KNOWN BUGS")), [])))
     for n, d in re.findall(r"\b(\d{1,2})\. (?=[A-Z])(?:(?!\b\d{1,2}\. [A-Z]).)*?Fix by:\s*(\d{4}-\d\d-\d\d)", bugs):
-        ev.append((d, days_after(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
+        if a_day(d):
+            ev.append((d, days_after(d, 1), "Assembly: known bug %s, fix by" % n, "bug-" + n))
     def text(t):   # RFC 5545 TEXT: backslash, semicolon and comma are escaped; line breaks cannot occur here
         return t.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
     out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//febu assembly//ledger.txt//EN"]
@@ -1255,7 +1260,7 @@ def pick_li(q, a, members):
             '%s</span></div><p class="says">%s</p><p class="acts"><a class="btn%s" href="ledger.html#%s">Open the '
             'answer</a>%s</p>%s</li>' % (aid, q["num"], a["num"], " done" if done else "",
                                          html.escape(("closed: " if done else "") + answer_state_text(a)),
-                                         html.escape(text_of(a["fields"], "SAYS")), "" if card else " primary", aid,
+                                         html.escape(short_addr(text_of(a["fields"], "SAYS"))), "" if card else " primary", aid,
                                          toggle, card))
 
 
@@ -1290,7 +1295,7 @@ def next_move(members, m, todo, waiting, votes, start, remind):
                                                                and name not in {r[0] for r in a["results"]})]
         rows = "".join('<li><a href="#check-%s"><span class="num">Q%d answer %d</span><span class="says">%s</span></a>'
                        '</li>' % (answer_id(qq["num"], a["num"]), qq["num"], a["num"],
-                                  html.escape(text_of(a["fields"], "SAYS"))) for qq, a in mine)
+                                  html.escape(short_addr(text_of(a["fields"], "SAYS")))) for qq, a in mine)
         if rows:
             check, c = '<ul class="todo">%s</ul>' % rows, chip("%d open to you" % len(mine), "due")
         else:
@@ -1304,7 +1309,7 @@ def next_move(members, m, todo, waiting, votes, start, remind):
         else:
             open_to = [p for p in waiting if p["who"] != name and name not in {n for n, _ in p["yes"]}]
             yes = "".join('<p>P%d: %s</p><p class="acts">%s</p>' % (
-                p["num"], html.escape(p["asks"]), copy("Copy a yes", CHAT.join(("YES P%d" % p["num"], name, "{today}"))))
+                p["num"], html.escape(short_addr(p["asks"])), copy("Copy a yes", CHAT.join(("YES P%d" % p["num"], name, "{today}"))))
                 for p in open_to) or "<p>No proposal waits for your yes.</p>"
             yes += ('<p>Propose a question a link anyone can open could settle (rule 1). The first proposal with three '
                     'yeses from other members opens next (rule 2).</p><p class="acts">%s</p>'
@@ -1424,14 +1429,14 @@ def assembly_page(title, secs, how_secs, m):
     remind = "\n".join(remind + [FRONT])
 
     if q:
-        picks = ('<p class="says">Q%d asks: %s</p><p class="hint">%s</p>' % (q["num"], doc.fmt(q["asks"]),
+        picks = ('<p class="says">Q%d asks: %s</p><p class="hint">%s</p>' % (q["num"], doc.fmt(short_addr(q["asks"])),
                                                                               html.escape(question_text(q)))
                  + ('<ul class="picks">%s</ul>' % "".join(pick_li(qq, a, names) for qq, a in todo) if todo else
                     '<p>No open answer yet. <a href="write.html">Write one</a>.</p>'))
     else:
         picks = "<p>No question is open. The first proposal with three yeses from other members opens next (rule 2).</p>"
     props = "".join('<li><a href="ledger.html#prop-P%d"><span class="num">P%d</span><span class="says">%s</span>'
-                    '<span class="state">%s</span></a></li>' % (p["num"], p["num"], html.escape(p["asks"]), (
+                    '<span class="state">%s</span></a></li>' % (p["num"], p["num"], html.escape(short_addr(p["asks"])), (
                         "three yeses on %s" % p["reach"] if p["reach"] else "%d of 3 yeses" % yes_count(
                             p, names, m["adopted"])[0])) for p in waiting)
     if props:
@@ -1443,7 +1448,7 @@ def assembly_page(title, secs, how_secs, m):
                                            picks, '<p class="hint">The vote week is also a dry run. Post what you '
                                            'saw.</p>' if proposed else ""))
     rows = "".join('<li><a href="ledger.html#q-%d"><span class="num">Q%d</span><span class="says">%s</span>'
-                   '<span class="state">%s</span></a></li>' % (x["num"], x["num"], html.escape(x["asks"]),
+                   '<span class="state">%s</span></a></li>' % (x["num"], x["num"], html.escape(short_addr(x["asks"])),
                                                                html.escape(question_text(x))) for x in m["questions"])
     every = ('<details class="win lead" id="every" data-open-wide><summary><span class="t">every question</span>'
              '<span class="q">%d so far</span></summary><div class="win-body">%s<p class="go"><a href="ledger.html">'
@@ -1502,7 +1507,7 @@ def ledger_dict(title, secs, m, more=False):
                 cp = COPIED.search(a["head"])
                 e.update(says=clip(text_of(a["fields"], "SAYS")), wrong_if=[clip(c) for c in a["lines"]],
                          url="%s/ledger.html#%s" % (SITE, answer_id(q["num"], a["num"])),
-                         copies=cp and [cp.group(1).upper(), int(cp.group(2))])   # agent.py runs that entry's scripts
+                         copies=cp and [cp.group(1).upper(), int(re.match(r"\d+", cp.group(2)).group())])   # agent.py runs that entry's scripts
             ans.append(e)
         qs.append({"num": q["num"], "opened": q["opened"], "from": q["from"], "asks": clip(q["asks"]),
                    "state": q["state"], "answers": ans})
@@ -1520,7 +1525,7 @@ def ledger_dict(title, secs, m, more=False):
 def ledger_data(title, secs, m):
     """ledger_dict as JSON in the weekly page."""
     return ('<script type="application/json" id="ledger-data">%s</script>'
-            % json.dumps(ledger_dict(title, secs, m)).replace("</", "<\\/"))
+            % json.dumps(ledger_dict(title, secs, m)).replace("<", "\\u003c"))
 
 
 def ledger_json(title, secs, raw, m):
