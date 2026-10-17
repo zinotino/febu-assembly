@@ -36,7 +36,7 @@ def tally(text):
         author = build.writer(who, fields, names)
         written[author] += 1
         if st["state"] in build.CLOSED and st["by"]:   # a promise withdrawn late is BROKEN with no closers: not rule 3
-            rows.append(("%s %s" % (kind.lower(), num), build.state_text(st, kind, fields), author, tuple(st["by"]),
+            rows.append(("%s %s" % (kind.lower(), num), build.state_text(st, kind, fields), author, tuple(sorted(st["by"])),
                          st["since"]))
     n = len(rows)
     closed = Counter(r[2] for r in rows)
@@ -55,7 +55,7 @@ def ranked(counts):
 
 
 def share(c, n, what):
-    return "%d of the %d %s (%d%%)" % (c, n, what, round(100 * c / n))
+    return "%d of the %d %s (%d%%)" % (c, n, what, 100 * c / n + 0.5)   # half rounds up
 
 
 def busiest(counts, n, on=""):

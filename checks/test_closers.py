@@ -52,10 +52,10 @@ F1 = fact(1, "Zed", post("Ann", D1), post("Bo", D2))
 F4 = fact(4, "Bo", post("Cy", D1))                                          # one post: open
 
 
-def base(second="Bo", last=post("Cy", D2)):
+def base(other="Bo", last=post("Cy", D2)):
     """Three closes: Ann and Bo on facts 1 and 2 (both by Zed), Bo and `last` on fact 3 (by Ann); fact 4 (by Bo) open.
-    `second` is fact 2's second closer."""
-    return ledger(F1, fact(2, "Zed", post("Ann", D1, "DOESN'T HOLD"), post(second, D2, "DOESN'T HOLD")),
+    On fact 2 `other` posts before Ann, so a pair is the same pair whoever posts first."""
+    return ledger(F1, fact(2, "Zed", post(other, D1, "DOESN'T HOLD"), post("Ann", D2, "DOESN'T HOLD")),
                   fact(3, "Ann", post("Bo", D1), last), F4)
 
 
@@ -96,8 +96,8 @@ def test_known_answers():
 
 
 def test_moving_one_closer_moves_the_pair_count():
-    """Fact 2's second closer is Cy, not Bo: three pairs of one, no pair at half, a three-way tie at the top."""
-    t = tally(base(second="Cy"))
+    """Fact 2's other closer is Cy, not Bo: three pairs of one, no pair at half, a three-way tie at the top."""
+    t = tally(base(other="Cy"))
     assert t["pairs"] == {"Ann and Bo": 1, "Ann and Cy": 1, "Bo and Cy": 1}
     assert t["closers"] == {"Ann": 2, "Bo": 2, "Cy": 2}
     assert len(t["flags"]) == 1 and "Zed wrote" in t["flags"][0], t["flags"]
@@ -111,6 +111,16 @@ def test_a_sampled_holds_closes_nothing():
     assert t["closed"] == {"Zed": 2} and t["written"]["Ann"] == 1
     assert t["closers"] == {"Ann": 2, "Bo": 2} and "Cy" not in t["closers"]
     assert t["pairs"] == {"Ann and Bo": 2}
+    t = tally(base(last=post("Cy", D2, items="all 164")))                    # the control: a full check closes
+    assert [r[0] for r in t["rows"]] == ["fact 1", "fact 2", "fact 3"] and t["pairs"]["Bo and Cy"] == 1
+
+
+def test_exactly_half_is_flagged():
+    """Two closes by two pairs, of entries by two writers: each is at 1 of 2, and at least half means flagged."""
+    t = tally(ledger(F1, fact(2, "Ann", post("Bo", D1), post("Cy", D2))))
+    assert len(t["flags"]) == 4, t["flags"]
+    for who in ("Ann and Bo made", "Bo and Cy made", "Ann wrote", "Zed wrote"):
+        assert any(f.startswith("FLAG: %s 1 of the 2 " % who) and "(50%)" in f for f in t["flags"]), (who, t["flags"])
 
 
 def test_a_withdrawn_promise_counts_nowhere():
